@@ -1,0 +1,9 @@
+# Godot
+client/.godot/
+client/export/
+# Builds
+dist/
+server/ninja-server
+server/ninja-server.exe
+# Sauvegardes locales
+*.save.json
