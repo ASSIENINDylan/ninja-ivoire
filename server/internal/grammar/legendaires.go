@@ -220,7 +220,9 @@ func Resonner(seq []string, e *Echec, precise bool) Resonance {
 		r.RetourDeSouffle = true
 		r.Message += " Le Souffle se retourne contre vous !"
 	}
-	if precise && e.Position < len(seq) {
+	if precise && r.Ancienne {
+		r.Indice = "Les anciens murmurent que cette voie est rare : peu de ninjas l'ont suivie jusqu'au bout."
+	} else if precise && e.Position < len(seq) {
 		if m := data.Mudras[seq[e.Position]]; m != nil {
 			r.Indice = fmt.Sprintf("Les anciens sentent que le signe n°%d (%s) trouble le Souffle.", e.Position+1, m.Nom)
 		}
