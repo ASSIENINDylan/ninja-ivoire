@@ -45,30 +45,8 @@ func _chemin_serveur() -> String:
 	for c in candidats:
 		if FileAccess.file_exists(c):
 			return c
-	return _extraire_serveur_embarque(exe)
+	return ""
 
-
-## Une copie du serveur voyage dans le jeu lui-même (res://bin). Si le
-## fichier manque à côté de l'exécutable, on l'extrait dans les données
-## de l'utilisateur et on lance cette copie.
-func _extraire_serveur_embarque(exe: String) -> String:
-	var source := "res://bin/" + exe
-	if not FileAccess.file_exists(source):
-		return ""
-	var octets := FileAccess.get_file_as_bytes(source)
-	if octets.is_empty():
-		return ""
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("user://bin"))
-	var dest := ProjectSettings.globalize_path("user://bin/" + exe)
-	if not FileAccess.file_exists(dest) or FileAccess.get_file_as_bytes(dest).size() != octets.size():
-		var f := FileAccess.open(dest, FileAccess.WRITE)
-		if f == null:
-			return ""
-		f.store_buffer(octets)
-		f.close()
-		if OS.get_name() != "Windows":
-			OS.execute("chmod", ["+x", dest])
-	return dest
 
 
 const PORTS := [7777, 7778, 7779, 7780]
@@ -99,6 +77,13 @@ func _derniere_ligne_journal() -> String:
 ## Démarre le serveur local s'il ne tourne pas déjà. Renvoie "" si tout va
 ## bien, sinon un message d'erreur qui dit précisément ce qui bloque.
 func demarrer_serveur() -> String:
+	if not OS.get_cmdline_user_args().has("--serveur"):
+		# Mode normal : les règles tournent dans le jeu, sans aucun serveur.
+		var err := Regles.charger()
+		if err != "":
+			return err
+		Api.partie = PartieLocale.new()
+		return ""
 	for p in PORTS:
 		Api.utiliser_port(p)
 		if await serveur_disponible():

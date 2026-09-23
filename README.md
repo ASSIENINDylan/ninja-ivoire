@@ -13,8 +13,10 @@ Jeu PC de ninjas, stratégique et persistant, dont le monde est la **Côte d'Ivo
 ## Jouer au prototype (Windows)
 
 1. Onglet **Actions** du dépôt → dernier run vert de **« Construire Ninja Ivoire »**.
-2. Télécharger l'artefact **`NinjaIvoire-Windows`** et le dézipper.
-3. Double-cliquer sur **`NinjaIvoire.exe`** (garder `ninja-server.exe` à côté).
+2. Télécharger l'artefact **`NinjaIvoire-Windows`**, puis clic droit → « Extraire tout… ».
+3. Double-cliquer sur **`NinjaIvoire.exe`** (garder `NinjaIvoire.pck` à côté).
+
+Le jeu tourne entièrement sur le PC. `NinjaIvoire.exe` est l'exécutable officiel de Godot, non modifié ; le jeu lui-même est dans `NinjaIvoire.pck`.
 
 ## Ce que contient le prototype 0.1
 
@@ -33,13 +35,16 @@ Jeu PC de ninjas, stratégique et persistant, dont le monde est la **Côte d'Ivo
 
 ## Architecture
 
-- **`server/`** : moteur de règles et serveur en **Go** (bibliothèque standard uniquement). Toute la logique vit ici : grammaire des mudras, recettes et conditions des légendaires, combat, progression. **Le client ne connaît jamais les recettes.**
+- **`server/`** : moteur de règles et serveur en **Go** (bibliothèque standard uniquement). C'est la **référence** des règles, et le futur serveur du jeu en ligne.
+  - `cmd/exporter-regles` : écrit `client/donnees/regles.json` (données du jeu, recettes légendaires sous forme d'empreintes SHA-256) et les vecteurs de test du client.
   - `internal/data` : éléments, mudras, régions, Soleil et Lune.
   - `internal/grammar` : suite de mudras → jutsu, résonance, légendaires (secret).
   - `internal/combat` : moteur de combat et IA.
   - `internal/game` : ninja, grimoire, maîtrise, niveaux, rencontres, sauvegarde.
   - `internal/api` : API HTTP JSON pour le client.
-- **`client/`** : jeu PC en **Godot 4.4** (GDScript). Il lance le serveur local tout seul au démarrage.
+- **`client/`** : jeu PC en **Godot 4.4** (GDScript).
+  - `scripts/moteur` : copie fidèle des règles Go, pour jouer sans serveur (prototype hors ligne). Un test vérifie la parité avec Go sur près de 3 000 suites de mudras.
+  - Avec l'option `-- --serveur`, le client utilise le serveur Go en HTTP (développement, futur mode en ligne).
 
 ## Développer
 
@@ -50,8 +55,12 @@ cd server && go test ./...
 # Serveur seul
 go run ./cmd/ninja-server            # http://127.0.0.1:7777
 
-# Client : compiler le serveur à côté, puis ouvrir client/ dans Godot 4.4
-go build -o ninja-server ./cmd/ninja-server
+# Après une modification des règles Go : régénérer les données du client
+go run ./cmd/exporter-regles -sortie ../client/donnees -tests ../client/tests
+
+# Client : ouvrir client/ dans Godot 4.4 ; tests du moteur local
+godot --headless --path client --script res://tests/test_grammaire.gd
+godot --headless --path client --script res://tests/test_partie.gd
 
 # Démo automatique avec captures d'écran
 godot --path client -- --demo=/tmp/captures

@@ -1,0 +1,2116 @@
+{
+ "constantes": {
+  "attribut_depart": 8,
+  "bonus_region": 3,
+  "maitrise_decouverte": 10,
+  "maitrise_max": 100,
+  "maitrise_parchemin": 50,
+  "maitrise_pnj": 30,
+  "nb_rangs": 3,
+  "niveau_fusion": 60,
+  "niveau_max": 100,
+  "palier_element": 20,
+  "points_par_niveau": 3,
+  "tour_max": 60
+ },
+ "elements": [
+  {
+   "id": "feu",
+   "nom": "Feu",
+   "de": "de Feu",
+   "tier": "base",
+   "role": "Gros dégâts, brûlure",
+   "horizon": "court",
+   "fort": [
+    "vegetal",
+    "essaim"
+   ],
+   "faible": [
+    "eau",
+    "sable"
+   ],
+   "couleur": "#e2572b"
+  },
+  {
+   "id": "eau",
+   "nom": "Eau",
+   "de": "d'Eau",
+   "tier": "base",
+   "role": "Polyvalence, soins",
+   "horizon": "moyen",
+   "fort": [
+    "feu",
+    "sable"
+   ],
+   "faible": [
+    "terre",
+    "foudre"
+   ],
+   "couleur": "#2f86c9"
+  },
+  {
+   "id": "vent",
+   "nom": "Vent",
+   "de": "de Vent",
+   "tier": "base",
+   "role": "Vitesse, initiative, portée",
+   "horizon": "court",
+   "fort": [
+    "brume",
+    "essaim"
+   ],
+   "faible": [
+    "venin",
+    "gravite"
+   ],
+   "couleur": "#9fd8c4"
+  },
+  {
+   "id": "terre",
+   "nom": "Terre",
+   "de": "de Terre",
+   "tier": "base",
+   "role": "Murs, armure, fortifications",
+   "horizon": "long",
+   "fort": [
+    "foudre",
+    "eau"
+   ],
+   "faible": [
+    "vegetal",
+    "metal"
+   ],
+   "couleur": "#a0703c"
+  },
+  {
+   "id": "foudre",
+   "nom": "Foudre",
+   "de": "de Foudre",
+   "tier": "base",
+   "role": "Perce, paralyse, agit en premier",
+   "horizon": "court",
+   "fort": [
+    "eau",
+    "metal"
+   ],
+   "faible": [
+    "terre",
+    "sable"
+   ],
+   "couleur": "#f2d64b"
+  },
+  {
+   "id": "vegetal",
+   "nom": "Végétal",
+   "de": "de Sève",
+   "tier": "base",
+   "role": "Pièges, entraves, croissance",
+   "horizon": "long",
+   "fort": [
+    "terre",
+    "sable"
+   ],
+   "faible": [
+    "feu",
+    "metal"
+   ],
+   "couleur": "#4f9d45"
+  },
+  {
+   "id": "metal",
+   "nom": "Métal",
+   "de": "de Métal",
+   "tier": "base",
+   "role": "Armes, forge, artisanat",
+   "horizon": "moyen",
+   "fort": [
+    "vegetal",
+    "terre"
+   ],
+   "faible": [
+    "foudre",
+    "son"
+   ],
+   "couleur": "#a9b4bd"
+  },
+  {
+   "id": "son",
+   "nom": "Son",
+   "de": "de Son",
+   "tier": "base",
+   "role": "Interrompt les mudras, tambours de soutien",
+   "horizon": "moyen",
+   "fort": [
+    "metal",
+    "lune"
+   ],
+   "faible": [
+    "brume",
+    "venin"
+   ],
+   "couleur": "#d98bd4"
+  },
+  {
+   "id": "sable",
+   "nom": "Sable",
+   "de": "de Sable",
+   "tier": "base",
+   "role": "Aveugle, use les défenses",
+   "horizon": "moyen",
+   "fort": [
+    "feu",
+    "foudre"
+   ],
+   "faible": [
+    "eau",
+    "vegetal"
+   ],
+   "couleur": "#dcb877"
+  },
+  {
+   "id": "venin",
+   "nom": "Venin",
+   "de": "de Venin",
+   "tier": "base",
+   "role": "Dégâts cumulatifs sur la durée",
+   "horizon": "long",
+   "fort": [
+    "son",
+    "vent"
+   ],
+   "faible": [
+    "sel",
+    "soleil"
+   ],
+   "couleur": "#7fc23a"
+  },
+  {
+   "id": "brume",
+   "nom": "Brume",
+   "de": "de Brume",
+   "tier": "base",
+   "role": "Cache ses actions, esquive",
+   "horizon": "moyen",
+   "fort": [
+    "son",
+    "sel"
+   ],
+   "faible": [
+    "vent",
+    "soleil"
+   ],
+   "couleur": "#b7c3cf"
+  },
+  {
+   "id": "sel",
+   "nom": "Sel",
+   "de": "de Sel",
+   "tier": "base",
+   "role": "Purifie, annule les effets, repousse les esprits",
+   "horizon": "long",
+   "fort": [
+    "venin",
+    "lune"
+   ],
+   "faible": [
+    "brume",
+    "gravite"
+   ],
+   "couleur": "#f4f1ea"
+  },
+  {
+   "id": "essaim",
+   "nom": "Essaim",
+   "de": "d'Essaim",
+   "tier": "base",
+   "role": "Nuées, éclaireurs, harcèlement",
+   "horizon": "long",
+   "fort": [
+    "soleil",
+    "gravite"
+   ],
+   "faible": [
+    "feu",
+    "vent"
+   ],
+   "couleur": "#c29a2e"
+  },
+  {
+   "id": "soleil",
+   "nom": "Soleil",
+   "de": "de Soleil",
+   "tier": "base",
+   "role": "Plus fort à midi (heure réelle)",
+   "horizon": "cyclique",
+   "fort": [
+    "brume",
+    "venin"
+   ],
+   "faible": [
+    "lune",
+    "essaim"
+   ],
+   "couleur": "#ffb534"
+  },
+  {
+   "id": "lune",
+   "nom": "Lune",
+   "de": "de Lune",
+   "tier": "base",
+   "role": "Illusions, plus forte la nuit et à la pleine lune",
+   "horizon": "cyclique",
+   "fort": [
+    "soleil",
+    "gravite"
+   ],
+   "faible": [
+    "son",
+    "sel"
+   ],
+   "couleur": "#8ea4ff"
+  },
+  {
+   "id": "gravite",
+   "nom": "Gravité",
+   "de": "de Gravité",
+   "tier": "base",
+   "role": "Déplace les ennemis entre les rangs",
+   "horizon": "moyen",
+   "fort": [
+    "vent",
+    "sel"
+   ],
+   "faible": [
+    "lune",
+    "essaim"
+   ],
+   "couleur": "#6b4fa3"
+  },
+  {
+   "id": "lave",
+   "nom": "Lave",
+   "de": "de Lave",
+   "tier": "rare",
+   "role": "Dégâts et terrain brûlant",
+   "horizon": "long",
+   "fort": [
+    "vegetal",
+    "essaim",
+    "foudre",
+    "eau"
+   ],
+   "faible": null,
+   "fusion": [
+    "feu",
+    "terre"
+   ],
+   "couleur": "#ff5a1f"
+  },
+  {
+   "id": "glace",
+   "nom": "Glace",
+   "de": "de Glace",
+   "tier": "rare",
+   "role": "Gel, entrave, armure",
+   "horizon": "moyen",
+   "fort": [
+    "feu",
+    "sable",
+    "brume",
+    "essaim"
+   ],
+   "faible": null,
+   "fusion": [
+    "eau",
+    "vent"
+   ],
+   "couleur": "#aee7ff"
+  },
+  {
+   "id": "vapeur",
+   "nom": "Vapeur",
+   "de": "de Vapeur",
+   "tier": "rare",
+   "role": "Brûlure et dissimulation",
+   "horizon": "moyen",
+   "fort": [
+    "vegetal",
+    "essaim",
+    "sable"
+   ],
+   "faible": null,
+   "fusion": [
+    "feu",
+    "eau"
+   ],
+   "couleur": "#e8e3e0"
+  },
+  {
+   "id": "magnetisme",
+   "nom": "Magnétisme",
+   "de": "de Magnétisme",
+   "tier": "rare",
+   "role": "Désarme, neutralise la technologie",
+   "horizon": "moyen",
+   "fort": [
+    "eau",
+    "vegetal",
+    "terre"
+   ],
+   "faible": null,
+   "fusion": [
+    "foudre",
+    "metal"
+   ],
+   "couleur": "#5ec8d8"
+  },
+  {
+   "id": "tempete",
+   "nom": "Tempête",
+   "de": "de Tempête",
+   "tier": "rare",
+   "role": "Dégâts de zone",
+   "horizon": "court",
+   "fort": [
+    "brume",
+    "essaim",
+    "eau",
+    "metal"
+   ],
+   "faible": null,
+   "fusion": [
+    "vent",
+    "foudre"
+   ],
+   "couleur": "#7c8cff"
+  },
+  {
+   "id": "cristal",
+   "nom": "Cristal",
+   "de": "de Cristal",
+   "tier": "rare",
+   "role": "Renvoie les jutsus, stocke le Souffle",
+   "horizon": "long",
+   "fort": [
+    "venin",
+    "lune",
+    "brume"
+   ],
+   "faible": null,
+   "fusion": [
+    "sel",
+    "soleil"
+   ],
+   "couleur": "#e0f7ff"
+  },
+  {
+   "id": "acide",
+   "nom": "Acide",
+   "de": "d'Acide",
+   "tier": "rare",
+   "role": "Détruit armures et équipements",
+   "horizon": "moyen",
+   "fort": [
+    "son",
+    "vent",
+    "feu",
+    "sable"
+   ],
+   "faible": null,
+   "fusion": [
+    "venin",
+    "eau"
+   ],
+   "couleur": "#b4f03c"
+  },
+  {
+   "id": "bois_sacre",
+   "nom": "Bois sacré",
+   "de": "de Bois sacré",
+   "tier": "rare",
+   "role": "Soins massifs, croissance explosive",
+   "horizon": "long",
+   "fort": [
+    "terre",
+    "sable",
+    "brume",
+    "venin"
+   ],
+   "faible": null,
+   "fusion": [
+    "vegetal",
+    "soleil"
+   ],
+   "couleur": "#8bc34a"
+  },
+  {
+   "id": "onde",
+   "nom": "Onde de choc",
+   "de": "d'Onde",
+   "tier": "rare",
+   "role": "Repousse et étourdit un rang",
+   "horizon": "court",
+   "fort": [
+    "metal",
+    "lune",
+    "brume",
+    "essaim"
+   ],
+   "faible": [
+    "venin"
+   ],
+   "fusion": [
+    "son",
+    "vent"
+   ],
+   "couleur": "#f09ae0"
+  },
+  {
+   "id": "cendre",
+   "nom": "Cendre",
+   "de": "de Cendre",
+   "tier": "rare",
+   "role": "Aveugle et étouffe",
+   "horizon": "long",
+   "fort": [
+    "vegetal",
+    "essaim",
+    "brume"
+   ],
+   "faible": null,
+   "fusion": [
+    "feu",
+    "vent"
+   ],
+   "couleur": "#8a817c"
+  },
+  {
+   "id": "crepuscule",
+   "nom": "Crépuscule",
+   "de": "de Crépuscule",
+   "tier": "rare",
+   "role": "Change le cycle jour/nuit du combat",
+   "horizon": "cyclique",
+   "fort": [
+    "brume",
+    "venin",
+    "gravite"
+   ],
+   "faible": null,
+   "fusion": [
+    "soleil",
+    "lune"
+   ],
+   "couleur": "#d76b8a"
+  },
+  {
+   "id": "songe",
+   "nom": "Songe",
+   "de": "de Songe",
+   "tier": "rare",
+   "role": "Illusions profondes",
+   "horizon": "moyen",
+   "fort": [
+    "son",
+    "sel",
+    "soleil",
+    "gravite"
+   ],
+   "faible": null,
+   "fusion": [
+    "brume",
+    "lune"
+   ],
+   "couleur": "#a78bfa"
+  },
+  {
+   "id": "fleau",
+   "nom": "Fléau",
+   "de": "de Fléau",
+   "tier": "rare",
+   "role": "Épidémie qui se propage",
+   "horizon": "long",
+   "fort": [
+    "soleil",
+    "gravite",
+    "son",
+    "vent"
+   ],
+   "faible": null,
+   "fusion": [
+    "essaim",
+    "venin"
+   ],
+   "couleur": "#6f8f2a"
+  },
+  {
+   "id": "seisme",
+   "nom": "Séisme",
+   "de": "de Séisme",
+   "tier": "rare",
+   "role": "Brise positions et fortifications",
+   "horizon": "court",
+   "fort": [
+    "foudre",
+    "eau",
+    "vent",
+    "sel"
+   ],
+   "faible": null,
+   "fusion": [
+    "terre",
+    "gravite"
+   ],
+   "couleur": "#7a5534"
+  },
+  {
+   "id": "maree",
+   "nom": "Marée",
+   "de": "de Marée",
+   "tier": "rare",
+   "role": "Vagues qui montent de tour en tour",
+   "horizon": "long",
+   "fort": [
+    "feu",
+    "sable",
+    "soleil",
+    "gravite"
+   ],
+   "faible": null,
+   "fusion": [
+    "eau",
+    "lune"
+   ],
+   "couleur": "#2b6cb0"
+  },
+  {
+   "id": "harmattan",
+   "nom": "Harmattan",
+   "de": "d'Harmattan",
+   "tier": "rare",
+   "role": "Affaiblit tout le camp adverse",
+   "horizon": "moyen",
+   "fort": [
+    "feu",
+    "foudre",
+    "brume",
+    "essaim"
+   ],
+   "faible": null,
+   "fusion": [
+    "sable",
+    "vent"
+   ],
+   "couleur": "#d9a55b"
+  },
+  {
+   "id": "ivoire",
+   "nom": "Ivoire",
+   "de": "d'Ivoire",
+   "tier": "mythique",
+   "role": "Le Souffle originel",
+   "horizon": "long",
+   "fort": null,
+   "faible": null,
+   "couleur": "#fff8e7"
+  },
+  {
+   "id": "esprit",
+   "nom": "Esprit",
+   "de": "d'Esprit",
+   "tier": "mythique",
+   "role": "Lien avec les ancêtres",
+   "horizon": "long",
+   "fort": null,
+   "faible": null,
+   "couleur": "#c6f1ff"
+  },
+  {
+   "id": "lumiere",
+   "nom": "Lumière",
+   "de": "de Lumière",
+   "tier": "mythique",
+   "role": "Révélation, guérison",
+   "horizon": "moyen",
+   "fort": null,
+   "faible": null,
+   "couleur": "#fffbd0"
+  },
+  {
+   "id": "ombre",
+   "nom": "Ombre",
+   "de": "d'Ombre",
+   "tier": "mythique",
+   "role": "Absorption, peur",
+   "horizon": "moyen",
+   "fort": null,
+   "faible": null,
+   "couleur": "#2a2233"
+  },
+  {
+   "id": "vie",
+   "nom": "Vie",
+   "de": "de Vie",
+   "tier": "mythique",
+   "role": "Régénération",
+   "horizon": "long",
+   "fort": null,
+   "faible": null,
+   "couleur": "#7fffa0"
+  },
+  {
+   "id": "temps",
+   "nom": "Temps",
+   "de": "du Temps",
+   "tier": "mythique",
+   "role": "Accélérer, ralentir",
+   "horizon": "cyclique",
+   "fort": null,
+   "faible": null,
+   "couleur": "#e6c07b"
+  },
+  {
+   "id": "vide",
+   "nom": "Vide",
+   "de": "du Vide",
+   "tier": "mythique",
+   "role": "Efface, annule",
+   "horizon": "court",
+   "fort": null,
+   "faible": null,
+   "couleur": "#111018"
+  },
+  {
+   "id": "astre",
+   "nom": "Astre",
+   "de": "des Astres",
+   "tier": "mythique",
+   "role": "Puissance cosmique",
+   "horizon": "cyclique",
+   "fort": null,
+   "faible": null,
+   "couleur": "#b9a7ff"
+  }
+ ],
+ "fusions": [
+  [
+   "feu",
+   "terre",
+   "lave"
+  ],
+  [
+   "eau",
+   "vent",
+   "glace"
+  ],
+  [
+   "feu",
+   "eau",
+   "vapeur"
+  ],
+  [
+   "foudre",
+   "metal",
+   "magnetisme"
+  ],
+  [
+   "vent",
+   "foudre",
+   "tempete"
+  ],
+  [
+   "sel",
+   "soleil",
+   "cristal"
+  ],
+  [
+   "venin",
+   "eau",
+   "acide"
+  ],
+  [
+   "vegetal",
+   "soleil",
+   "bois_sacre"
+  ],
+  [
+   "son",
+   "vent",
+   "onde"
+  ],
+  [
+   "feu",
+   "vent",
+   "cendre"
+  ],
+  [
+   "soleil",
+   "lune",
+   "crepuscule"
+  ],
+  [
+   "brume",
+   "lune",
+   "songe"
+  ],
+  [
+   "essaim",
+   "venin",
+   "fleau"
+  ],
+  [
+   "terre",
+   "gravite",
+   "seisme"
+  ],
+  [
+   "eau",
+   "lune",
+   "maree"
+  ],
+  [
+   "sable",
+   "vent",
+   "harmattan"
+  ]
+ ],
+ "grammaire": {
+  "adj_effet": {
+   "aveugler": [
+    "aveuglant",
+    "aveuglante"
+   ],
+   "briser": [
+    "brisant",
+    "brisante"
+   ],
+   "consumer": [
+    "dévorant",
+    "dévorante"
+   ],
+   "dissimuler": [
+    "voilé",
+    "voilée"
+   ],
+   "drainer": [
+    "vampire",
+    "vampire"
+   ],
+   "lier": [
+    "entravant",
+    "entravante"
+   ],
+   "marquer": [
+    "marqueur",
+    "marqueuse"
+   ],
+   "renforcer": [
+    "fortifiant",
+    "fortifiante"
+   ],
+   "repousser": [
+    "déferlant",
+    "déferlante"
+   ],
+   "soigner": [
+    "guérisseur",
+    "guérisseuse"
+   ]
+  },
+  "longueur_max": 8,
+  "max_modificateurs": 2,
+  "messages_echec": {
+   "effet": "Une forme se dessine… puis se dissipe, faute de but.",
+   "element": "Le Souffle reste incolore : il lui manque un élément pour naître.",
+   "forme": "Le Souffle prend une couleur, mais aucune forme.",
+   "fusion": "Deux éléments s'entrechoquent sans se mêler.",
+   "inconnu": "Ce signe n'existe pas.",
+   "modificateurs": "Trop de signes de maîtrise étouffent le jutsu.",
+   "surplus": "Le jutsu était presque né : des signes en trop l'ont brisé."
+  },
+  "noms_formes": {
+   "armure": {
+    "feminin": true,
+    "nom": "Armure"
+   },
+   "cercle": {
+    "feminin": false,
+    "nom": "Cercle"
+   },
+   "double": {
+    "feminin": false,
+    "nom": "Double"
+   },
+   "invocation": {
+    "feminin": true,
+    "nom": "Invocation"
+   },
+   "lame": {
+    "feminin": true,
+    "nom": "Lame"
+   },
+   "lien": {
+    "feminin": false,
+    "nom": "Lien"
+   },
+   "mur": {
+    "feminin": false,
+    "nom": "Mur"
+   },
+   "pas": {
+    "feminin": false,
+    "nom": "Pas"
+   },
+   "piege": {
+    "feminin": false,
+    "nom": "Piège"
+   },
+   "trait": {
+    "feminin": false,
+    "nom": "Trait"
+   }
+  },
+  "prefixe_mod_forme": {
+   "amplifier": [
+    "Grand",
+    "Grande"
+   ],
+   "etendre": [
+    "Vaste",
+    "Vaste"
+   ],
+   "multiplier": [
+    "Triple",
+    "Triple"
+   ],
+   "persistance": [
+    "Éternel",
+    "Éternelle"
+   ],
+   "retarder": [
+    "Patient",
+    "Patiente"
+   ],
+   "silence": [
+    "Muet",
+    "Muette"
+   ]
+  },
+  "puissance_forme": {
+   "armure": 1,
+   "cercle": 0.6,
+   "double": 0.5,
+   "invocation": 0.45,
+   "lame": 1.4,
+   "lien": 0.5,
+   "mur": 1.2,
+   "pas": 0.5,
+   "piege": 1.3,
+   "trait": 1
+  },
+  "suffixe_mod_effet": {
+   "amplifier": [
+    "au paroxysme",
+    "au paroxysme"
+   ],
+   "etendre": [
+    "sans fin",
+    "sans fin"
+   ],
+   "multiplier": [
+    "contagieux",
+    "contagieuse"
+   ],
+   "persistance": [
+    "tenace",
+    "tenace"
+   ],
+   "retarder": [
+    "à retardement",
+    "à retardement"
+   ],
+   "silence": [
+    "invisible",
+    "invisible"
+   ]
+  },
+  "texte_effet": {
+   "aveugler": "aveugle la cible (40 % de chances de rater)",
+   "briser": "brise les défenses et l'incantation de la cible",
+   "consumer": "consume la cible pendant 3 tours",
+   "dissimuler": "rend un allié insaisissable (esquive, actions cachées)",
+   "drainer": "rend au lanceur une partie des dégâts et du Souffle",
+   "lier": "entrave la cible (lente, ne peut ni frapper au contact ni bouger)",
+   "marquer": "marque la cible, qui subit plus de dégâts",
+   "renforcer": "renforce les dégâts d'un allié",
+   "repousser": "repousse la cible d'un rang et brise son incantation",
+   "soigner": "soigne un allié"
+  },
+  "texte_forme": {
+   "armure": "Une armure qui absorbe les coups portés au lanceur.",
+   "cercle": "Une onde qui touche tous les adversaires, plus faiblement.",
+   "double": "Un double qui détourne la prochaine attaque.",
+   "invocation": "Une créature de Souffle qui attaque pendant trois tours.",
+   "lame": "Une lame de Souffle qui frappe fort au corps à corps (rangs 1 et 2).",
+   "lien": "Un lien qui touche peu mais renforce l'effet.",
+   "mur": "Un mur qui protège tout le camp et absorbe les coups.",
+   "pas": "Un déplacement éclair : le lanceur change de rang et esquive.",
+   "piege": "Un piège qui se déclenche quand la cible agit.",
+   "trait": "Un projectile qui frappe une cible à n'importe quel rang."
+  },
+  "texte_modificateur": {
+   "amplifier": [
+    "forme amplifiée",
+    "effet amplifié"
+   ],
+   "etendre": [
+    "atteint une cible voisine",
+    "effet prolongé de 2 tours"
+   ],
+   "multiplier": [
+    "frappe deux fois",
+    "effet propagé à une autre cible"
+   ],
+   "persistance": [
+    "la forme persiste un tour de plus",
+    "effet deux fois plus long"
+   ],
+   "retarder": [
+    "frappe au tour suivant, plus fort",
+    "effet retardé mais doublé"
+   ],
+   "silence": [
+    "incantation impossible à interrompre",
+    "effet impossible à purifier"
+   ]
+  }
+ },
+ "legendaires": {
+  "nombre": 8,
+  "prefixes": {
+   "01045df13e64785fc7caeb983f0d417e1825d99ca031e34d4450e35e6750e38f": 0.4,
+   "03940dfd614c1b6f2979323d9e58dd7e14701c220b5385a9952c58deb5a24aea": 0.8,
+   "050c121eba7bbfc75c123e6990684611cb726a581b26f1d829ad1cc0d727d4a3": 0.6,
+   "122544c5fd141cd25dbff6d0bbff8765f843e705729033780053a27e6b2f220e": 1,
+   "319c1f3e018632f52dbac52ad9a1694f6cb3e49550b0b2ab1c6df4f8e1053477": 0.4,
+   "3e2eb9978af372156b451ee7f4e1de2d166086a75afb7ae615d5e9c6879bd01b": 0.6,
+   "3ee77c4af95364d792bc45df397955da971a4de2eb18fe3f1eaf59faf1c3632a": 0.8,
+   "494e5412c0a0f65ca834b3549677bc0a3fb34bc85cd05025a3c974e7f02ffd1c": 0.8333333333333334,
+   "4d9cd4bab8f09b78f8da3b65403bc4d1308d125810207f00142ea074ff6d03d7": 1,
+   "4dad5294b8a66ae27ff6f8bfc09cd5a2affb22fd1643b549e3ff0dc901e68a79": 1,
+   "57e74984d652a64ecef72c90f232c6c1067f4eead48ea7a393b89e5fe84c064b": 0.4,
+   "5b111317a5594cae21c7270754e2fad479ef7cf263076786f66a11f5b5b5c2f7": 0.4,
+   "5b13a59ad079c60db56be262ccdfc00298f7901cb8695e4822b427783627c824": 0.6666666666666666,
+   "5bf281f6cba812ef7c958a3e03282a6bfa44ab23bb16ca0c591ab9abff84601c": 0.8,
+   "5e58e8f2fd6416db192d18b058b7878e88dfcfc96e0e0ccd41a3413dd11fe31c": 0.4,
+   "6af4633a9adad348cdf725e31fc708e68043eb9deee287c901fb18027dbb41ef": 0.6,
+   "6cb7d43617bc30e2e42978241d6dc81b14cdb53f9e4cb1b2ba3ea685d275d622": 0.5,
+   "6cc2e0e457e97ac1ac9e9e3ee4a3da047ad1968cf4dbb1846b1bee98d4bf52ff": 0.8333333333333334,
+   "740380bf11c734f3ef9c898455ef824ee991d61136194ae4bed9ced32556d523": 1,
+   "75d602f00006a8f6e3e7052db628add925f22612bcd82f7e3c72ccf25739f412": 1,
+   "8989b27953c785a13410b6d74b0de76053999f6a2d9da059661b9371fe17a3af": 0.8,
+   "8a07b440f0e565cb294866ad02e973c7ae30d900596ad570f4a71dc0b72b0755": 1,
+   "93c38e2b3eb1d4caf8f8e2f1e561e298c9ebe5929c3aa05d315ebfd4ff99457d": 0.6,
+   "987155ec6bcb0396229a32ed44a741997fce746ab80b78dda7cfe7b2d61b2ec6": 1,
+   "aa3bf4a6558042347e373ad5d03b2ae258e0b04a224fd46a91a6472f8fdd0b7c": 0.3333333333333333,
+   "b24c466dab985bf5a6cb1c8e13ae97500f6ddda30df8839ddd9236a360768587": 1,
+   "bd7ea9b7bd9e1082eccbf74ea8f6ce0604b59b47491a8a0af67ce85a438beabe": 0.8,
+   "c9d90525a2976ba97b19cb0eb7c830db67759469b21660e41b8ef1b365762f7f": 0.6,
+   "ca9ff7668bebf2a8183fffb1686adc85e11226a47953d70665dc921f1e1e4012": 0.3333333333333333,
+   "cadab1bebb950e8d37eb2cbe482a0351972bbe82939fd8b6cc8df9bb6a92f53b": 0.8,
+   "d735229f31aa0c03d0bd727f1d4462ddd7b743a527084b23df64629656b35fc5": 0.5,
+   "da93eb7637fdefcb52d3cdf6e9e105d8c4f6923ac0e909a0d89024aaf535f24f": 0.4,
+   "e5981072ea7fb251eb265226fee8f84f65aa675bfc7dad4d483251823701da66": 0.6,
+   "efef9ad0410ef28e18bce774e18e11b65e91546e34ab938ef4c9a19798270b1c": 0.6666666666666666
+  },
+  "recettes": {
+   "122544c5fd141cd25dbff6d0bbff8765f843e705729033780053a27e6b2f220e": {
+    "conditions": {
+     "elements": [],
+     "jour": false,
+     "niveau_min": 8,
+     "nuit": false,
+     "pleine_lune": false
+    },
+    "cout": 40,
+    "effet": "soigner",
+    "effet2": "",
+    "element": "terre",
+    "forme": "mur",
+    "fusion": false,
+    "id": "rempart_argile",
+    "intensite": 1.6,
+    "longueur": 5,
+    "mods_effet": [],
+    "mods_forme": [
+     "amplifier"
+    ],
+    "nom": "Rempart des Mosquées d'argile",
+    "puissance": 3.4,
+    "texte": "Un rempart d'argile hérissé de pieux protège tout le camp et soigne ceux qui s'y abritent."
+   },
+   "4d9cd4bab8f09b78f8da3b65403bc4d1308d125810207f00142ea074ff6d03d7": {
+    "conditions": {
+     "elements": [],
+     "jour": false,
+     "niveau_min": 12,
+     "nuit": false,
+     "pleine_lune": false
+    },
+    "cout": 42,
+    "effet": "briser",
+    "effet2": "",
+    "element": "foudre",
+    "forme": "trait",
+    "fusion": false,
+    "id": "tonnerre_man",
+    "intensite": 2.2,
+    "longueur": 5,
+    "mods_effet": [
+     "amplifier"
+    ],
+    "mods_forme": [],
+    "nom": "Tonnerre de la Dent de Man",
+    "puissance": 3.6,
+    "texte": "La foudre tombe du sommet de la Dent de Man et pulvérise les défenses de la cible."
+   },
+   "4dad5294b8a66ae27ff6f8bfc09cd5a2affb22fd1643b549e3ff0dc901e68a79": {
+    "conditions": {
+     "elements": [],
+     "jour": true,
+     "niveau_min": 60,
+     "nuit": false,
+     "pleine_lune": false
+    },
+    "cout": 70,
+    "effet": "aveugler",
+    "effet2": "repousser",
+    "element": "harmattan",
+    "forme": "cercle",
+    "fusion": true,
+    "id": "harmattan_anciens",
+    "intensite": 2.4,
+    "longueur": 6,
+    "mods_effet": [
+     "etendre"
+    ],
+    "mods_forme": [],
+    "nom": "Harmattan des Anciens",
+    "puissance": 3.2,
+    "texte": "Le vent sec du Nord se lève, aveugle et disperse toute l'armée adverse."
+   },
+   "740380bf11c734f3ef9c898455ef824ee991d61136194ae4bed9ced32556d523": {
+    "conditions": {
+     "elements": [],
+     "jour": false,
+     "niveau_min": 10,
+     "nuit": true,
+     "pleine_lune": false
+    },
+    "cout": 38,
+    "effet": "soigner",
+    "effet2": "",
+    "element": "eau",
+    "forme": "cercle",
+    "fusion": false,
+    "id": "chant_lamantin",
+    "intensite": 2,
+    "longueur": 5,
+    "mods_effet": [
+     "etendre"
+    ],
+    "mods_forme": [],
+    "nom": "Chant du Lamantin",
+    "puissance": 2.6,
+    "texte": "Un chant venu des lagunes soigne tous les alliés et les régénère plusieurs tours. Il ne s'élève que la nuit."
+   },
+   "75d602f00006a8f6e3e7052db628add925f22612bcd82f7e3c72ccf25739f412": {
+    "conditions": {
+     "elements": [
+      "ivoire"
+     ],
+     "jour": false,
+     "niveau_min": 100,
+     "nuit": false,
+     "pleine_lune": true
+    },
+    "cout": 120,
+    "effet": "soigner",
+    "effet2": "renforcer",
+    "element": "ivoire",
+    "forme": "cercle",
+    "fusion": false,
+    "id": "souffle_ivoire",
+    "intensite": 3,
+    "longueur": 6,
+    "mods_effet": [
+     "persistance"
+    ],
+    "mods_forme": [],
+    "nom": "Souffle d'Ivoire",
+    "puissance": 6,
+    "texte": "Le Souffle originel, blanc et pur, relève tous les alliés et décuple leur force."
+   },
+   "8a07b440f0e565cb294866ad02e973c7ae30d900596ad570f4a71dc0b72b0755": {
+    "conditions": {
+     "elements": [],
+     "jour": false,
+     "niveau_min": 8,
+     "nuit": false,
+     "pleine_lune": false
+    },
+    "cout": 40,
+    "effet": "consumer",
+    "effet2": "",
+    "element": "feu",
+    "forme": "lame",
+    "fusion": false,
+    "id": "colere_panthere",
+    "intensite": 2,
+    "longueur": 5,
+    "mods_effet": [],
+    "mods_forme": [
+     "amplifier"
+    ],
+    "nom": "Colère de la Panthère",
+    "puissance": 4.2,
+    "texte": "Le Souffle de Feu prend la forme d'une panthère qui déchire la cible et la consume longuement."
+   },
+   "987155ec6bcb0396229a32ed44a741997fce746ab80b78dda7cfe7b2d61b2ec6": {
+    "conditions": {
+     "elements": [],
+     "jour": false,
+     "niveau_min": 10,
+     "nuit": false,
+     "pleine_lune": false
+    },
+    "cout": 36,
+    "effet": "lier",
+    "effet2": "consumer",
+    "element": "vegetal",
+    "forme": "lien",
+    "fusion": false,
+    "id": "racines_fromager",
+    "intensite": 2.5,
+    "longueur": 5,
+    "mods_effet": [],
+    "mods_forme": [],
+    "nom": "Racines du Fromager",
+    "puissance": 2.2,
+    "texte": "Les racines du grand fromager enserrent la cible, l'immobilisent et l'épuisent."
+   },
+   "b24c466dab985bf5a6cb1c8e13ae97500f6ddda30df8839ddd9236a360768587": {
+    "conditions": {
+     "elements": [],
+     "jour": false,
+     "niveau_min": 12,
+     "nuit": false,
+     "pleine_lune": false
+    },
+    "cout": 38,
+    "effet": "repousser",
+    "effet2": "",
+    "element": "vent",
+    "forme": "trait",
+    "fusion": false,
+    "id": "danse_calao",
+    "intensite": 1.8,
+    "longueur": 5,
+    "mods_effet": [],
+    "mods_forme": [
+     "multiplier"
+    ],
+    "nom": "Danse du Calao",
+    "puissance": 3,
+    "texte": "Une nuée de rafales en forme de calaos frappe deux fois et balaie les rangs adverses."
+   }
+  },
+  "sel": "ninja-ivoire:"
+ },
+ "mudras": [
+  {
+   "categorie": "element",
+   "id": "panthere",
+   "niveau": 0,
+   "nom": "Panthère",
+   "ref": "feu"
+  },
+  {
+   "categorie": "element",
+   "id": "lamantin",
+   "niveau": 0,
+   "nom": "Lamantin",
+   "ref": "eau"
+  },
+  {
+   "categorie": "element",
+   "id": "calao",
+   "niveau": 0,
+   "nom": "Calao",
+   "ref": "vent"
+  },
+  {
+   "categorie": "element",
+   "id": "buffle",
+   "niveau": 0,
+   "nom": "Buffle",
+   "ref": "terre"
+  },
+  {
+   "categorie": "element",
+   "id": "aigle",
+   "niveau": 0,
+   "nom": "Aigle",
+   "ref": "foudre"
+  },
+  {
+   "categorie": "element",
+   "id": "chimpanze",
+   "niveau": 0,
+   "nom": "Chimpanzé",
+   "ref": "vegetal"
+  },
+  {
+   "categorie": "element",
+   "id": "enclume",
+   "niveau": 0,
+   "nom": "Enclume",
+   "ref": "metal"
+  },
+  {
+   "categorie": "element",
+   "id": "tambour",
+   "niveau": 0,
+   "nom": "Tambour",
+   "ref": "son"
+  },
+  {
+   "categorie": "element",
+   "id": "scorpion",
+   "niveau": 0,
+   "nom": "Scorpion",
+   "ref": "sable"
+  },
+  {
+   "categorie": "element",
+   "id": "mamba",
+   "niveau": 0,
+   "nom": "Mamba",
+   "ref": "venin"
+  },
+  {
+   "categorie": "element",
+   "id": "cameleon",
+   "niveau": 0,
+   "nom": "Caméléon",
+   "ref": "brume"
+  },
+  {
+   "categorie": "element",
+   "id": "crabe",
+   "niveau": 0,
+   "nom": "Crabe",
+   "ref": "sel"
+  },
+  {
+   "categorie": "element",
+   "id": "termite",
+   "niveau": 0,
+   "nom": "Termite",
+   "ref": "essaim"
+  },
+  {
+   "categorie": "element",
+   "id": "coq",
+   "niveau": 0,
+   "nom": "Coq",
+   "ref": "soleil"
+  },
+  {
+   "categorie": "element",
+   "id": "hibou",
+   "niveau": 0,
+   "nom": "Hibou",
+   "ref": "lune"
+  },
+  {
+   "categorie": "element",
+   "id": "hippopotame",
+   "niveau": 0,
+   "nom": "Hippopotame",
+   "ref": "gravite"
+  },
+  {
+   "categorie": "forme",
+   "id": "martin_pecheur",
+   "niveau": 1,
+   "nom": "Martin-pêcheur",
+   "ref": "trait"
+  },
+  {
+   "categorie": "forme",
+   "id": "mante",
+   "niveau": 1,
+   "nom": "Mante",
+   "ref": "lame"
+  },
+  {
+   "categorie": "forme",
+   "id": "tortue",
+   "niveau": 1,
+   "nom": "Tortue",
+   "ref": "mur"
+  },
+  {
+   "categorie": "forme",
+   "id": "case",
+   "niveau": 5,
+   "nom": "Case ronde",
+   "ref": "cercle"
+  },
+  {
+   "categorie": "forme",
+   "id": "araignee",
+   "niveau": 10,
+   "nom": "Araignée",
+   "ref": "lien"
+  },
+  {
+   "categorie": "forme",
+   "id": "pangolin",
+   "niveau": 15,
+   "nom": "Pangolin",
+   "ref": "armure"
+  },
+  {
+   "categorie": "forme",
+   "id": "perroquet",
+   "niveau": 20,
+   "nom": "Perroquet",
+   "ref": "double"
+  },
+  {
+   "categorie": "forme",
+   "id": "crocodile",
+   "niveau": 30,
+   "nom": "Crocodile",
+   "ref": "piege"
+  },
+  {
+   "categorie": "forme",
+   "id": "antilope",
+   "niveau": 40,
+   "nom": "Antilope",
+   "ref": "pas"
+  },
+  {
+   "categorie": "forme",
+   "id": "masque",
+   "niveau": 50,
+   "nom": "Masque",
+   "ref": "invocation"
+  },
+  {
+   "categorie": "effet",
+   "id": "braise",
+   "niveau": 1,
+   "nom": "Braise",
+   "ref": "consumer"
+  },
+  {
+   "categorie": "effet",
+   "id": "liane",
+   "niveau": 1,
+   "nom": "Liane",
+   "ref": "lier"
+  },
+  {
+   "categorie": "effet",
+   "id": "kola",
+   "niveau": 1,
+   "nom": "Kola",
+   "ref": "soigner"
+  },
+  {
+   "categorie": "effet",
+   "id": "belier",
+   "niveau": 5,
+   "nom": "Bélier",
+   "ref": "repousser"
+  },
+  {
+   "categorie": "effet",
+   "id": "voile",
+   "niveau": 10,
+   "nom": "Voile",
+   "ref": "aveugler"
+  },
+  {
+   "categorie": "effet",
+   "id": "hache",
+   "niveau": 15,
+   "nom": "Hache",
+   "ref": "briser"
+  },
+  {
+   "categorie": "effet",
+   "id": "moustique",
+   "niveau": 25,
+   "nom": "Moustique",
+   "ref": "drainer"
+  },
+  {
+   "categorie": "effet",
+   "id": "racine",
+   "niveau": 35,
+   "nom": "Racine",
+   "ref": "renforcer"
+  },
+  {
+   "categorie": "effet",
+   "id": "feuille",
+   "niveau": 45,
+   "nom": "Feuille",
+   "ref": "dissimuler"
+  },
+  {
+   "categorie": "effet",
+   "id": "kaolin",
+   "niveau": 55,
+   "nom": "Kaolin",
+   "ref": "marquer"
+  },
+  {
+   "categorie": "modificateur",
+   "id": "lion",
+   "niveau": 3,
+   "nom": "Lion",
+   "ref": "amplifier"
+  },
+  {
+   "categorie": "modificateur",
+   "id": "fleuve",
+   "niveau": 8,
+   "nom": "Fleuve",
+   "ref": "etendre"
+  },
+  {
+   "categorie": "modificateur",
+   "id": "fourmi",
+   "niveau": 12,
+   "nom": "Fourmi",
+   "ref": "multiplier"
+  },
+  {
+   "categorie": "modificateur",
+   "id": "escargot",
+   "niveau": 18,
+   "nom": "Escargot",
+   "ref": "retarder"
+  },
+  {
+   "categorie": "modificateur",
+   "id": "silure",
+   "niveau": 25,
+   "nom": "Silure",
+   "ref": "silence"
+  },
+  {
+   "categorie": "modificateur",
+   "id": "baobab",
+   "niveau": 35,
+   "nom": "Baobab",
+   "ref": "persistance"
+  },
+  {
+   "categorie": "element",
+   "id": "elephant",
+   "niveau": -1,
+   "nom": "Éléphant",
+   "ref": "ivoire"
+  },
+  {
+   "categorie": "element",
+   "id": "ancetre",
+   "niveau": -1,
+   "nom": "Ancêtre",
+   "ref": "esprit"
+  },
+  {
+   "categorie": "element",
+   "id": "etoile",
+   "niveau": -1,
+   "nom": "Étoile du matin",
+   "ref": "lumiere"
+  },
+  {
+   "categorie": "element",
+   "id": "nuit",
+   "niveau": -1,
+   "nom": "Nuit",
+   "ref": "ombre"
+  },
+  {
+   "categorie": "element",
+   "id": "oeuf",
+   "niveau": -1,
+   "nom": "Œuf",
+   "ref": "vie"
+  },
+  {
+   "categorie": "element",
+   "id": "griot",
+   "niveau": -1,
+   "nom": "Griot",
+   "ref": "temps"
+  },
+  {
+   "categorie": "element",
+   "id": "gouffre",
+   "niveau": -1,
+   "nom": "Gouffre",
+   "ref": "vide"
+  },
+  {
+   "categorie": "element",
+   "id": "comete",
+   "niveau": -1,
+   "nom": "Comète",
+   "ref": "astre"
+  }
+ ],
+ "regions": [
+  {
+   "id": "lagunes",
+   "nom": "Lagunes",
+   "geo": "Sud-Est : Abidjan, Grand-Bassam, Assinie",
+   "element": "eau",
+   "attribut": "manhis",
+   "jouable": true,
+   "paysage": "Littoral, lagunes, mangroves",
+   "couleur": "#2f86c9",
+   "villages": [
+    "Village des Palétuviers",
+    "Port-Lagune",
+    "Néo-Ébrié"
+   ]
+  },
+  {
+   "id": "cote_ouest",
+   "nom": "Côte Ouest",
+   "geo": "Sud-Ouest : San-Pédro, Sassandra, forêt de Taï",
+   "element": "vegetal",
+   "attribut": "gnanga",
+   "jouable": true,
+   "paysage": "Forêt primaire, côte sauvage",
+   "couleur": "#4f9d45",
+   "villages": [
+    "Village des Fromagers",
+    "Sassandra-Cité",
+    "Taï-Prime"
+   ]
+  },
+  {
+   "id": "montagnes",
+   "nom": "Montagnes",
+   "geo": "Ouest : Man, Danané, mont Nimba",
+   "element": "foudre",
+   "attribut": "manhis",
+   "jouable": true,
+   "paysage": "Montagnes, cascades",
+   "couleur": "#f2d64b",
+   "villages": [
+    "Village des Cascades",
+    "Dent-de-Man",
+    "Nimba-Orbitale"
+   ]
+  },
+  {
+   "id": "hautes_savanes",
+   "nom": "Hautes Savanes",
+   "geo": "Nord-Ouest : Odienné, Séguéla",
+   "element": "vent",
+   "attribut": "fangan",
+   "jouable": true,
+   "paysage": "Savane arborée, plateaux",
+   "couleur": "#9fd8c4",
+   "villages": [
+    "Village des Plateaux",
+    "Séguéla-Carrefour",
+    "Denguélé-Station"
+   ]
+  },
+  {
+   "id": "savanes_nord",
+   "nom": "Savanes du Nord",
+   "geo": "Nord : Korhogo, Ferkessédougou, Kong",
+   "element": "feu",
+   "attribut": "fangan",
+   "jouable": true,
+   "paysage": "Savane, collines, cités anciennes",
+   "couleur": "#e2572b",
+   "villages": [
+    "Village des Collines",
+    "Kong-la-Neuve",
+    "Korhogo-Nova"
+   ]
+  },
+  {
+   "id": "levant",
+   "nom": "Levant",
+   "geo": "Est : Bondoukou, Abengourou, parc de la Comoé",
+   "element": "terre",
+   "attribut": "gnanga",
+   "jouable": true,
+   "paysage": "Forêt et savane, grande réserve",
+   "couleur": "#a0703c",
+   "villages": [
+    "Village des Mosquées d'argile",
+    "Abengourou-Marché",
+    "Comoé-Arcologie"
+   ]
+  },
+  {
+   "id": "coeur",
+   "nom": "Cœur",
+   "geo": "Centre : Yamoussoukro, Bouaké, lac de Kossou",
+   "element": "",
+   "attribut": "",
+   "jouable": false,
+   "paysage": "Terre neutre, lacs, fleuve Bandama",
+   "couleur": "#f4efe6",
+   "villages": [
+    "Village du Lac",
+    "Bouaké-Marché",
+    "Yamoussoukro-Céleste"
+   ]
+  }
+ ],
+ "rencontres": [
+  {
+   "description": "Deux chacals rôdent autour du village. Un bon premier combat.",
+   "dje": 10,
+   "ennemis": [
+    {
+     "apparence": "chacal",
+     "arme": {
+      "nom": "ses crocs",
+      "puissance": 5,
+      "distance": false
+     },
+     "element": "",
+     "fangan": 7,
+     "gnanga": 0,
+     "ia": "bete",
+     "jutsus": null,
+     "manhis": 12,
+     "nom": "Chacal",
+     "pv": 50
+    },
+    {
+     "apparence": "chacal",
+     "arme": {
+      "nom": "ses crocs",
+      "puissance": 5,
+      "distance": false
+     },
+     "element": "",
+     "fangan": 7,
+     "gnanga": 0,
+     "ia": "bete",
+     "jutsus": null,
+     "manhis": 12,
+     "nom": "Chacal",
+     "pv": 50
+    }
+   ],
+   "id": "chacals",
+   "lieu": "Savane des Hautes Savanes",
+   "niveau": 1,
+   "nom": "Chacals affamés",
+   "xp": 40
+  },
+  {
+   "description": "Un brigand qui connaît quelques signes d'Eau rançonne les pêcheurs.",
+   "dje": 25,
+   "ennemis": [
+    {
+     "apparence": "brigand",
+     "arme": {
+      "nom": "une machette",
+      "puissance": 7,
+      "distance": false
+     },
+     "element": "eau",
+     "fangan": 9,
+     "gnanga": 8,
+     "ia": "ninja",
+     "jutsus": [
+      [
+       "lamantin",
+       "martin_pecheur",
+       "liane"
+      ]
+     ],
+     "manhis": 9,
+     "nom": "Brigand des lagunes",
+     "pv": 75
+    }
+   ],
+   "id": "brigand",
+   "lieu": "Mangroves de la lagune Ébrié",
+   "niveau": 2,
+   "nom": "Brigand des lagunes",
+   "xp": 70
+  },
+  {
+   "description": "Un apprenti a fui son académie avec des secrets de Foudre.",
+   "dje": 40,
+   "ennemis": [
+    {
+     "apparence": "ninja_renegat",
+     "arme": {
+      "nom": "des dagues",
+      "puissance": 7,
+      "distance": false
+     },
+     "element": "foudre",
+     "fangan": 9,
+     "gnanga": 10,
+     "ia": "ninja",
+     "jutsus": [
+      [
+       "aigle",
+       "martin_pecheur",
+       "braise"
+      ],
+      [
+       "aigle",
+       "mante",
+       "liane"
+      ]
+     ],
+     "manhis": 11,
+     "nom": "Apprenti renégat",
+     "pv": 85
+    }
+   ],
+   "id": "renegat",
+   "lieu": "Sentiers des cascades de Man",
+   "niveau": 3,
+   "nom": "Apprenti renégat",
+   "xp": 110
+  },
+  {
+   "description": "Un esprit ancien protège la forêt. Il soigne ses blessures et enserre ses proies.",
+   "dje": 60,
+   "ennemis": [
+    {
+     "apparence": "esprit",
+     "arme": {
+      "nom": "ses branches",
+      "puissance": 6,
+      "distance": false
+     },
+     "element": "vegetal",
+     "fangan": 8,
+     "gnanga": 14,
+     "ia": "ninja",
+     "jutsus": [
+      [
+       "chimpanze",
+       "araignee",
+       "liane",
+       "braise"
+      ],
+      [
+       "chimpanze",
+       "tortue",
+       "kola"
+      ],
+      [
+       "chimpanze",
+       "martin_pecheur",
+       "kola"
+      ]
+     ],
+     "manhis": 8,
+     "nom": "Esprit de la forêt de Taï",
+     "pv": 130
+    }
+   ],
+   "id": "esprit_tai",
+   "lieu": "Cœur de la forêt de Taï",
+   "niveau": 5,
+   "nom": "Esprit de la forêt",
+   "xp": 180
+  },
+  {
+   "description": "Deux drones escortent un ninja cybernétique. Le Cercle d'Acier veut remplacer le Souffle par la machine.",
+   "dje": 90,
+   "ennemis": [
+    {
+     "apparence": "cyborg",
+     "arme": {
+      "nom": "une lame à plasma",
+      "puissance": 10,
+      "distance": false
+     },
+     "element": "foudre",
+     "fangan": 12,
+     "gnanga": 10,
+     "ia": "ninja",
+     "jutsus": [
+      [
+       "aigle",
+       "mante",
+       "lion",
+       "hache"
+      ],
+      [
+       "aigle",
+       "pangolin",
+       "liane"
+      ]
+     ],
+     "manhis": 12,
+     "nom": "Ninja cybernétique",
+     "pv": 120
+    },
+    {
+     "apparence": "drone",
+     "arme": {
+      "nom": "un laser",
+      "puissance": 8,
+      "distance": true
+     },
+     "element": "metal",
+     "fangan": 8,
+     "gnanga": 9,
+     "ia": "ninja",
+     "jutsus": [
+      [
+       "enclume",
+       "martin_pecheur",
+       "hache"
+      ]
+     ],
+     "manhis": 14,
+     "nom": "Drone du Cercle d'Acier",
+     "pv": 70
+    },
+    {
+     "apparence": "drone",
+     "arme": {
+      "nom": "un laser",
+      "puissance": 8,
+      "distance": true
+     },
+     "element": "metal",
+     "fangan": 8,
+     "gnanga": 9,
+     "ia": "ninja",
+     "jutsus": [
+      [
+       "enclume",
+       "martin_pecheur",
+       "hache"
+      ]
+     ],
+     "manhis": 14,
+     "nom": "Drone du Cercle d'Acier",
+     "pv": 70
+    }
+   ],
+   "id": "cercle_acier",
+   "lieu": "Faubourgs de Néo-Ébrié",
+   "niveau": 7,
+   "nom": "Patrouille du Cercle d'Acier",
+   "xp": 280
+  },
+  {
+   "description": "Des adeptes tentent de réveiller un esprit scellé. Leurs tambours brisent les incantations.",
+   "dje": 130,
+   "ennemis": [
+    {
+     "apparence": "sans_visage",
+     "arme": {
+      "nom": "une faucille",
+      "puissance": 7,
+      "distance": false
+     },
+     "element": "lune",
+     "fangan": 8,
+     "gnanga": 15,
+     "ia": "ninja",
+     "jutsus": [
+      [
+       "hibou",
+       "martin_pecheur",
+       "voile",
+       "liane"
+      ],
+      [
+       "hibou",
+       "case",
+       "braise"
+      ],
+      [
+       "hibou",
+       "martin_pecheur",
+       "kola"
+      ]
+     ],
+     "manhis": 11,
+     "nom": "Adepte Sans-Visage",
+     "pv": 100
+    },
+    {
+     "apparence": "sans_visage",
+     "arme": {
+      "nom": "un tambour de guerre",
+      "puissance": 6,
+      "distance": true
+     },
+     "element": "son",
+     "fangan": 9,
+     "gnanga": 13,
+     "ia": "ninja",
+     "jutsus": [
+      [
+       "tambour",
+       "martin_pecheur",
+       "belier"
+      ],
+      [
+       "tambour",
+       "case",
+       "racine"
+      ]
+     ],
+     "manhis": 12,
+     "nom": "Batteur Sans-Visage",
+     "pv": 90
+    },
+    {
+     "apparence": "sans_visage",
+     "arme": {
+      "nom": "une faucille",
+      "puissance": 7,
+      "distance": false
+     },
+     "element": "lune",
+     "fangan": 8,
+     "gnanga": 15,
+     "ia": "ninja",
+     "jutsus": [
+      [
+       "hibou",
+       "martin_pecheur",
+       "voile",
+       "liane"
+      ],
+      [
+       "hibou",
+       "case",
+       "braise"
+      ],
+      [
+       "hibou",
+       "martin_pecheur",
+       "kola"
+      ]
+     ],
+     "manhis": 11,
+     "nom": "Adepte Sans-Visage",
+     "pv": 100
+    }
+   ],
+   "id": "sans_visage",
+   "lieu": "Rives du lac de Kossou",
+   "niveau": 10,
+   "nom": "Rituel des Sans-Visage",
+   "xp": 420
+  },
+  {
+   "description": "Le gardien d'un portail de région. Chaque vendredi soir, il faut le vaincre pour lancer un siège.",
+   "dje": 300,
+   "ennemis": [
+    {
+     "apparence": "gardien",
+     "arme": {
+      "nom": "une massue de pierre",
+      "puissance": 12,
+      "distance": false
+     },
+     "element": "terre",
+     "fangan": 16,
+     "gnanga": 12,
+     "ia": "ninja",
+     "jutsus": [
+      [
+       "buffle",
+       "tortue",
+       "lion",
+       "belier"
+      ],
+      [
+       "buffle",
+       "mante",
+       "hache"
+      ],
+      [
+       "buffle",
+       "case",
+       "liane"
+      ]
+     ],
+     "manhis": 8,
+     "nom": "Gardien du portail",
+     "pv": 260
+    }
+   ],
+   "id": "portail",
+   "lieu": "Portail des Montagnes",
+   "niveau": 15,
+   "nom": "Gardien du portail",
+   "xp": 800
+  }
+ ],
+ "version": "0.1.0",
+ "villages": [
+  {
+   "id": "traditionnel",
+   "nom": "Traditionnel",
+   "avantages": "Souffle plus puissant, accès aux lieux mythiques, résonance plus précise au dojo",
+   "defauts": "Peu d'équipement, économie lente",
+   "bonus_pv": 0,
+   "bonus_souffle": 20,
+   "bonus_xp": 0,
+   "bonus_arme": 0,
+   "resonance": true
+  },
+  {
+   "id": "moderne",
+   "nom": "Moderne",
+   "avantages": "Équilibre, commerce, formation plus rapide (+15 % d'expérience)",
+   "defauts": "N'excelle dans aucun domaine",
+   "bonus_pv": 5,
+   "bonus_souffle": 0,
+   "bonus_xp": 15,
+   "bonus_arme": 2,
+   "resonance": false
+  },
+  {
+   "id": "futuriste",
+   "nom": "Futuriste",
+   "avantages": "Implants, meilleure arme de départ, plus de points de vie",
+   "defauts": "Souffle affaibli par la technologie, vulnérable à la Foudre",
+   "bonus_pv": 20,
+   "bonus_souffle": -15,
+   "bonus_xp": 0,
+   "bonus_arme": 5,
+   "resonance": false
+  }
+ ]
+}

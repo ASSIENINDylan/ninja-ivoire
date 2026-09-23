@@ -347,3 +347,25 @@ func decrire(j *Jutsu) string {
 	}
 	return s
 }
+
+// Tables renvoie les tables de la grammaire (puissances, noms, textes),
+// pour les exporter vers le moteur local du client.
+func Tables() map[string]any {
+	noms := map[string]any{}
+	for k, v := range nomsFormes {
+		noms[k] = map[string]any{"nom": v.nom, "feminin": v.feminin}
+	}
+	return map[string]any{
+		"puissance_forme":    puissanceForme,
+		"noms_formes":        noms,
+		"adj_effet":          adjEffet,
+		"prefixe_mod_forme":  prefixeModForme,
+		"suffixe_mod_effet":  suffixeModEffet,
+		"texte_forme":        texteForme,
+		"texte_effet":        texteEffet,
+		"texte_modificateur": texteModificateur,
+		"messages_echec":     messagesEchec,
+		"max_modificateurs":  MaxModificateurs,
+		"longueur_max":       LongueurMax,
+	}
+}

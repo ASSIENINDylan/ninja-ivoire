@@ -1,6 +1,8 @@
 package grammar
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -251,4 +253,48 @@ func Resume(seq []string) string {
 		}
 	}
 	return strings.Join(noms, " · ")
+}
+
+// SelHachage préfixe les suites avant hachage : les recettes légendaires
+// voyagent vers le client sous forme d'empreintes, jamais en clair.
+const SelHachage = "ninja-ivoire:"
+
+// Empreinte renvoie l'empreinte SHA-256 (hexadécimale) d'une clé de suite.
+func Empreinte(cle string) string {
+	h := sha256.Sum256([]byte(SelHachage + cle))
+	return hex.EncodeToString(h[:])
+}
+
+// LegendairesHaches exporte les légendaires indexés par l'empreinte de
+// leur suite, et les préfixes (au moins deux signes) avec leur proximité.
+func LegendairesHaches() (map[string]any, map[string]float64) {
+	legs := map[string]any{}
+	prefixes := map[string]float64{}
+	for _, l := range legendaireList {
+		legs[Empreinte(Cle(l.Sequence))] = map[string]any{
+			"id": l.ID, "nom": l.Nom, "longueur": len(l.Sequence),
+			"element": l.Element, "fusion": l.Fusion, "forme": l.Forme,
+			"effet": l.Effet, "effet2": l.Effet2,
+			"mods_forme": nonNul(l.ModsForme), "mods_effet": nonNul(l.ModsEffet),
+			"puissance": l.Puissance, "intensite": l.Intensite, "cout": l.Cout, "texte": l.Texte,
+			"conditions": map[string]any{
+				"niveau_min": l.Conditions.NiveauMin, "nuit": l.Conditions.Nuit, "jour": l.Conditions.Jour,
+				"pleine_lune": l.Conditions.PleineLune, "elements": nonNul(l.Conditions.Elements),
+			},
+		}
+		for k := 2; k <= len(l.Sequence); k++ {
+			h := Empreinte(Cle(l.Sequence[:k]))
+			if r := float64(k) / float64(len(l.Sequence)); r > prefixes[h] {
+				prefixes[h] = r
+			}
+		}
+	}
+	return legs, prefixes
+}
+
+func nonNul(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
 }

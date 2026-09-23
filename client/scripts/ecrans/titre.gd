@@ -67,7 +67,7 @@ func _demarrer() -> void:
 			_demarrer()))
 		_boutons.add_child(UI.bouton("Quitter", Jeu.quitter))
 		return
-	_statut.text = "Serveur local prêt."
+	_statut.text = "Prêt."
 	if Jeu.ninja != null:
 		var n = Jeu.ninja
 		_boutons.add_child(UI.bouton_principal("Continuer — %s, niveau %d" % [n.nom, n.niveau], func(): Jeu.aller("village"), 22))

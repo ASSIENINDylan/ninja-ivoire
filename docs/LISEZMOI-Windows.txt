@@ -3,34 +3,22 @@ NINJA IVOIRE — prototype 0.1
 
 Lancer le jeu
 -------------
-1. Dézippez le dossier où vous voulez.
-2. Double-cliquez sur NinjaIvoire.exe.
-   Le jeu lance tout seul le serveur local (ninja-server.exe) :
-   gardez les deux fichiers dans le même dossier.
+1. Faites un clic droit sur le zip > « Extraire tout… ».
+2. Dans le dossier extrait, double-cliquez sur NinjaIvoire.exe.
+   Gardez NinjaIvoire.exe et NinjaIvoire.pck dans le même dossier :
+   le .pck contient le jeu.
 
-Si le jeu dit que le serveur est introuvable ou bloqué
------------------------------------------------------
-Le jeu n'est pas encore signé numériquement : Windows Defender peut, à tort,
-supprimer ou bloquer ninja-server.exe (faux positif).
-1. Ouvrez Sécurité Windows > Protection contre les virus et menaces >
-   Historique de protection, et « Autorisez » / « Restaurez » ninja-server.exe.
-2. Ou ajoutez le dossier du jeu aux exclusions : Protection contre les virus >
-   Gérer les paramètres > Exclusions > Ajouter une exclusion > Dossier.
-3. Réextrayez le zip si le fichier a disparu.
-Le message affiché par le jeu indique précisément ce qui bloque, ainsi que le
-fichier journal du serveur.
+Le jeu tourne entièrement sur votre PC, sans connexion ni serveur.
 
-Si Windows affiche un avertissement au lancement
-------------------------------------------------
-Le jeu n'est pas signé numériquement, donc SmartScreen peut prévenir :
-cliquez sur « Informations complémentaires » puis « Exécuter quand même ».
-Le jeu reste 100 % local : le serveur n'écoute que sur votre propre PC.
-Si le pare-feu demande l'autorisation pour ninja-server.exe, les réseaux
-privés suffisent (et même aucun : il n'écoute que sur 127.0.0.1).
+Si Windows affiche « Windows a protégé votre ordinateur »
+--------------------------------------------------------
+Le jeu n'est pas encore signé numériquement. Cliquez sur
+« Informations complémentaires » puis « Exécuter quand même ».
 
 Sauvegarde
 ----------
-Votre ninja est enregistré dans %APPDATA%\NinjaIvoire\ninja.save.json.
+Votre ninja est enregistré dans :
+%APPDATA%\Godot\app_userdata\Ninja Ivoire\ninja.save.json
 
 Contenu du prototype
 --------------------

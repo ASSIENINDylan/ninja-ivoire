@@ -1,6 +1,9 @@
 extends Node
-## Client HTTP du serveur local. Toute la logique du jeu vit sur le
-## serveur : le client ne fait qu'envoyer des intentions et afficher.
+## Accès aux règles du jeu. Par défaut, la partie se joue dans le jeu
+## lui-même (PartieLocale) ; avec l'option --serveur, les mêmes routes sont
+## envoyées au serveur Go en HTTP (développement, futur jeu en ligne).
+
+var partie: PartieLocale = null
 
 var port := 7777
 var base := "http://127.0.0.1:7777"
@@ -12,6 +15,9 @@ func utiliser_port(p: int) -> void:
 
 
 func appel(methode: int, chemin: String, corps = null) -> Dictionary:
+	if partie != null:
+		var noms := {HTTPClient.METHOD_GET: "GET", HTTPClient.METHOD_POST: "POST", HTTPClient.METHOD_DELETE: "DELETE"}
+		return partie.appel(noms.get(methode, "GET"), chemin, corps if corps is Dictionary else {})
 	var req := HTTPRequest.new()
 	req.timeout = 8.0 if chemin != "/api/sante" else 1.5
 	add_child(req)

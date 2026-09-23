@@ -10,7 +10,7 @@ env:
 
 jobs:
   serveur:
-    name: Tests du serveur
+    name: Tests du serveur et des règles
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,6 +26,11 @@ jobs:
       - name: Tests
         working-directory: server
         run: go test ./...
+      - name: Les règles du client sont à jour
+        working-directory: server
+        run: |
+          go run ./cmd/exporter-regles -sortie ../client/donnees -tests ../client/tests
+          git diff --exit-code -- ../client/donnees ../client/tests
 
   windows:
     name: Jeu pour Windows (.zip)
@@ -33,20 +38,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.22"
-
-      # Binaire standard (ni « -H=windowsgui » ni symboles retirés) : ces
-      # options déclenchent souvent de faux positifs antivirus. Le client
-      # cache déjà la console en lançant le serveur.
-      - name: Compiler le serveur local
-        working-directory: server
-        env:
-          GOOS: windows
-          GOARCH: amd64
-          CGO_ENABLED: "0"
-        run: go build -trimpath -o ../dist/NinjaIvoire/ninja-server.exe ./cmd/ninja-server
 
       - name: Mettre en cache Godot et ses modèles d'export
         uses: actions/cache@v4
@@ -71,14 +62,25 @@ jobs:
             mv /tmp/tpl/templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable/
           fi
 
-      - name: Exporter le client
+      - name: Importer le projet
+        working-directory: client
+        run: ~/godot/godot --headless --import || true
+
+      - name: Tests du moteur local (parité avec le serveur Go)
         working-directory: client
         run: |
-          # Copie de secours du serveur, embarquée dans NinjaIvoire.exe.
-          mkdir -p bin && cp ../dist/NinjaIvoire/ninja-server.exe bin/
-          ~/godot/godot --headless --import || true
+          ~/godot/godot --headless --script res://tests/test_grammaire.gd
+          ~/godot/godot --headless --script res://tests/test_partie.gd
+
+      # L'exécutable est celui de Godot, non modifié ; le jeu est dans le .pck.
+      # Aucun programme maison : c'est ce qui évite les alertes antivirus.
+      - name: Exporter le jeu
+        working-directory: client
+        run: |
+          mkdir -p ../dist/NinjaIvoire
           ~/godot/godot --headless --export-release "Windows Desktop" ../dist/NinjaIvoire/NinjaIvoire.exe
           test -f ../dist/NinjaIvoire/NinjaIvoire.exe
+          test -f ../dist/NinjaIvoire/NinjaIvoire.pck
 
       - name: Ajouter le mode d'emploi
         run: cp docs/LISEZMOI-Windows.txt dist/NinjaIvoire/LISEZMOI.txt
