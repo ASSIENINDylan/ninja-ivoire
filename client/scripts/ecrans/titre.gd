@@ -56,7 +56,10 @@ func _demarrer() -> void:
 		err = await Jeu.charger()
 	if err != "":
 		_statut.text = err
-		_statut.add_theme_color_override("font_color", Pal.SANG)
+		_statut.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_statut.custom_minimum_size.x = 760
+		_statut.add_theme_color_override("font_color", Color("e8806f"))
+		_boutons.add_child(UI.bouton("Ouvrir le dossier du jeu", func(): OS.shell_open(Jeu.dossier_jeu())))
 		_boutons.add_child(UI.bouton("Réessayer", func():
 			for c in _boutons.get_children():
 				c.queue_free()

@@ -63,7 +63,7 @@ func Nouveau(p *game.Partie) *Serveur {
 	s := &Serveur{partie: p, mux: http.NewServeMux()}
 	cat := catalogue()
 	s.mux.HandleFunc("GET /api/sante", func(w http.ResponseWriter, r *http.Request) {
-		ecrire(w, map[string]string{"etat": "ok", "version": Version})
+		ecrire(w, map[string]string{"etat": "ok", "jeu": "ninja-ivoire", "version": Version})
 	})
 	s.mux.HandleFunc("GET /api/catalogue", func(w http.ResponseWriter, r *http.Request) { ecrire(w, cat) })
 	s.mux.HandleFunc("GET /api/etat", func(w http.ResponseWriter, r *http.Request) { ecrire(w, p.Etat()) })

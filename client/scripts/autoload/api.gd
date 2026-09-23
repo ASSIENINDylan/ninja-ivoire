@@ -2,16 +2,22 @@ extends Node
 ## Client HTTP du serveur local. Toute la logique du jeu vit sur le
 ## serveur : le client ne fait qu'envoyer des intentions et afficher.
 
-const BASE := "http://127.0.0.1:7777"
+var port := 7777
+var base := "http://127.0.0.1:7777"
+
+
+func utiliser_port(p: int) -> void:
+	port = p
+	base = "http://127.0.0.1:%d" % p
 
 
 func appel(methode: int, chemin: String, corps = null) -> Dictionary:
 	var req := HTTPRequest.new()
-	req.timeout = 8.0
+	req.timeout = 8.0 if chemin != "/api/sante" else 1.5
 	add_child(req)
 	var entetes := PackedStringArray(["Content-Type: application/json"])
 	var texte := "" if corps == null else JSON.stringify(corps)
-	var err := req.request(BASE + chemin, entetes, methode, texte)
+	var err := req.request(base + chemin, entetes, methode, texte)
 	if err != OK:
 		req.queue_free()
 		return {"ok": false, "erreur": "Requête impossible (%d)." % err, "reseau": true}

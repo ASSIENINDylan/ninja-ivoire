@@ -37,13 +37,16 @@ jobs:
         with:
           go-version: "1.22"
 
-      - name: Compiler le serveur local (sans fenêtre de console)
+      # Binaire standard (ni « -H=windowsgui » ni symboles retirés) : ces
+      # options déclenchent souvent de faux positifs antivirus. Le client
+      # cache déjà la console en lançant le serveur.
+      - name: Compiler le serveur local
         working-directory: server
         env:
           GOOS: windows
           GOARCH: amd64
           CGO_ENABLED: "0"
-        run: go build -trimpath -ldflags "-s -w -H=windowsgui" -o ../dist/NinjaIvoire/ninja-server.exe ./cmd/ninja-server
+        run: go build -trimpath -o ../dist/NinjaIvoire/ninja-server.exe ./cmd/ninja-server
 
       - name: Mettre en cache Godot et ses modèles d'export
         uses: actions/cache@v4
@@ -71,6 +74,8 @@ jobs:
       - name: Exporter le client
         working-directory: client
         run: |
+          # Copie de secours du serveur, embarquée dans NinjaIvoire.exe.
+          mkdir -p bin && cp ../dist/NinjaIvoire/ninja-server.exe bin/
           ~/godot/godot --headless --import || true
           ~/godot/godot --headless --export-release "Windows Desktop" ../dist/NinjaIvoire/NinjaIvoire.exe
           test -f ../dist/NinjaIvoire/NinjaIvoire.exe
