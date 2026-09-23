@@ -2,8 +2,8 @@
 
 | Étape | Contenu | Ce qu'on peut tester | État |
 |---|---|---|---|
-| **1. Prototype de combat** | Création du ninja, combat au tour par tour contre des PNJ, rangs, attributs Fangan, Gnanga et Manhis | Un combat complet sur PC | En cours |
-| **2. Mudras et découverte** | Grammaire des mudras, résonance, grimoire, maîtrise | Découvrir ses premiers jutsus | En cours |
+| **1. Prototype de combat** | Création du ninja, combat au tour par tour contre des PNJ, rangs, attributs Fangan, Gnanga et Manhis | Un combat complet sur PC | **Fait (0.1)** |
+| **2. Mudras et découverte** | Grammaire des mudras, résonance, grimoire, maîtrise | Découvrir ses premiers jutsus | **Fait (0.1)** |
 | **3. Carte de la Côte d'Ivoire** | 7 régions et leurs zones, déplacement façon shinobi.fr, zones réservées à certains niveaux | Parcourir la carte | À venir |
 | **4. Progression** | Expérience, niveaux, missions, équipement, défaite avec perte des objets | Une vraie partie en solo | À venir |
 | **5. Passage en ligne** | Serveur, comptes, joueurs contre joueurs, recettes protégées | Se battre entre amis | À venir |

@@ -1,0 +1,29 @@
+NINJA IVOIRE — prototype 0.1
+============================
+
+Lancer le jeu
+-------------
+1. Dézippez le dossier où vous voulez.
+2. Double-cliquez sur NinjaIvoire.exe.
+   Le jeu lance tout seul le serveur local (ninja-server.exe) :
+   gardez les deux fichiers dans le même dossier.
+
+Si Windows affiche un avertissement
+-----------------------------------
+Le jeu n'est pas signé numériquement, donc SmartScreen peut prévenir :
+cliquez sur « Informations complémentaires » puis « Exécuter quand même ».
+Le jeu reste 100 % local : le serveur n'écoute que sur votre propre PC.
+Si le pare-feu demande l'autorisation pour ninja-server.exe, les réseaux
+privés suffisent (et même aucun : il n'écoute que sur 127.0.0.1).
+
+Sauvegarde
+----------
+Votre ninja est enregistré dans %APPDATA%\NinjaIvoire\ninja.save.json.
+
+Contenu du prototype
+--------------------
+- Création du ninja : 6 régions de la Côte d'Ivoire, 3 types de village.
+- Dojo : composez des suites de mudras, découvrez des jutsus, écoutez la
+  résonance quand un essai rate. L'ordre des signes compte.
+- Grimoire : vos jutsus, leur maîtrise qui progresse à chaque usage.
+- Combats contre des PNJ, au tour par tour simultané, à débloquer par niveau.

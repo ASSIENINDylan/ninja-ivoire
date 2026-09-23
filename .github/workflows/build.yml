@@ -1,0 +1,84 @@
+name: Construire Ninja Ivoire
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: 4.4.1
+
+jobs:
+  serveur:
+    name: Tests du serveur
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - name: Vérifier le formatage
+        working-directory: server
+        run: test -z "$(gofmt -l .)"
+      - name: go vet
+        working-directory: server
+        run: go vet ./...
+      - name: Tests
+        working-directory: server
+        run: go test ./...
+
+  windows:
+    name: Jeu pour Windows (.zip)
+    needs: serveur
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Compiler le serveur local (sans fenêtre de console)
+        working-directory: server
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: "0"
+        run: go build -trimpath -ldflags "-s -w -H=windowsgui" -o ../dist/NinjaIvoire/ninja-server.exe ./cmd/ninja-server
+
+      - name: Mettre en cache Godot et ses modèles d'export
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}
+
+      - name: Installer Godot
+        run: |
+          if [ ! -x ~/godot/godot ]; then
+            mkdir -p ~/godot
+            cd ~/godot
+            curl -sSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+            unzip -q godot.zip && mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" godot && rm godot.zip
+          fi
+          if [ ! -d ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable ]; then
+            curl -sSL -o /tmp/tpl.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+            unzip -q /tmp/tpl.tpz -d /tmp/tpl
+            mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+            mv /tmp/tpl/templates/* ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable/
+          fi
+
+      - name: Exporter le client
+        working-directory: client
+        run: |
+          ~/godot/godot --headless --import || true
+          ~/godot/godot --headless --export-release "Windows Desktop" ../dist/NinjaIvoire/NinjaIvoire.exe
+          test -f ../dist/NinjaIvoire/NinjaIvoire.exe
+
+      - name: Ajouter le mode d'emploi
+        run: cp docs/LISEZMOI-Windows.txt dist/NinjaIvoire/LISEZMOI.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NinjaIvoire-Windows
+          path: dist/NinjaIvoire/
