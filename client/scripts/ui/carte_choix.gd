@@ -58,7 +58,7 @@ func _style() -> void:
 	var bord := Pal.BORD
 	var ep := 1
 	if inactive:
-		fond = Color("171114", 0.9)
+		fond = Color(Pal.PANNEAU_2, 0.95)
 	elif selectionnee:
 		fond = Color(couleur.darkened(0.72), 0.95)
 		bord = couleur

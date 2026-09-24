@@ -7,9 +7,14 @@ extends Control
 signal case_cliquee(x: int, y: int)
 
 const COULEURS := {
-	"savane": Color("8c7a45"), "savane_boisee": Color("6e7a40"), "foret": Color("3d6a3a"),
-	"foret_dense": Color("284a2c"), "montagne": Color("7b6d60"), "fleuve": Color("3b6e98"),
-	"lac": Color("2d5e8c"), "lagune": Color("3b8290"), "littoral": Color("b19c66"),
+	"savane": Color("e6c96a"), "savane_boisee": Color("b9c55f"), "foret": Color("6db356"),
+	"foret_dense": Color("3f8a4a"), "montagne": Color("b59a80"), "fleuve": Color("5aa9e0"),
+	"lac": Color("4a92d4"), "lagune": Color("4fbcc6"), "littoral": Color("f0dca0"),
+}
+## Couleur et lettre de chaque contenu de case.
+const CONTENUS := {
+	"camp": [Color("d23c2c"), "⚑"], "fer": [Color("6f7c8a"), "Fe"], "peau": [Color("a0643a"), "Pe"],
+	"pierre": [Color("8d8478"), "Pi"], "or": [Color("e0a81b"), "Or"], "diamant": [Color("39b6d8"), "Di"],
 }
 const COULEURS_VILLAGES := {"traditionnel": Color("d9974f"), "moderne": Color("b8c3cf"), "futuriste": Color("5ed6e6")}
 
@@ -83,10 +88,10 @@ func _draw() -> void:
 	var h := int(_c.h)
 	var n = Jeu.ninja
 	var niveau := int(n.niveau)
-	var brouillard := Color("1d1619")
+	var brouillard := Color("e8dfcf")
 	var teintes := []
 	for rid in _c.regions:
-		teintes.append(brouillard.lerp(Color(Jeu.region(rid).get("couleur", "#888888")), 0.13))
+		teintes.append(brouillard.lerp(Color(Jeu.region(rid).get("couleur", "#888888")), 0.22))
 	# Cases.
 	for y in h:
 		for x in l:
@@ -153,7 +158,7 @@ func _draw() -> void:
 				draw_circle(c, max(1.8, s * 0.55), Pal.IVOIRE)
 				draw_arc(c, max(1.8, s * 0.55), 0, TAU, 12, Color(0, 0, 0, 0.6), 1.0, true)
 			"mythique":
-				_etoile(c, s * 1.3, Color("c9a7ff"))
+				_etoile(c, s * 1.3, Color("9b6fe0"))
 			"portail":
 				draw_arc(c + Vector2(0, s * 0.4), s * 1.1, PI, TAU, 12, Pal.OR_VIF, 2.2, true)
 				draw_line(c + Vector2(-s * 1.1, s * 0.4), c + Vector2(-s * 1.1, s * 1.2), Pal.OR_VIF, 2.2)

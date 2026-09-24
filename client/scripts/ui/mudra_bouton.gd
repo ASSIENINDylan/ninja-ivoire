@@ -45,9 +45,9 @@ func _draw() -> void:
 	var r := 22.0 if compact else 30.0
 	var c := Vector2(size.x * 0.5, r + 6)
 	if disabled:
-		col = Color(0.35, 0.32, 0.3)
+		col = Color("c9bfb2")
 	draw_circle(c, r + 3, Color(col, 0.18 if _survol and not disabled else 0.08))
-	draw_circle(c, r, Color("140e11"))
+	draw_circle(c, r, Color("ffffff"))
 	draw_arc(c, r, 0, TAU, 48, Color(col, 0.9 if _survol and not disabled else 0.6), 2.0, true)
 	UI.dessiner_glyphe(self, c, r - 5, mudra_id, col, 2.2)
 	var font := Pal.police_texte
@@ -56,6 +56,6 @@ func _draw() -> void:
 	var w := font.get_string_size(nom, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	draw_string(font, Vector2((size.x - w) * 0.5, c.y + r + (15 if compact else 18)), nom, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Pal.GRIS if disabled else Pal.IVOIRE)
 	if disabled and verrou != "":
-		draw_circle(c, r - 1, Color(0.05, 0.035, 0.04, 0.78))
+		draw_circle(c, r - 1, Color(0.95, 0.92, 0.88, 0.85))
 		var w2 := font.get_string_size(verrou, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
 		draw_string(font, Vector2((size.x - w2) * 0.5, c.y + 5), verrou, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Pal.IVOIRE_DOUX)

@@ -50,7 +50,7 @@ func _draw() -> void:
 			var id: String = sequence[i]
 			var col := Jeu.couleur_mudra(id)
 			draw_circle(c, r + 6, Color(col, 0.12 + 0.3 * eclat))
-			draw_circle(c, r, Color("140e11"))
+			draw_circle(c, r, Color("ffffff"))
 			draw_arc(c, r, 0, TAU, 48, col, 2.0, true)
 			UI.dessiner_glyphe(self, c, r - 5, id, col, 2.2)
 			var nom: String = Jeu.mudra(id).get("nom", "?")

@@ -27,6 +27,27 @@ func _capture(nom: String) -> void:
 	print("capture ", nom)
 
 
+## La case la plus proche (du ninja) qui porte l'un de ces contenus, dans
+## une zone à sa portée.
+func _plus_proche(contenus: Array) -> Vector2i:
+	var c: Dictionary = Regles.carte()
+	var pos: Array = Api.partie.ninja.position
+	var meilleur := Vector2i(-1, -1)
+	var dmin := 1e9
+	for i in c.contenu.size():
+		if not contenus.has(c.contenus[int(c.contenu[i])]):
+			continue
+		if int(Regles.zone(int(c.zone[i])).niveau) > maxi(3, int(Api.partie.ninja.niveau)):
+			continue
+		var x: int = i % int(c.l)
+		var y: int = i / int(c.l)
+		var d := Vector2(x - int(pos[0]), y - int(pos[1])).length()
+		if d < dmin:
+			dmin = d
+			meilleur = Vector2i(x, y)
+	return meilleur
+
+
 func _ecran() -> Node:
 	return main.get("_ecran")
 
@@ -76,14 +97,52 @@ func _scenario() -> void:
 			break
 	await _attendre(1.0)
 	if main.get("_ecran") == e:
-		e._carte.survol = Vector2i(int(Jeu.ninja.position[0]) - 1, int(Jeu.ninja.position[1]))
+		e._vue.survol = Vector2i(int(Jeu.ninja.position[0]) - 1, int(Jeu.ninja.position[1]))
 		await _capture("12_carte_exploration")
 	else:
 		await _capture("12_carte_rencontre")
 		await Api.envoyer("/api/combat/fuite")
 		await Jeu.rafraichir()
+	# Un gisement tout proche, une récolte, puis un camp de bandits.
 	if Api.partie != null:
+		var c := _plus_proche(["pierre", "peau", "fer"])
+		if c != Vector2i(-1, -1):
+			Api.partie.ninja.position = [c.x, c.y]
+			Api.partie._reveler(c.x, c.y, 2)
+			await Jeu.rafraichir()
+			Jeu.aller("carte", {"message": "Un gisement !"})
+			await _attendre(1.0)
+			await _capture("13_carte_gisement")
+			e = _ecran()
+			e._exploiter()
+			await _attendre(0.8)
+			e._exploiter()
+			await _attendre(1.2)
+			await _capture("14_exploitation")
+		var k := _plus_proche(["camp"])
+		if k != Vector2i(-1, -1):
+			Api.partie.ninja.position = [k.x, k.y]
+			Api.partie._reveler(k.x, k.y, 2)
+			Api.partie.ninja.niveau = maxi(int(Api.partie.ninja.niveau), 3)
+			await Jeu.rafraichir()
+			Jeu.aller("carte", {"message": "Un camp de bandits."})
+			await _attendre(1.0)
+			await _capture("15_carte_camp")
 		Api.partie.hasard = randf
+		# Retour au village pour la forge, avec de quoi forger.
+		var v = Api.partie.village_natal()
+		Api.partie.ninja.position = [int(v.x), int(v.y)]
+		Api.partie.ninja.sac = {"fer": 9, "peau": 7, "pierre": 4}
+		Api.partie.ninja.coffre = {"or": 2}
+		await Jeu.rafraichir()
+		Jeu.aller("forge")
+		await _attendre(0.8)
+		e = _ecran()
+		e._fabriquer("sabre_fer")
+		await _attendre(0.6)
+		e._equiper("sabre_fer")
+		await _attendre(1.0)
+		await _capture("16_forge")
 
 	# Pour la démonstration, le ninja a déjà du métier (niveau 25).
 	if Api.partie != null:

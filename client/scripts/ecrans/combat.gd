@@ -5,7 +5,7 @@ extends Ecran
 const ECART := 205.0
 
 var etat: Dictionary = {}
-var _decor: DecorCombat
+var _decor: Paysage
 var _arene: Node2D
 var _vues := {}
 var _bouton_fuir: Button
@@ -28,8 +28,14 @@ var _onglet_composer: Button
 
 func construire() -> void:
 	etat = params.combat
-	_decor = DecorCombat.new()
-	_decor.sol = 0.62
+	# Le combat a lieu dans le paysage où se trouve le ninja.
+	_decor = Paysage.new()
+	_decor.sol = 0.5
+	var sit = Jeu.ninja.get("situation") if Jeu.ninja != null else null
+	if sit != null:
+		_decor.terrain = sit.get("terrain", "savane")
+		if str(params.get("nom", "")).begins_with("Camp"):
+			_decor.contenu = "camp"
 	_decor.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_decor)
 	_arene = Node2D.new()
@@ -61,7 +67,7 @@ func construire() -> void:
 	_banniere.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_banniere.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	_banniere.offset_top = 86
-	_banniere.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_banniere.add_theme_color_override("font_outline_color", Color(1, 1, 1, 0.95))
 	_banniere.add_theme_constant_override("outline_size", 8)
 	_banniere.modulate.a = 0
 	_banniere.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -72,7 +78,7 @@ func construire() -> void:
 	_placer.call_deferred(true)
 	_choisir_cible_defaut()
 	_maj_interface()
-	_ecrire("[color=#c9a25b]Le combat commence. Choisis ton action : les adversaires choisissent la leur en même temps.[/color]")
+	_ecrire("[color=#b67a1f]Le combat commence. Choisis ton action : les adversaires choisissent la leur en même temps.[/color]")
 
 
 func _nom_rencontre() -> String:
@@ -85,7 +91,7 @@ func _nom_rencontre() -> String:
 
 func _construire_panneau() -> void:
 	var panneau := PanelContainer.new()
-	panneau.add_theme_stylebox_override("panel", Pal.boite(Color("140e11", 0.96), Pal.BORD, 0, 1, 14))
+	panneau.add_theme_stylebox_override("panel", Pal.boite(Color(Pal.PANNEAU, 0.97), Pal.BORD, 0, 1, 14))
 	panneau.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	panneau.offset_top = -280
 	add_child(panneau)
@@ -319,7 +325,7 @@ func _construire_liste(j: Dictionary) -> void:
 		b.clip_text = true
 		b.text = "%s\n%s · %d Souffle · %d tour(s)" % [ju.nom, Jeu.libelle_type(ju), ju.cout, ju.tours]
 		b.add_theme_font_size_override("font_size", 13)
-		b.add_theme_color_override("font_color", Jeu.couleur_element(ju.element).lightened(0.35))
+		b.add_theme_color_override("font_color", Jeu.couleur_texte(Jeu.couleur_element(ju.element)))
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.tooltip_text = ju.get("nature", "") + " · puissance %d · maîtrise %d\n" % [int(ju.get("puissance", 0)), int(ju.maitrise)] + ju.texte
 		b.disabled = _occupe or ju.cout > j.souffle or _a(j, "scelle")
@@ -404,7 +410,7 @@ func _traiter(r: Dictionary) -> void:
 
 
 func _jouer(evts: Array) -> void:
-	_ecrire("[color=#6b6058]— Tour %d —[/color]" % (int(etat.tour) + 1))
+	_ecrire("[color=#998d81]— Tour %d —[/color]" % (int(etat.tour) + 1))
 	for e in evts:
 		_journaliser(e)
 		await _animer(e)
@@ -459,7 +465,7 @@ func _animer(e: Dictionary) -> void:
 			Effets.texte(_arene, _pos(acteur, 175), "Raté", Pal.GRIS, 22)
 			await _attendre(0.25)
 		"jutsu", "differe":
-			_annoncer(e.get("jutsu", e.texte), el.lightened(0.3))
+			_annoncer(e.get("jutsu", e.texte), Jeu.couleur_texte(el))
 			Effets.onde(_arene, _pos(acteur, 90), el, 110)
 			await _attendre(0.45)
 		"decouverte":
@@ -468,7 +474,7 @@ func _animer(e: Dictionary) -> void:
 			Effets.onde(_arene, _pos(acteur, 90), Pal.OR_VIF, 180)
 			await _attendre(1.1)
 		"echec":
-			_annoncer(e.texte, Color("b9a7ff"), 2.4)
+			_annoncer(e.texte, Pal.INDIGO, 2.4)
 			await _attendre(1.0)
 		"interruption":
 			Effets.texte(_arene, _pos(cible, 215), "Incantation brisée !", Pal.SANG, 22)
@@ -537,13 +543,13 @@ func _secouer(force: float) -> void:
 
 func _journaliser(e: Dictionary) -> void:
 	var couleurs := {
-		"degats": "#e8806f", "soin": "#8fd18f", "decouverte": "#e8c47a", "echec": "#b9a7ff",
-		"interruption": "#e0604f", "mort": "#f2e8d5", "fin": "#e8c47a", "jutsu": "#f2e8d5",
-		"statut": "#d9c9f0", "resiste": "#9c8f86", "bouclier": "#f2e8d5", "clone": "#9fd8c4", "clone_dissipe": "#9fd8c4",
+		"degats": "#c8372a", "soin": "#23883f", "decouverte": "#d9780b", "echec": "#4453b8",
+		"interruption": "#c8372a", "mort": "#2b221d", "fin": "#d9780b", "jutsu": "#2b221d",
+		"statut": "#7a4fb0", "resiste": "#998d81", "bouclier": "#2f8fd8", "clone": "#1f8f8a", "clone_dissipe": "#1f8f8a",
 	}
-	var col: String = couleurs.get(e.type, "#c9bda8")
+	var col: String = couleurs.get(e.type, "#62564c")
 	if e.type == "jutsu" and e.get("element", "") != "":
-		col = "#" + Jeu.couleur_element(e.element).lightened(0.3).to_html(false)
+		col = "#" + Jeu.couleur_texte(Jeu.couleur_element(e.element)).to_html(false)
 	_ecrire("[color=%s]%s[/color]" % [col, e.texte])
 
 

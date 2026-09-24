@@ -298,6 +298,7 @@ func catalogue() -> Dictionary:
 		"version": Regles.d.version, "regions": Regles.d.regions, "villages": Regles.d.villages,
 		"elements": Regles.d.elements, "mudras": mudras, "niveau_max": Regles.c.niveau_max,
 		"legendaires": Regles.d.legendaires.nombre, "carte": Regles.d.carte,
+		"noms_ressources": Regles.d.ressources.noms, "rendement": Regles.d.ressources.rendement, "forge": Regles.d.forge,
 	})
 
 

@@ -32,16 +32,22 @@ static func bouton(t: String, cb: Callable, taille: int = 18) -> Button:
 
 static func bouton_principal(t: String, cb: Callable, taille: int = 20) -> Button:
 	var b := bouton(t, cb, taille)
-	var n := Pal.boite(Color("5a3b22"), Pal.OR, 8, 1, 12)
+	var n := Pal.boite(Pal.OR_VIF, Pal.OCRE, 8, 1, 12)
 	n.content_margin_left = 26
 	n.content_margin_right = 26
-	var h := Pal.boite(Color("6e4828"), Pal.OR_VIF, 8, 2, 12)
+	var h := Pal.boite(Color("f59a2c"), Pal.OCRE, 8, 2, 12)
 	h.content_margin_left = 26
 	h.content_margin_right = 26
 	b.add_theme_stylebox_override("normal", n)
 	b.add_theme_stylebox_override("hover", h)
 	b.add_theme_stylebox_override("pressed", h)
-	b.add_theme_color_override("font_color", Pal.IVOIRE)
+	b.add_theme_color_override("font_color", Pal.CLAIR)
+	b.add_theme_color_override("font_hover_color", Pal.CLAIR)
+	b.add_theme_color_override("font_pressed_color", Pal.CLAIR)
+	var d := Pal.boite(Color("f1d9b6"), Color("e8cfa8"), 8, 1, 12)
+	d.content_margin_left = 26
+	d.content_margin_right = 26
+	b.add_theme_stylebox_override("disabled", d)
 	return b
 
 
@@ -199,5 +205,5 @@ class Glyphe:
 
 	func _draw() -> void:
 		var r: float = min(size.x, size.y) * 0.5 - 1
-		draw_circle(size * 0.5, r, Color("150f12"))
+		draw_circle(size * 0.5, r, Color("ffffff"))
 		UI.dessiner_glyphe(self, size * 0.5, r - 1, mudra_id, Jeu.couleur_mudra(mudra_id), max(1.2, r / 10.0))

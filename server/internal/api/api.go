@@ -37,6 +37,10 @@ type Catalogue struct {
 	NiveauMax   int                `json:"niveau_max"`
 	Carte       map[string]any     `json:"carte"`
 	Legendaires int                `json:"legendaires"`
+	// Ressources et forge.
+	NomsRessources map[string]string  `json:"noms_ressources"`
+	Rendement      map[string]float64 `json:"rendement"`
+	Forge          map[string]any     `json:"forge"`
 }
 
 func catalogue() Catalogue {
@@ -44,6 +48,8 @@ func catalogue() Catalogue {
 		Version: Version, Regions: data.AllRegions(), Villages: data.AllTypesVillage(),
 		Elements: data.AllElements(), NiveauMax: game.NiveauMax,
 		Legendaires: grammar.NombreLegendaires(), Carte: carte.Monde.Export(),
+		NomsRessources: game.NomsRessources, Rendement: game.RendementBase,
+		Forge: map[string]any{"objets": game.AllObjets(), "emplacements": game.Emplacements, "noms_emplacements": game.NomsEmplacements},
 	}
 	for _, m := range data.AllMudras() {
 		mp := MudraPublic{ID: m.ID, Nom: m.Nom, Categorie: m.Categorie, Niveau: m.Niveau}

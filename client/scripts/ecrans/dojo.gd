@@ -29,7 +29,7 @@ func construire() -> void:
 	tete.add_child(UI.extensible())
 	tete.add_child(UI.bouton("Retour au village", func(): Jeu.aller("village")))
 
-	var zone := UI.carte(Color("150f12", 0.9), Pal.BORD, 14)
+	var zone := UI.carte(Color(Pal.PANNEAU, 0.9), Pal.BORD, 14)
 	gauche.add_child(zone)
 	var zv := UI.vbox(10)
 	zone.add_child(zv)
@@ -110,7 +110,7 @@ func _essayer() -> void:
 		_barre.eclat = 1.0
 		if d.nouveau:
 			_resultat.add_child(UI.label("JUTSU LÉGENDAIRE !" if j.legendaire else "Nouveau jutsu !", 20, Pal.OR_VIF, true))
-		_resultat.add_child(UI.texte(j.nom, 28 if j.nom.length() < 30 else 22, col.lightened(0.25), 400))
+		_resultat.add_child(UI.texte(j.nom, 28 if j.nom.length() < 30 else 22, Jeu.couleur_texte(col), 400))
 		_resultat.get_child(_resultat.get_child_count() - 1).add_theme_font_override("font", Pal.police_titre)
 		_resultat.add_child(UI.label("%s  ·  %s  ·  puissance %d" % [Jeu.libelle_type(j), j.get("nature", ""), int(j.get("puissance", 0))], 15, Pal.IVOIRE_DOUX))
 		_resultat.add_child(UI.glyphes(j.sequence, 30))
@@ -128,7 +128,7 @@ func _essayer() -> void:
 			score = int(res.score)
 			var col := Pal.SANG.lerp(Pal.OR_VIF, score / 100.0)
 			if res.ancienne:
-				col = Color("b9a7ff")
+				col = Pal.INDIGO
 			_resultat.add_child(UI.label("Résonance : %d / 100" % score, 20, col, true))
 			_resultat.add_child(UI.barre(score, 100, col, 12))
 			if res.ancienne:
@@ -147,10 +147,10 @@ func _ajouter_journal(seq: Array, d: Dictionary, score: int) -> void:
 	var col := Pal.GRIS
 	if d.valide:
 		t = d.jutsu.nom
-		col = Jeu.couleur_element(d.jutsu.element).lightened(0.2)
+		col = Jeu.couleur_texte(Jeu.couleur_element(d.jutsu.element))
 	elif d.get("refus", "") != "":
 		t = "pouvoir endormi"
-		col = Color("b9a7ff")
+		col = Pal.INDIGO
 	else:
 		t = "résonance %d" % score
 	var l := UI.label(t, 13, col)

@@ -48,13 +48,13 @@ func construire() -> void:
 	for j in jutsus:
 		var col := Jeu.couleur_element(j.element)
 		var fav: bool = j.get("favori", false)
-		var carte := UI.carte(Color("2a2016", 0.96) if fav else Color(Pal.PANNEAU, 0.94), Pal.OR_VIF if (j.legendaire or fav) else col.darkened(0.3))
+		var carte := UI.carte(Color("fff4de") if fav else Color(Pal.PANNEAU, 0.94), Pal.OR_VIF if (j.legendaire or fav) else col.darkened(0.3))
 		carte.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var cv := UI.vbox(8)
 		carte.add_child(cv)
 		var t := UI.hbox(10)
 		t.add_child(UI.pastille(col, 14))
-		var nom := UI.label(j.nom, 21, col.lightened(0.3), true)
+		var nom := UI.label(j.nom, 21, Jeu.couleur_texte(col), true)
 		nom.clip_text = true
 		nom.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		t.add_child(nom)

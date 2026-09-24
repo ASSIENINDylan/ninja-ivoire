@@ -60,7 +60,7 @@ func construire() -> void:
 		h.add_child(UI.label(r.nom, 24, Pal.IVOIRE, true))
 		carte.ajouter(h)
 		carte.ajouter(UI.label(r.geo, 14, Pal.IVOIRE_DOUX))
-		carte.ajouter(UI.label("Élément : %s   ·   %s" % [el.nom, NOMS_ATTRIBUTS[r.attribut]], 15, Color(el.couleur).lightened(0.25)))
+		carte.ajouter(UI.label("Élément : %s   ·   %s" % [el.nom, NOMS_ATTRIBUTS[r.attribut]], 15, Jeu.couleur_texte(el.couleur)))
 		carte.clic.connect(_choisir_region.bind(r.id))
 		grille.add_child(carte)
 		_cartes_regions[r.id] = carte
@@ -77,8 +77,8 @@ func construire() -> void:
 		var nom_v := UI.label("—", 16, Pal.IVOIRE)
 		carte.ajouter(nom_v)
 		_noms_villages[t.id] = nom_v
-		carte.ajouter(UI.texte("+ " + t.avantages, 14, Color("9ccf8f"), 300))
-		carte.ajouter(UI.texte("− " + t.defauts, 14, Color("d98c7a"), 300))
+		carte.ajouter(UI.texte("+ " + t.avantages, 14, Pal.VERT, 300))
+		carte.ajouter(UI.texte("− " + t.defauts, 14, Pal.SANG, 300))
 		carte.clic.connect(_choisir_village.bind(t.id))
 		ligne_v.add_child(carte)
 		_cartes_villages[t.id] = carte

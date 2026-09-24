@@ -108,7 +108,7 @@ func _remplir() -> void:
 		var el := Jeu.element(e)
 		var b := UI.hbox(6)
 		b.add_child(UI.pastille(Color(el.couleur), 14))
-		b.add_child(UI.label(el.nom, 17, Color(el.couleur).lightened(0.2)))
+		b.add_child(UI.label(el.nom, 17, Jeu.couleur_texte(el.couleur)))
 		b.tooltip_text = el.role
 		els.add_child(b)
 	_fiche.add_child(els)
@@ -125,9 +125,16 @@ func _remplir() -> void:
 	var dojo := UI.bouton_principal("Dojo — expérimenter les mudras", func(): Jeu.aller("dojo"), 19)
 	_droite.add_child(dojo)
 	_droite.add_child(UI.bouton("Grimoire — mes jutsus (%d)" % jutsus.size(), func(): Jeu.aller("grimoire"), 18))
+	_droite.add_child(UI.bouton("Forge, coffre et équipement", func(): Jeu.aller("forge"), 18))
+	var sac: Dictionary = n.get("sac", {})
+	if not sac.is_empty():
+		var total := 0
+		for r in sac:
+			total += int(sac[r])
+		_droite.add_child(UI.texte("Ton sac contient %d ressources : dépose-les au coffre de la forge pour ne pas les perdre." % total, 13, Pal.OCRE, 380))
 	_droite.add_child(UI.frise())
 	_droite.add_child(UI.label("Au-delà des murs", 26, Pal.IVOIRE, true))
-	_droite.add_child(UI.texte("Explore la Côte d'Ivoire case par case. Chaque pas coûte de l'endurance ; les zones lointaines sont réservées aux ninjas aguerris ; des rencontres surgissent en brousse. La défaite te ramène ici.", 14, Pal.IVOIRE_DOUX, 380))
+	_droite.add_child(UI.texte("Explore la Côte d'Ivoire case par case. Exploite le fer, les peaux, la pierre, l'or et le diamant ; attaque les camps de bandits ; méfie-toi des autres ninjas. La défaite te ramène ici, sans ton sac.", 14, Pal.IVOIRE_DOUX, 380))
 	_droite.add_child(UI.bouton_principal("Sortir explorer la carte", func(): Jeu.aller("carte", {"message": "Vous quittez %s." % Jeu.ninja.village}), 19))
 	var s = n.get("situation")
 	if s != null:
@@ -140,7 +147,7 @@ func _remplir() -> void:
 
 
 func _panneau_element() -> Control:
-	var carte := UI.carte(Color("2a2016"), Pal.OR_VIF)
+	var carte := UI.carte(Color("fff4de"), Pal.OR_VIF)
 	var v := UI.vbox(8)
 	carte.add_child(v)
 	v.add_child(UI.label("Un nouvel élément s'offre à toi", 20, Pal.OR_VIF, true))
@@ -154,7 +161,7 @@ func _panneau_element() -> Control:
 		if e.tier != "base" or Jeu.ninja.elements.has(e.id):
 			continue
 		var b := UI.bouton(e.nom, _choisir_element.bind(e.id), 14)
-		b.add_theme_color_override("font_color", Color(e.couleur).lightened(0.2))
+		b.add_theme_color_override("font_color", Jeu.couleur_texte(e.couleur))
 		b.tooltip_text = "%s\nFort contre : %s\nFaible contre : %s" % [e.role, ", ".join(e.fort), ", ".join(e.faible)]
 		grille.add_child(b)
 	return carte

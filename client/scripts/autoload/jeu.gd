@@ -186,3 +186,13 @@ func libelle_type(ju: Dictionary) -> String:
 	if ju.get("type", "") == "degats" and ju.get("degats_nature", "") != "":
 		t += " " + str(ju.degats_nature) + "s"
 	return t
+
+
+## Une couleur d'élément lisible en texte sur fond clair.
+func couleur_texte(c) -> Color:
+	var col: Color = Color(c)
+	if col.get_luminance() > 0.55:
+		col = col.darkened(0.45)
+	elif col.get_luminance() > 0.4:
+		col = col.darkened(0.2)
+	return col

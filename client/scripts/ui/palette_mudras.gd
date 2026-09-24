@@ -24,7 +24,7 @@ func _ready() -> void:
 	for cat in ["element", "forme", "effet", "modificateur"]:
 		var tete := UI.hbox(8)
 		tete.add_child(UI.pastille(Pal.CATEGORIES[cat], 10))
-		tete.add_child(UI.label(Pal.NOMS_CATEGORIES[cat], 17, Pal.CATEGORIES[cat].lightened(0.2), true))
+		tete.add_child(UI.label(Pal.NOMS_CATEGORIES[cat], 17, Pal.CATEGORIES[cat].darkened(0.1), true))
 		add_child(tete)
 		var flux := HFlowContainer.new()
 		flux.add_theme_constant_override("h_separation", 2)
