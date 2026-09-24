@@ -585,6 +585,24 @@ func _fin(fin: Dictionary) -> void:
 		v.add_child(UI.label("Niveau %d atteint ! Tu as des points d'attribut à répartir." % Jeu.ninja.niveau, 19, Pal.OR_VIF, true))
 	for d in _decouvertes:
 		v.add_child(UI.label("Découvert : " + d, 16, Pal.OR))
+	var perdus := PackedStringArray()
+	for id in fin.get("objets_perdus", []) if fin.get("objets_perdus") != null else []:
+		for o in Jeu.catalogue.get("forge", {}).get("objets", []):
+			if o.id == id:
+				perdus.append(o.nom)
+	var sac = fin.get("perdu")
+	if sac != null:
+		for r in sac:
+			if int(sac[r]) > 0:
+				perdus.append("%s ×%d" % [Jeu.catalogue.noms_ressources.get(r, r), int(sac[r])])
+	if perdus.size() > 0:
+		v.add_child(UI.texte("Perdu : " + ", ".join(perdus), 15, Pal.SANG, 500))
+	var butin = fin.get("butin")
+	if butin != null:
+		var gains := PackedStringArray()
+		for r in butin:
+			gains.append("%s ×%d" % [Jeu.catalogue.noms_ressources.get(r, r), int(butin[r])])
+		v.add_child(UI.texte("Butin : " + ", ".join(gains), 15, Pal.VERT, 500))
 	var m = fin.get("maitrise")
 	if m != null:
 		for nom in m:

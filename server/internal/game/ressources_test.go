@@ -124,13 +124,19 @@ func TestCampForgeEtDefaite(t *testing.T) {
 	if c := n.Combattant(p.Maintenant()); c.Arme.Puissance <= base || c.Arme.Nom != "un sabre de fer" {
 		t.Errorf("l'arme forgée compte en combat : %+v", c.Arme)
 	}
-	// Défaite : le sac et les objets non portés sont perdus, pas le coffre.
+	// Défaite : le sac, les objets et l'équipement porté sont perdus, pas le coffre.
 	n.Coffre[carte.Pierre] = 7
 	n.Objets = []string{"bandeau_cuir"}
 	p.DemarrerCombat("chacals")
 	p.combat.Fini, p.combat.Vainqueur = true, 1
-	p.terminer()
-	if len(n.Sac) != 0 || len(n.Objets) != 0 || n.Coffre[carte.Pierre] != 7 || n.Equipement[EmplArme] != "sabre_fer" {
+	fin = p.terminer()
+	if len(n.Sac) != 0 || len(n.Objets) != 0 || n.Coffre[carte.Pierre] != 7 || len(n.Equipement) != 0 {
 		t.Errorf("après défaite : sac %v objets %v coffre %v équipement %v", n.Sac, n.Objets, n.Coffre, n.Equipement)
+	}
+	if len(fin.ObjetsPerdus) != 2 {
+		t.Errorf("objets perdus : %v", fin.ObjetsPerdus)
+	}
+	if c := n.Combattant(p.Maintenant()); c.Arme.Nom != n.Arme.Nom || n.PV != n.PVMax() {
+		t.Errorf("on renaît avec l'arme de départ et tous ses PV : %+v, PV %d/%d", c.Arme, n.PV, n.PVMax())
 	}
 }

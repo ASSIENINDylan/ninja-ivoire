@@ -537,15 +537,22 @@ func _terminer() -> Dictionary:
 		fin.message = "Vous prenez la fuite, blessé mais vivant."
 	else:
 		ninja.defaites = int(ninja.defaites) + 1
-		_renaitre()
 		fin.defaite = true
 		fin.message = "Défaite. Vous renaissez dans votre village."
-		# Le vainqueur emporte le sac et les objets non portés ; le coffre est sûr.
-		if ninja.sac.size() > 0 or ninja.objets.size() > 0:
+		# Le vainqueur emporte tout ce que le ninja a sur lui : le sac, les
+		# objets du sac et l'équipement porté. Seul le coffre du village est sûr.
+		var perdus: Array = ninja.objets.duplicate()
+		for e in Regles.d.forge.emplacements:
+			if ninja.equipement.get(e, "") != "":
+				perdus.append(ninja.equipement[e])
+		if ninja.sac.size() > 0 or perdus.size() > 0:
 			fin.perdu = ninja.sac
+			fin.objets_perdus = perdus
 			ninja.sac = {}
 			ninja.objets = []
-			fin.message += " Le vainqueur emporte votre sac et vos objets non portés (le coffre du village, lui, est intact)."
+			ninja.equipement = {}
+			fin.message += " Le vainqueur emporte votre sac et tout votre équipement (le coffre du village, lui, est intact)."
+		_renaitre()
 	if fin.baume > 0 and int(ninja.pv) > 0:
 		fin.message += " Un baume de Souffle referme vos plaies (+%d PV)." % fin.baume
 	fin.pv = int(ninja.pv)

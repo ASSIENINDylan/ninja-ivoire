@@ -63,7 +63,7 @@ type Ninja struct {
 	Explore          string                 `json:"explore"`
 	Defaites         int                    `json:"defaites"`
 	Exploitation     map[string]*Metier     `json:"exploitation"` // niveau d'exploitation par ressource
-	Sac              map[string]int         `json:"sac"`          // ressources portées (perdues à la défaite)
+	Sac              map[string]int         `json:"sac"`          // ressources portées (perdues à la défaite, comme l'équipement)
 	Coffre           map[string]int         `json:"coffre"`       // ressources à l'abri au village
 	Objets           []string               `json:"objets"`       // objets forgés non portés
 	Equipement       map[string]string      `json:"equipement"`   // emplacement → objet porté

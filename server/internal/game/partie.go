@@ -398,10 +398,11 @@ type FinCombat struct {
 	XP            int            `json:"xp"`
 	Dje           int            `json:"dje"`
 	NiveauxGagnes int            `json:"niveaux_gagnes"`
-	Maitrise      map[string]int `json:"maitrise"`        // nom du jutsu → maîtrise atteinte
-	Baume         int            `json:"baume"`           // PV rendus après le combat
-	Butin         map[string]int `json:"butin,omitempty"` // ressources gagnées
-	Perdu         map[string]int `json:"perdu,omitempty"` // ressources perdues à la défaite
+	Maitrise      map[string]int `json:"maitrise"`                // nom du jutsu → maîtrise atteinte
+	Baume         int            `json:"baume"`                   // PV rendus après le combat
+	Butin         map[string]int `json:"butin,omitempty"`         // ressources gagnées
+	Perdu         map[string]int `json:"perdu,omitempty"`         // ressources perdues à la défaite
+	ObjetsPerdus  []string       `json:"objets_perdus,omitempty"` // objets et équipement perdus
 	PV            int            `json:"pv"`
 	Message       string         `json:"message"`
 }
@@ -513,16 +514,24 @@ func (p *Partie) terminer() *FinCombat {
 		fin.Message = "Vous prenez la fuite, blessé mais vivant."
 	default:
 		n.Defaites++
-		n.Renaitre(now)
 		fin.Defaite = true
 		fin.Message = "Défaite. Vous renaissez dans votre village."
-		// Le vainqueur emporte le sac et les objets non portés ; le coffre est sûr.
-		if len(n.Sac) > 0 || len(n.Objets) > 0 {
+		// Le vainqueur emporte tout ce que le ninja a sur lui : le sac, les
+		// objets du sac et l'équipement porté. Seul le coffre du village est sûr.
+		fin.ObjetsPerdus = append([]string{}, n.Objets...)
+		for _, e := range Emplacements {
+			if id := n.Equipement[e]; id != "" {
+				fin.ObjetsPerdus = append(fin.ObjetsPerdus, id)
+			}
+		}
+		if len(n.Sac) > 0 || len(fin.ObjetsPerdus) > 0 {
 			fin.Perdu = n.Sac
 			n.Sac = map[string]int{}
 			n.Objets = []string{}
-			fin.Message += " Le vainqueur emporte votre sac et vos objets non portés (le coffre du village, lui, est intact)."
+			n.Equipement = map[string]string{}
+			fin.Message += " Le vainqueur emporte votre sac et tout votre équipement (le coffre du village, lui, est intact)."
 		}
+		n.Renaitre(now)
 	}
 	if fin.Baume > 0 && n.PV > 0 {
 		fin.Message += fmt.Sprintf(" Un baume de Souffle referme vos plaies (+%d PV).", fin.Baume)

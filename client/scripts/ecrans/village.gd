@@ -134,7 +134,7 @@ func _remplir() -> void:
 		_droite.add_child(UI.texte("Ton sac contient %d ressources : dépose-les au coffre de la forge pour ne pas les perdre." % total, 13, Pal.OCRE, 380))
 	_droite.add_child(UI.frise())
 	_droite.add_child(UI.label("Au-delà des murs", 26, Pal.IVOIRE, true))
-	_droite.add_child(UI.texte("Explore la Côte d'Ivoire case par case. Exploite le fer, les peaux, la pierre, l'or et le diamant ; attaque les camps de bandits ; méfie-toi des autres ninjas. La défaite te ramène ici, sans ton sac.", 14, Pal.IVOIRE_DOUX, 380))
+	_droite.add_child(UI.texte("Explore la Côte d'Ivoire case par case. Exploite le fer, les peaux, la pierre, l'or et le diamant ; attaque les camps de bandits ; méfie-toi des autres ninjas. La défaite te ramène ici, sans ton sac ni ton équipement.", 14, Pal.IVOIRE_DOUX, 380))
 	_droite.add_child(UI.bouton_principal("Sortir explorer la carte", func(): Jeu.aller("carte", {"message": "Vous quittez %s." % Jeu.ninja.village}), 19))
 	var s = n.get("situation")
 	if s != null:

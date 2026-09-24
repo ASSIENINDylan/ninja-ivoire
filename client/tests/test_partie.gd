@@ -238,14 +238,15 @@ func _test_ressources() -> void:
 	r = p.appel("POST", "/api/equipement/equiper", {"objet": "sabre_fer"})
 	var arme: Dictionary = p._combattant(Regles.maintenant()).arme
 	verifier(r.ok and int(arme.puissance) > avant and arme.nom == "un sabre de fer", "l'arme forgée compte en combat")
-	# Défaite : sac et objets non portés perdus, coffre intact.
+	# Défaite : sac, objets et équipement porté perdus, coffre intact.
 	p.ninja.coffre = {"pierre": 7}
 	p.ninja.objets = ["bandeau_cuir"]
 	p.appel("POST", "/api/combat", {"rencontre": "chacals"})
 	p.combat.fini = true
 	p.combat.vainqueur = 1
-	p._terminer()
-	verifier(p.ninja.sac.is_empty() and p.ninja.objets.is_empty() and int(p.ninja.coffre.pierre) == 7 and p.ninja.equipement.arme == "sabre_fer", "défaite : on perd le sac, pas le coffre")
+	var fin2 := p._terminer()
+	verifier(p.ninja.sac.is_empty() and p.ninja.objets.is_empty() and int(p.ninja.coffre.pierre) == 7 and p.ninja.equipement.is_empty(), "défaite : on perd le sac et l'équipement, pas le coffre")
+	verifier(fin2.get("objets_perdus", []).size() == 2 and p._combattant(Regles.maintenant()).arme.nom == p.ninja.arme.nom, "on renaît avec l'arme de départ")
 
 
 func _test_blessures() -> void:

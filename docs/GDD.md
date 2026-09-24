@@ -317,9 +317,8 @@ Le cœur de la forêt de Taï, le sommet du mont Nimba, les profondeurs des lagu
 - Un gisement s'épuise après 5 récoltes et se reconstitue d'un point toutes les 10 minutes.
 - **Pendant la récolte** (une fois sur cinq) : des **bandits** surgissent (combat), ou **un autre ninja** arrive sur le gisement. On peut aussi trouver un ninja en arrivant sur un gisement. **Toute personne qui n'est pas de ton équipe est affrontable**, même un ninja de ton propre village : on choisit **Affronter** ou **Ignorer**. Hors ligne, ces ninjas sont simulés ; en ligne, ce seront de vrais joueurs.
 - **Camp de bandits** : on l'attaque (ou les bandits vous repèrent en entrant, une fois sur trois). Vaincu, il laisse son butin (fer, peaux, parfois de l'or) et se reforme en 30 minutes.
-- **Sac et coffre** : les ressources récoltées vont dans le **sac**, que le vainqueur emporte à la défaite avec les objets non portés. Le **coffre du village** ne se perd jamais.
+- **Sac et coffre** : les ressources récoltées vont dans le **sac**. À la défaite, le vainqueur emporte le sac, les objets et **l'équipement porté** (Décidé). Le **coffre du village** ne se perd jamais.
 - **Forge du village** : 17 objets pour 5 emplacements (arme, arme secondaire, tête, corps, pieds), du sabre de fer à l'armure de diamant. Les armes ajoutent de la puissance, les armures de la défense physique ou magique, des PV, du Manhis.
-- **Question ouverte** : l'équipement porté est-il perdu à la défaite ? Pour l'instant, non.
 
 ### La carte (étape 3 ; Proposé et en place, à ajuster)
 - **Écran de carte (Décidé) :** au centre, seulement les cases autour du ninja ; derrière, un **paysage** qui rappelle où l'on est (savane, forêt, montagne, fleuve, lagune, littoral…) et ce qu'abrite la case ; la **grande carte en bas à gauche**.
@@ -372,5 +371,4 @@ Le cœur de la forêt de Taï, le sommet du mont Nimba, les profondeurs des lagu
 ## 10. Questions ouvertes
 
 - Détail des lignées.
-- L'équipement porté est-il perdu à la défaite ?
 - Monétisation.

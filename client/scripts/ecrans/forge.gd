@@ -105,6 +105,7 @@ func _remplir() -> void:
 
 	# Équipement porté et objets du sac.
 	_gauche.add_child(UI.label("Équipement", 24, Pal.IVOIRE, true))
+	_gauche.add_child(UI.texte("À la défaite, le vainqueur emporte tout ce que tu portes : équipement, objets et sac.", 13, Pal.SANG))
 	for e in Jeu.catalogue.forge.emplacements:
 		var carte := UI.carte(Color(Pal.PANNEAU_2, 0.9), Pal.BORD, 10)
 		var cv := UI.vbox(4)
@@ -124,7 +125,7 @@ func _remplir() -> void:
 		_gauche.add_child(carte)
 	_gauche.add_child(UI.label("Objets dans le sac", 20, Pal.IVOIRE, true))
 	if n.objets.is_empty():
-		_gauche.add_child(UI.texte("Aucun. Attention : à la défaite, le vainqueur emporte les objets non portés.", 13, Pal.GRIS))
+		_gauche.add_child(UI.texte("Aucun.", 13, Pal.GRIS))
 	for id in n.objets:
 		var o = _objet(id)
 		if o == null:
@@ -163,7 +164,7 @@ func _remplir() -> void:
 
 	# Sac et coffre.
 	_droite.add_child(UI.label("Sac", 24, Pal.IVOIRE, true))
-	_droite.add_child(UI.texte("Perdu à la défaite : le vainqueur l'emporte.", 13, Pal.SANG))
+	_droite.add_child(UI.texte("Perdu à la défaite, comme l'équipement : le vainqueur l'emporte.", 13, Pal.SANG))
 	_droite.add_child(_liste(n.sac))
 	_droite.add_child(UI.bouton_principal("Tout déposer au coffre", _transferer.bind(true), 15))
 	_droite.add_child(UI.frise())
