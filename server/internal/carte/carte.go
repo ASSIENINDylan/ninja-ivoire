@@ -57,7 +57,7 @@ type Cellule struct {
 	Region  string `json:"region"` // "" : hors du pays
 	Zone    int    `json:"zone"`   // indice dans Carte.Zones, -1 hors du pays
 	Terrain string `json:"terrain"`
-	Lieu    int    `json:"lieu"` // indice dans Carte.Lieux, -1 sinon
+	Lieu    int    `json:"lieu"`              // indice dans Carte.Lieux, -1 sinon
 	Contenu string `json:"contenu,omitempty"` // camp de bandits ou ressource (voir contenu.go)
 }
 

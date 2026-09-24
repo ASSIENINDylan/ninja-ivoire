@@ -37,7 +37,7 @@ type Partie struct {
 	combat       *combat.Combat
 	rencontre    *Rencontre
 	niveauCombat int
-	vus          int  // découvertes du combat déjà inscrites au grimoire
+	vus          int       // découvertes du combat déjà inscrites au grimoire
 	fuite        bool      // le joueur a fui : pas de renaissance
 	presence     *Presence // ninja croisé sur la case
 	campCle      string    // case du camp de bandits attaqué
@@ -398,10 +398,10 @@ type FinCombat struct {
 	XP            int            `json:"xp"`
 	Dje           int            `json:"dje"`
 	NiveauxGagnes int            `json:"niveaux_gagnes"`
-	Maitrise      map[string]int `json:"maitrise"` // nom du jutsu → maîtrise atteinte
-	Baume         int            `json:"baume"`    // PV rendus après le combat
-	Butin         map[string]int `json:"butin,omitempty"`  // ressources gagnées
-	Perdu         map[string]int `json:"perdu,omitempty"`  // ressources perdues à la défaite
+	Maitrise      map[string]int `json:"maitrise"`        // nom du jutsu → maîtrise atteinte
+	Baume         int            `json:"baume"`           // PV rendus après le combat
+	Butin         map[string]int `json:"butin,omitempty"` // ressources gagnées
+	Perdu         map[string]int `json:"perdu,omitempty"` // ressources perdues à la défaite
 	PV            int            `json:"pv"`
 	Message       string         `json:"message"`
 }
