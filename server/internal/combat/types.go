@@ -1,6 +1,10 @@
 // Package combat implémente le combat au tour par tour simultané :
 // chaque camp choisit ses actions en secret, puis le tour se résout dans
 // l'ordre d'initiative. Trois rangs par camp, à la Darkest Dungeon.
+//
+// Les jutsus sont décrits par des effets élémentaires (voir
+// grammar/profil.go) que le moteur interprète : dégâts physiques, magiques
+// ou purs, défenses, entraves, illusions et soins.
 package combat
 
 import (
@@ -19,25 +23,35 @@ const (
 	AConcentrer = "concentrer"
 )
 
-// Types de statut.
+// Statuts propres au moteur (les autres viennent des jutsus).
 const (
-	SConsume    = "consume"
-	SEntrave    = "entrave"
-	SAveugle    = "aveugle"
-	SAffaibli   = "affaibli"
-	SVoile      = "voile"
-	SRenfort    = "renfort"
-	SMarque     = "marque"
-	SRegen      = "regen"
-	SPiege      = "piege"
-	SInvocation = "invocation"
-	SEcho       = "echo"
-	SRiposte    = "riposte"
-	SLeurre     = "leurre"
+	SConsume     = "consume"     // brûlure : dégâts par tour
+	SPiege       = "piege"       // piège posé sur un adversaire
+	SRiposte     = "riposte"     // charge contre qui attaque
+	SInvocation  = "invocation"  // créature de Souffle
+	SDeclencheur = "declencheur" // charge quand le lanceur faiblit
 )
 
-// NbRangs par camp.
-const NbRangs = 3
+// NbRangs par camp ; les clones peuvent porter un camp à RangsMax.
+const (
+	NbRangs  = 3
+	RangsMax = 4
+)
+
+// Bienfaits : statuts qu'une dissipation peut retirer.
+var Bienfaits = map[string]bool{
+	"def_phys": true, "def_mag": true, "renvoi": true, "parade": true, "esquive": true,
+	"reflet": true, "deviation": true, "intangible_phys": true, "intangible_mag": true,
+	"invisible": true, "disparu": true, "leurre": true, "regen": true, "baume": true,
+	"second_souffle": true, SRiposte: true, SInvocation: true, SDeclencheur: true,
+}
+
+// Maux : statuts qu'une purification peut retirer.
+var Maux = map[string]bool{
+	SConsume: true, "sangsue": true, "immobilise": true, "retenu": true, "desarme": true,
+	"scelle": true, "sans_garde": true, "confus": true, "endormi": true, "aveugle": true,
+	"egare": true, "marque": true, SPiege: true,
+}
 
 // Arme d'un combattant.
 type Arme struct {
@@ -48,16 +62,16 @@ type Arme struct {
 
 // Statut est un effet durable sur un combattant.
 type Statut struct {
-	Type    string         `json:"type"`
-	Tours   int            `json:"tours"`
-	Valeur  float64        `json:"valeur"`
-	Element string         `json:"element,omitempty"`
-	Effet   string         `json:"-"` // effet porté (piège, invocation)
-	Source  string         `json:"-"` // identifiant du lanceur
-	Silence bool           `json:"-"` // impossible à purifier
-	Jutsu   *grammar.Jutsu `json:"-"`
-	Base    float64        `json:"-"`
-	CibleID string         `json:"-"`
+	Type         string          `json:"type"`
+	Tours        int             `json:"tours"`
+	Valeur       float64         `json:"valeur"`
+	Element      string          `json:"element,omitempty"`
+	Nature       string          `json:"-"`
+	Source       string          `json:"-"` // identifiant du lanceur
+	Puissance    float64         `json:"-"` // puissance du jutsu d'origine
+	Indissipable bool            `json:"-"`
+	Effets       []grammar.Effet `json:"-"` // charge (piège, riposte, invocation…)
+	nouveau      bool            // posé ce tour-ci : ne s'use pas avant le tour suivant
 }
 
 // Incantation en cours : les mudras se forment sur plusieurs tours.
@@ -72,7 +86,7 @@ type Incantation struct {
 	Silence  bool           `json:"silence"`
 }
 
-// Combattant : ninja joueur, PNJ ou créature.
+// Combattant : ninja joueur, PNJ, créature ou clone.
 type Combattant struct {
 	ID          string       `json:"id"`
 	Nom         string       `json:"nom"`
@@ -91,11 +105,15 @@ type Combattant struct {
 	Element     string       `json:"element"`
 	Elements    []string     `json:"elements"`
 	Arme        Arme         `json:"arme"`
-	Defense     int          `json:"defense"`
-	Absorption  int          `json:"absorption"`
+	Defense     int          `json:"defense"`     // armure (dégâts physiques)
+	DefenseMag  int          `json:"defense_mag"` // garde du Souffle (dégâts magiques)
+	Absorption  int          `json:"absorption"`  // bouclier : PV temporaires
 	Garde       bool         `json:"garde"`
 	Statuts     []*Statut    `json:"statuts"`
 	Incantation *Incantation `json:"incantation,omitempty"`
+	Clone       bool         `json:"clone,omitempty"` // visible par son propre camp seulement
+	Original    string       `json:"-"`
+	ToursClone  int          `json:"-"`
 
 	// Connaissances (non envoyées au client).
 	Jutsus   []*grammar.Jutsu  `json:"-"` // jutsus connus (pour l'IA)
@@ -112,6 +130,9 @@ func (f *Combattant) Vivant() bool { return f.PV > 0 }
 // MudrasParTour : nombre de signes formés par tour, selon la technique.
 func (f *Combattant) MudrasParTour() int { return 3 + f.Gnanga/15 }
 
+// A indique si le combattant porte un statut actif.
+func (f *Combattant) A(t string) bool { return f.statut(t) != nil }
+
 func (f *Combattant) statut(t string) *Statut {
 	for _, s := range f.Statuts {
 		if s.Type == t && s.Tours > 0 {
@@ -121,15 +142,15 @@ func (f *Combattant) statut(t string) *Statut {
 	return nil
 }
 
-// Mur protège tout un camp.
-type Mur struct {
-	Absorption int     `json:"absorption"`
-	Tours      int     `json:"tours"`
-	Element    string  `json:"element"`
-	Riposte    string  `json:"-"`
-	Intensite  float64 `json:"-"`
-	Base       float64 `json:"-"`
-	Lanceur    string  `json:"-"`
+// Baume : les soins qui s'appliqueront à la fin du combat.
+func (f *Combattant) Baume() int {
+	total := 0.0
+	for _, s := range f.Statuts {
+		if s.Type == "baume" && s.Tours > 0 {
+			total += s.Valeur
+		}
+	}
+	return int(total + 0.5)
 }
 
 // Action choisie pour un tour.
@@ -163,7 +184,6 @@ type Combat struct {
 	ID          string              `json:"id"`
 	Tour        int                 `json:"tour"`
 	Combattants []*Combattant       `json:"combattants"`
-	Murs        [2]*Mur             `json:"murs"`
 	Fini        bool                `json:"fini"`
 	Vainqueur   int                 `json:"vainqueur"` // -1 tant que le combat dure
 	Decouvertes []Decouverte        `json:"-"`
@@ -173,14 +193,14 @@ type Combat struct {
 	rng    *rand.Rand
 	moment func() time.Time
 	evts   []Evenement
-	// Jutsus retardés et échos qui tombent en fin de tour.
+	// Jutsus retardés, échos et effets différés qui tombent en fin de tour.
 	differes []differe
 }
 
 type differe struct {
-	lanceur *Combattant
-	jutsu   *grammar.Jutsu
-	cible   string
+	jutsu   *grammar.Jutsu  // jutsu entier (retard, écho)…
+	effets  []grammar.Effet // … ou seulement des effets
+	cx      contexte
 	facteur float64
 	tours   int
 }

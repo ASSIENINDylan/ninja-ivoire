@@ -82,7 +82,9 @@ func regles() map[string]any {
 			"niveau_fusion": data.NiveauFusion, "nb_rangs": combat.NbRangs,
 			"favoris_max": game.FavorisMax, "endurance_max": game.EnduranceMax, "regen_secondes": game.RegenSecondes,
 			"chance_rencontre": game.ChanceRencontre, "rayon_vision": game.RayonVision,
+			"regen_pv_secondes": game.RegenPVSecondes, "rangs_max": combat.RangsMax,
 		},
+		"statuts": map[string]any{"bienfaits": combat.Bienfaits, "maux": combat.Maux},
 	}
 }
 
@@ -149,6 +151,9 @@ func vecteurs() []map[string]any {
 		j, e := grammar.Analyser(s)
 		if j != nil {
 			v["jutsu"] = j
+			// Puissance pour un combattant de référence (maîtrise 40, ciel neutre).
+			ref := &combat.Combattant{Fangan: 10, Gnanga: 12, Manhis: 8}
+			v["puissance_ref"] = combat.Puissance(ref, j, 40, 1)
 		} else {
 			v["echec"] = e
 			v["resonance"] = grammar.Resonner(s, e, false)

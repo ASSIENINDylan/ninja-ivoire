@@ -52,11 +52,17 @@ func TestIncantationLongueInterrompue(t *testing.T) {
 	joueur.Gnanga = 0 // 3 mudras par tour : une suite de 5 prend 2 tours
 	batteur := ninja("batteur", 1, "son")
 	batteur.Gnanga = 30
+	batteur.Manhis, joueur.Manhis = 40, 0 // le batteur agit toujours avant
+	joueur.PV, joueur.PVMax = 400, 400
 	batteur.Jutsus = []*grammar.Jutsu{jutsu(t, "tambour", "martin_pecheur", "braise")}
 	c := Nouveau("t", []*Combattant{joueur, batteur}, 3, midi)
 	evts, err := c.JouerTour([]Action{{Acteur: "joueur", Type: AIncanter, Sequence: []string{"panthere", "mante", "lion", "braise", "liane"}}})
 	if err != nil {
 		t.Fatal(err)
+	}
+	if joueur.Incantation != nil {
+		suite, _ := c.JouerTour(nil)
+		evts = append(evts, suite...)
 	}
 	interrompu := false
 	for _, e := range evts {
@@ -118,5 +124,126 @@ func TestLegendaireRefuseSousLeNiveau(t *testing.T) {
 		if e.Type == "decouverte" {
 			t.Fatal("un légendaire ne doit pas être découvert sous le niveau requis")
 		}
+	}
+}
+
+func joueurSeul(t *testing.T, element string) *Combattant {
+	j := ninja("joueur", 0, element)
+	j.Joueur, j.IA = true, ""
+	return j
+}
+
+// lancerDirect applique un jutsu sans incantation (pour tester ses effets).
+func lancerDirect(c *Combat, f *Combattant, j *grammar.Jutsu, cible string) []Evenement {
+	c.evts = nil
+	c.lancer(f, j, cible, 1, false)
+	return c.evts
+}
+
+func TestDegatsPursIgnorentLaDefense(t *testing.T) {
+	j := joueurSeul(t, "feu")
+	cible := ninja("mur", 1, "terre")
+	cible.Defense, cible.DefenseMag, cible.Manhis = 200, 200, 0
+	c := Nouveau("t", []*Combattant{j, cible}, 1, midi)
+	avant := cible.PV
+	lancerDirect(c, j, jutsu(t, "panthere", "martin_pecheur", "hache"), "mur")
+	phys := avant - cible.PV
+	avant = cible.PV
+	lancerDirect(c, j, jutsu(t, "panthere", "martin_pecheur", "kaolin"), "mur")
+	pur := avant - cible.PV
+	if pur <= phys*3 {
+		t.Errorf("les dégâts purs devraient traverser l'armure : physiques %d, purs %d", phys, pur)
+	}
+}
+
+func TestIntangibleEtClone(t *testing.T) {
+	j := joueurSeul(t, "brume")
+	adv := ninja("adv", 1, "eau")
+	c := Nouveau("t", []*Combattant{j, adv}, 1, midi)
+	lancerDirect(c, j, jutsu(t, "cameleon", "pangolin", "feuille"), "") // intangible physique
+	if !j.A("intangible_phys") {
+		t.Fatal("le lanceur devrait être insensible aux dégâts physiques")
+	}
+	pv := j.PV
+	c.infliger(adv, j, 50, grammar.NPhysique, "", false)
+	if j.PV != pv {
+		t.Error("des dégâts physiques ont traversé l'intangibilité")
+	}
+	c.infliger(adv, j, 50, grammar.NMagique, "eau", false)
+	if j.PV == pv {
+		t.Error("les dégâts magiques devraient toucher")
+	}
+
+	lancerDirect(c, j, jutsu(t, "cameleon", "perroquet", "voile"), "") // clone indiscernable
+	if len(c.Vivants(0)) != 2 {
+		t.Fatalf("un clone était attendu : %d combattants", len(c.Vivants(0)))
+	}
+	vue := c.Vue(1)
+	var vus []*Combattant
+	for _, f := range vue.Combattants {
+		if f.Camp == 0 && f.Vivant() {
+			vus = append(vus, f)
+		}
+	}
+	if len(vus) != 2 || vus[0].Clone || vus[1].Clone || vus[0].PV != vus[1].PV || vus[0].Nom != vus[1].Nom {
+		t.Errorf("l'adversaire ne doit pas distinguer le clone : %+v %+v", vus[0], vus[1])
+	}
+	if !c.Vue(0).Get("joueur2").Clone {
+		t.Error("le joueur doit reconnaître son propre clone")
+	}
+}
+
+func TestEntravesBloquentLesActions(t *testing.T) {
+	j := joueurSeul(t, "feu")
+	adv := ninja("adv", 1, "eau")
+	adv.IA = IABete
+	c := Nouveau("t", []*Combattant{j, adv}, 1, midi)
+	c.ajouterStatut(j, &Statut{Type: "scelle", Tours: 2})
+	evts, _ := c.JouerTour([]Action{{Acteur: "joueur", Type: AIncanter, Sequence: []string{"panthere", "martin_pecheur", "braise"}}})
+	for _, e := range evts {
+		if e.Type == "jutsu" && e.Acteur == "joueur" {
+			t.Fatal("des mains scellées ne forment pas de mudras")
+		}
+	}
+	c.ajouterStatut(j, &Statut{Type: "desarme", Tours: 2})
+	pv := adv.PV
+	c.JouerTour([]Action{{Acteur: "joueur", Type: AFrapper, Cible: "adv"}})
+	if adv.PV != pv {
+		t.Error("un ninja désarmé ne frappe pas")
+	}
+}
+
+func TestSoinDuLanceurEtBaume(t *testing.T) {
+	j := joueurSeul(t, "eau")
+	j.PV = 40
+	c := Nouveau("t", []*Combattant{j, ninja("adv", 1, "feu")}, 1, midi)
+	lancerDirect(c, j, jutsu(t, "lamantin", "martin_pecheur", "kola"), "")
+	if j.PV <= 40 {
+		t.Error("le soin devrait soigner le lanceur")
+	}
+	lancerDirect(c, j, jutsu(t, "lamantin", "tortue", "moustique"), "")
+	if j.Baume() <= 0 {
+		t.Error("un baume devrait attendre la fin du combat")
+	}
+}
+
+func TestEntraveDependDeLaPuissance(t *testing.T) {
+	reussites := func(gnanga int) int {
+		n := 0
+		for g := int64(0); g < 200; g++ {
+			j := joueurSeul(t, "vegetal")
+			j.Gnanga = gnanga
+			adv := ninja("adv", 1, "eau")
+			c := Nouveau("t", []*Combattant{j, adv}, g, midi)
+			lancerDirect(c, j, jutsu(t, "chimpanze", "araignee", "liane"), "adv")
+			if adv.A("scelle") {
+				n++
+			}
+		}
+		return n
+	}
+	faible, fort := reussites(2), reussites(40)
+	if fort <= faible {
+		t.Errorf("un Souffle plus fort devrait mieux sceller : %d contre %d", fort, faible)
 	}
 }

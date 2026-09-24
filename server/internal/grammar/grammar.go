@@ -22,7 +22,7 @@ import (
 const MaxModificateurs = 2
 
 // LongueurMax d'une suite de mudras.
-const LongueurMax = 8
+const LongueurMax = 7
 
 // Jutsu est le résultat d'une suite de mudras valide.
 type Jutsu struct {
@@ -38,13 +38,20 @@ type Jutsu struct {
 	ModsForme  []string `json:"mods_forme,omitempty"`
 	ModsEffet  []string `json:"mods_effet,omitempty"`
 	Legendaire string   `json:"legendaire,omitempty"` // identifiant du légendaire
-	// Puissance relative de la forme (1 = un trait simple).
-	Puissance float64 `json:"puissance"`
-	// Intensité relative de l'effet (1 = normale).
-	Intensite float64 `json:"intensite"`
-	Cout      int     `json:"cout"` // en Souffle
-	Soutien   bool    `json:"soutien"`
-	Texte     string  `json:"texte"`
+
+	// Profil de combat (voir profil.go).
+	Type         string  `json:"type"`                    // degats, defense, entrave, illusion, soin
+	DegatsNature string  `json:"degats_nature,omitempty"` // physique, magique, pur
+	Coefs        Coefs   `json:"coefs"`
+	Effets       []Effet `json:"effets"`
+	Delai        bool    `json:"delai,omitempty"`        // part au tour suivant
+	Echo         float64 `json:"echo,omitempty"`         // rejoué au tour suivant (part de la puissance)
+	Incassable   bool    `json:"incassable,omitempty"`   // incantation impossible à interrompre
+	Indissipable bool    `json:"indissipable,omitempty"` // effets impossibles à dissiper
+
+	Cout    int    `json:"cout"`    // en Souffle
+	Soutien bool   `json:"soutien"` // vise le lanceur ou son camp
+	Texte   string `json:"texte"`
 }
 
 // Longueur renvoie le nombre de mudras du jutsu.
@@ -153,56 +160,28 @@ func Analyser(seq []string) (*Jutsu, *Echec) {
 	return j, nil
 }
 
-// Puissance de base de chaque forme.
-var puissanceForme = map[string]float64{
-	data.FTrait:      1.0,
-	data.FLame:       1.4,
-	data.FMur:        1.2,
-	data.FCercle:     0.6,
-	data.FDouble:     0.5,
-	data.FLien:       0.5,
-	data.FArmure:     1.0,
-	data.FPiege:      1.3,
-	data.FInvocation: 0.45,
-	data.FPas:        0.5,
-}
-
-// EffetSoutien : effets qui visent les alliés.
-func EffetSoutien(e string) bool {
-	return e == data.XSoigner || e == data.XRenforcer || e == data.XDissimuler
-}
-
-// FormeDefensive : formes qui protègent le lanceur ou son camp.
-func FormeDefensive(f string) bool {
-	return f == data.FMur || f == data.FArmure || f == data.FDouble || f == data.FPas
-}
-
-func facteurTier(element string) float64 {
-	switch data.Elements[element].Tier {
-	case data.TierRare:
-		return 1.35
-	case data.TierMythique:
-		return 1.7
+// EstSoutien : le jutsu ne vise que le lanceur ou son camp.
+func EstSoutien(j *Jutsu) bool {
+	for _, e := range j.Effets {
+		if e.Cible != CSoi && e.Cible != CAllies {
+			return false
+		}
 	}
-	return 1
+	return true
 }
 
-// calculer fixe la puissance, l'intensité, le coût, le nom et le texte.
+// calculer fixe le profil, le coût, le nom et le texte.
 func calculer(j *Jutsu) {
+	profiler(j)
 	n := len(j.Sequence)
-	// Plus la suite est longue, plus le jutsu est puissant.
-	j.Puissance = puissanceForme[j.Forme] * (1 + 0.15*float64(n-3)) * facteurTier(j.Element)
-	j.Intensite = 1
 	cout := 5 + 4*float64(n)
 	for _, m := range j.ModsForme {
 		if m == data.MAmplifier {
-			j.Puissance *= 1.4
 			cout *= 1.3
 		}
 	}
 	for _, m := range j.ModsEffet {
 		if m == data.MAmplifier {
-			j.Intensite *= 1.5
 			cout *= 1.2
 		}
 	}
@@ -213,7 +192,7 @@ func calculer(j *Jutsu) {
 		cout *= 2
 	}
 	j.Cout = int(cout + 0.5)
-	j.Soutien = EffetSoutien(j.Effet)
+	j.Soutien = EstSoutien(j)
 	j.Nom = nommer(j)
 	j.Nature = nature(j)
 	j.Texte = decrire(j)
@@ -295,62 +274,6 @@ func nature(j *Jutsu) string {
 	return strings.Join(parts, " ")
 }
 
-// --- Description ---------------------------------------------------------
-
-var texteForme = map[string]string{
-	data.FTrait:      "Un projectile qui frappe une cible à n'importe quel rang.",
-	data.FLame:       "Une lame de Souffle qui frappe fort au corps à corps (rangs 1 et 2).",
-	data.FMur:        "Un mur qui protège tout le camp et absorbe les coups.",
-	data.FCercle:     "Une onde qui touche tous les adversaires, plus faiblement.",
-	data.FDouble:     "Un double qui détourne la prochaine attaque.",
-	data.FLien:       "Un lien qui touche peu mais renforce l'effet.",
-	data.FArmure:     "Une armure qui absorbe les coups portés au lanceur.",
-	data.FPiege:      "Un piège qui se déclenche quand la cible agit.",
-	data.FInvocation: "Une créature de Souffle qui attaque pendant trois tours.",
-	data.FPas:        "Un déplacement éclair : le lanceur change de rang et esquive.",
-}
-
-var texteEffet = map[string]string{
-	data.XConsumer:   "consume la cible pendant 3 tours",
-	data.XLier:       "entrave la cible (lente, ne peut ni frapper au contact ni bouger)",
-	data.XSoigner:    "soigne un allié",
-	data.XAveugler:   "aveugle la cible (40 % de chances de rater)",
-	data.XRepousser:  "repousse la cible d'un rang et brise son incantation",
-	data.XDrainer:    "rend au lanceur une partie des dégâts et du Souffle",
-	data.XBriser:     "brise les défenses et l'incantation de la cible",
-	data.XDissimuler: "rend un allié insaisissable (esquive, actions cachées)",
-	data.XRenforcer:  "renforce les dégâts d'un allié",
-	data.XMarquer:    "marque la cible, qui subit plus de dégâts",
-}
-
-var texteModificateur = map[string][2]string{
-	data.MAmplifier:   {"forme amplifiée", "effet amplifié"},
-	data.MEtendre:     {"atteint une cible voisine", "effet prolongé de 2 tours"},
-	data.MMultiplier:  {"frappe deux fois", "effet propagé à une autre cible"},
-	data.MRetarder:    {"frappe au tour suivant, plus fort", "effet retardé mais doublé"},
-	data.MSilence:     {"incantation impossible à interrompre", "effet impossible à purifier"},
-	data.MPersistance: {"la forme persiste un tour de plus", "effet deux fois plus long"},
-}
-
-func decrire(j *Jutsu) string {
-	s := texteForme[j.Forme] + " Effet : " + texteEffet[j.Effet]
-	if j.Effet2 != "" {
-		s += ", puis " + texteEffet[j.Effet2] + " (atténué)"
-	}
-	s += "."
-	var mods []string
-	for _, m := range j.ModsForme {
-		mods = append(mods, texteModificateur[m][0])
-	}
-	for _, m := range j.ModsEffet {
-		mods = append(mods, texteModificateur[m][1])
-	}
-	if len(mods) > 0 {
-		s += " Modificateurs : " + strings.Join(mods, ", ") + "."
-	}
-	return s
-}
-
 // Tables renvoie les tables de la grammaire (puissances, noms, textes),
 // pour les exporter vers le moteur local du client.
 func Tables() map[string]any {
@@ -359,17 +282,37 @@ func Tables() map[string]any {
 		noms[k] = map[string]any{"nom": v.nom, "feminin": v.feminin}
 	}
 	return map[string]any{
-		"puissance_forme":    puissanceForme,
-		"noms_formes":        noms,
-		"adj_effet":          adjEffet,
-		"prefixe_mod_forme":  prefixeModForme,
-		"suffixe_mod_effet":  suffixeModEffet,
-		"texte_forme":        texteForme,
-		"texte_effet":        texteEffet,
-		"texte_modificateur": texteModificateur,
-		"messages_echec":     messagesEchec,
-		"noms":               tablesNoms(),
-		"max_modificateurs":  MaxModificateurs,
-		"longueur_max":       LongueurMax,
+		"noms_formes":       noms,
+		"adj_effet":         adjEffet,
+		"prefixe_mod_forme": prefixeModForme,
+		"suffixe_mod_effet": suffixeModEffet,
+		"messages_echec":    messagesEchec,
+		"noms":              tablesNoms(),
+		"max_modificateurs": MaxModificateurs,
+		"longueur_max":      LongueurMax,
+		"cellules":          Cellules,
+		"type_effet":        TypeEffet,
+		"nature_effet":      NatureEffet,
+		"bases_type":        basesType,
+		"inclinaisons":      tablesInclinaisons(),
+		"sel_signature":     SelSignature,
+		"textes_cible":      textesCible,
+		"textes_statut":     TextesStatut,
+		"noms_types":        NomsTypes,
+		"statuts_controle":  StatutsControle,
+		"statuts_drapeau":   StatutsDrapeau,
 	}
+}
+
+func tablesInclinaisons() map[string]any {
+	el := map[string]any{}
+	for id := range data.Elements {
+		f, g, m := InclinaisonElement(id)
+		el[id] = []float64{f, g, m}
+	}
+	fo := map[string]any{}
+	for id, t := range inclinaisonsForme {
+		fo[id] = []float64{t.F, t.G, t.M}
+	}
+	return map[string]any{"elements": el, "formes": fo}
 }

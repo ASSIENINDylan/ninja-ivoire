@@ -3,6 +3,7 @@ package combat
 import (
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/ASSIENINDylan/ninja-ivoire/server/internal/data"
 	"github.com/ASSIENINDylan/ninja-ivoire/server/internal/grammar"
@@ -13,15 +14,6 @@ const MaitriseDecouverte = 10
 
 // MaitrisePNJ : maîtrise par défaut des jutsus des PNJ.
 const MaitrisePNJ = 30
-
-func aMod(mods []string, m string) bool {
-	for _, x := range mods {
-		if x == m {
-			return true
-		}
-	}
-	return false
-}
 
 // CoutReel : le coût en Souffle baisse avec la maîtrise (jusqu'à -30 %).
 func CoutReel(j *grammar.Jutsu, maitrise int) int {
@@ -36,6 +28,23 @@ func (f *Combattant) maitriseDe(j *grammar.Jutsu) int {
 		return MaitriseDecouverte
 	}
 	return MaitrisePNJ
+}
+
+// Puissance d'un jutsu pour ce lanceur :
+// (8 + F·Fangan + G·Gnanga + M·Manhis) × N, modulée par la maîtrise,
+// le Soleil et la Lune.
+func Puissance(f *Combattant, j *grammar.Jutsu, maitrise int, cosmique float64) float64 {
+	k := j.Coefs
+	base := (8 + k.F*float64(f.Fangan) + k.G*float64(f.Gnanga) + k.M*float64(f.Manhis)) * k.N
+	return base * (0.8 + 0.4*float64(maitrise)/100) * cosmique
+}
+
+func (c *Combat) puissance(f *Combattant, j *grammar.Jutsu, facteur float64) float64 {
+	p := Puissance(f, j, f.maitriseDe(j), data.FacteurCosmique(j.Element, c.moment())) * facteur
+	if j.Element == "vegetal" || j.Element == "bois_sacre" {
+		p *= 1 + 0.05*math.Min(float64(c.Tour), 10) // la sève croît au fil du combat
+	}
+	return p
 }
 
 // incanter commence ou poursuit une incantation.
@@ -64,8 +73,8 @@ func (c *Combat) incanter(f *Combattant, a Action) {
 			cout = CoutReel(j, f.maitriseDe(j))
 		}
 		if f.Souffle < cout {
-			c.emit(Evenement{Type: "info", Acteur: f.ID, Texte: fmt.Sprintf("%s manque de Souffle (%d requis).", f.Nom, cout)})
-			f.Garde = true
+			c.info(f, fmt.Sprintf("%s manque de Souffle (%d requis).", f.Nom, cout))
+			f.Garde = !f.A("sans_garde")
 			return
 		}
 		f.Souffle -= cout
@@ -73,7 +82,7 @@ func (c *Combat) incanter(f *Combattant, a Action) {
 		if refus == "" {
 			inc.Jutsu = j
 		}
-		if j != nil && aMod(j.ModsForme, data.MSilence) {
+		if j != nil && j.Incassable {
 			inc.Silence = true
 		}
 		f.Incantation = inc
@@ -102,7 +111,7 @@ func (c *Combat) liberer(f *Combattant, inc *Incantation) {
 		c.emit(Evenement{Type: "echec", Acteur: f.ID, Valeur: r.Score, Texte: f.Nom + " : " + r.Message})
 		if r.RetourDeSouffle {
 			c.emit(Evenement{Type: "retour", Acteur: f.ID, Cible: f.ID, Texte: "Retour de Souffle !"})
-			c.infliger(nil, f, float64(4+2*len(inc.Sequence)), "", true)
+			c.infliger(nil, f, float64(4+2*len(inc.Sequence)), grammar.NPur, "", true)
 		}
 		return
 	}
@@ -119,209 +128,410 @@ func (c *Combat) liberer(f *Combattant, inc *Incantation) {
 		}
 		c.Usages[j.Cle]++
 	}
-	if aMod(j.ModsForme, data.MRetarder) {
-		c.emit(Evenement{Type: "jutsu", Acteur: f.ID, Jutsu: j.Nom, Element: j.Element, Texte: f.Nom + " prépare " + j.Nom + " : il frappera au prochain tour."})
-		c.differes = append(c.differes, differe{lanceur: f, jutsu: j, cible: inc.Cible, facteur: 1.6, tours: 1})
+	if j.Delai {
+		c.emit(Evenement{Type: "jutsu", Acteur: f.ID, Jutsu: j.Nom, Element: j.Element, Texte: f.Nom + " accumule le Souffle de " + j.Nom + " : il partira au prochain tour."})
+		c.differes = append(c.differes, differe{jutsu: j, cx: contexte{lanceur: f, cibleID: inc.Cible}, facteur: 1, tours: 1})
 		return
 	}
 	c.lancer(f, j, inc.Cible, 1, false)
 }
 
-// puissance calcule la valeur de base d'un jutsu pour ce lanceur.
-func (c *Combat) puissance(f *Combattant, j *grammar.Jutsu, facteur float64) float64 {
-	m := float64(f.maitriseDe(j))
-	base := (12 + float64(f.Gnanga)*1.6 + float64(f.Niveau)*1.2) * j.Puissance * (0.8 + 0.4*m/100)
-	base *= data.FacteurCosmique(j.Element, c.moment()) * facteur
-	if j.Element == "vegetal" || j.Element == "bois_sacre" {
-		base *= 1 + 0.05*math.Min(float64(c.Tour), 10) // la sève croît au fil du combat
-	}
-	if s := f.statut(SRenfort); s != nil {
-		base *= 1 + s.Valeur
-	}
-	return base
-}
-
 // lancer applique un jutsu. `echo` : relance différée, sans nouvel écho.
 func (c *Combat) lancer(f *Combattant, j *grammar.Jutsu, cibleID string, facteur float64, echo bool) {
-	base := c.puissance(f, j, facteur)
+	p := c.puissance(f, j, facteur)
 	if !echo {
-		c.emit(Evenement{Type: "jutsu", Acteur: f.ID, Jutsu: j.Nom, Element: j.Element, Texte: f.Nom + " lance " + j.Nom + " !"})
-	}
-	if !echo && aMod(j.ModsForme, data.MPersistance) {
-		c.differes = append(c.differes, differe{lanceur: f, jutsu: j, cible: cibleID, facteur: 0.5, tours: 1})
+		c.emit(Evenement{Type: "jutsu", Acteur: f.ID, Jutsu: j.Nom, Element: j.Element, Valeur: int(math.Round(p)), Texte: fmt.Sprintf("%s lance %s (puissance %d) !", f.Nom, j.Nom, int(math.Round(p)))})
+		if j.Echo > 0 {
+			c.differes = append(c.differes, differe{jutsu: j, cx: contexte{lanceur: f, cibleID: cibleID}, facteur: j.Echo, tours: 1})
+		}
 	}
 	if j.Element == "brume" || j.Element == "vapeur" || j.Element == "songe" {
-		c.ajouterStatut(f, &Statut{Type: SVoile, Tours: 1, Valeur: 0.5, Element: j.Element})
+		c.ajouterStatut(f, &Statut{Type: "esquive", Tours: 1, Valeur: 0.3, Element: j.Element, Puissance: p})
 	}
-	if j.Soutien {
-		c.lancerSoutien(f, j, cibleID, base)
-		return
+	cx := contexte{
+		lanceur: f, p: p, element: j.Element, maitrise: f.maitriseDe(j),
+		indissipable: j.Indissipable, cibleID: cibleID, passif: true,
 	}
-	opts := optsDe(j)
-	switch j.Forme {
-	case data.FCercle:
-		for _, t := range c.ennemis(f) {
-			c.toucher(f, t, j, base, opts, false)
+	c.appliquer(cx, j.Effets)
+}
+
+// contexte : ce qu'il faut savoir pour appliquer des effets.
+type contexte struct {
+	lanceur      *Combattant
+	p            float64 // puissance
+	element      string
+	maitrise     int
+	indissipable bool
+	cibleID      string      // cible choisie par le lanceur
+	autre        *Combattant // attaquant (riposte) ou victime (piège)
+	passif       bool        // le passif de l'élément reste à appliquer
+	annule       *bool       // piège : l'action de la victime est annulée
+}
+
+// contexteCharge : le contexte d'une charge portée par un statut.
+func contexteCharge(src *Combattant, s *Statut, autre *Combattant) contexte {
+	return contexte{lanceur: src, p: s.Puissance, element: s.Element, maitrise: 50, indissipable: s.Indissipable, autre: autre}
+}
+
+type cibleEffet struct {
+	t      *Combattant
+	part   float64
+	unique bool // visée seule : clones, leurres, esquive et riposte s'appliquent
+}
+
+func partSecondaire(e grammar.Effet, defaut float64) float64 {
+	if e.Part > 0 {
+		return e.Part
+	}
+	return defaut
+}
+
+// resoudre trouve les cibles d'un effet.
+func (c *Combat) resoudre(cx *contexte, e grammar.Effet) []cibleEffet {
+	l := cx.lanceur
+	voisine := func(t *Combattant) *Combattant {
+		for _, o := range c.ennemis(l) {
+			if o != t && ciblable(o) && (o.Rang == t.Rang+1 || o.Rang == t.Rang-1) {
+				return o
+			}
 		}
-	case data.FMur:
-		abs := base * 1.5
-		if j.Element == "terre" || j.Element == "seisme" || j.Element == "lave" {
-			abs *= 1.3
+		return nil
+	}
+	switch e.Cible {
+	case grammar.CSoi:
+		return []cibleEffet{{l, 1, false}}
+	case grammar.CAllies:
+		var out []cibleEffet
+		for _, a := range c.Reels(l.Camp) {
+			k := 1.0
+			if a != l {
+				k = partSecondaire(e, 1)
+			}
+			out = append(out, cibleEffet{a, k, false})
 		}
-		c.Murs[f.Camp] = &Mur{Absorption: int(abs), Tours: 2 + opts.bonus, Element: j.Element, Riposte: j.Effet, Intensite: j.Intensite, Base: base, Lanceur: f.ID}
-		c.emit(Evenement{Type: "mur", Acteur: f.ID, Valeur: int(abs), Element: j.Element, Texte: fmt.Sprintf("Un mur se dresse devant le camp de %s (%d).", f.Nom, int(abs))})
-	case data.FArmure:
-		abs := int(base * 1.2)
-		f.Absorption += abs
-		c.ajouterStatut(f, &Statut{Type: SRiposte, Tours: 3 + opts.bonus, Valeur: j.Intensite, Base: base, Effet: j.Effet, Element: j.Element})
-		c.emit(Evenement{Type: "armure", Acteur: f.ID, Valeur: abs, Element: j.Element, Texte: fmt.Sprintf("%s se couvre d'une armure de Souffle (%d).", f.Nom, abs)})
-	case data.FDouble:
-		c.ajouterStatut(f, &Statut{Type: SLeurre, Tours: 2 + opts.bonus, Valeur: j.Intensite, Base: base, Effet: j.Effet, Element: j.Element})
-		c.emit(Evenement{Type: "double", Acteur: f.ID, Element: j.Element, Texte: f.Nom + " crée un double."})
-	case data.FPas:
-		if f.Rang > 1 {
-			c.placer(f, 1)
-		} else {
-			c.placer(f, NbRangs)
+		return out
+	case grammar.CEnnemi, grammar.CEnnemiEtendu, grammar.CContact, grammar.CContactEtendu:
+		contact := e.Cible == grammar.CContact || e.Cible == grammar.CContactEtendu
+		if contact && l.Rang > 2 {
+			c.info(l, "Trop loin : "+l.Nom+" doit être au rang 1 ou 2 pour toucher au contact.")
+			return nil
 		}
-		c.ajouterStatut(f, &Statut{Type: SVoile, Tours: 1, Valeur: 0.5, Element: j.Element})
-		c.emit(Evenement{Type: "deplacement", Acteur: f.ID, Valeur: f.Rang, Texte: fmt.Sprintf("%s bondit au rang %d.", f.Nom, f.Rang)})
-		if t := c.cibleEnnemie(f, "", true); t != nil {
-			c.toucher(f, t, j, base, opts, true)
-		}
-	case data.FInvocation:
-		c.ajouterStatut(f, &Statut{Type: SInvocation, Tours: 3 + opts.bonus, Valeur: j.Intensite, Base: base, Effet: j.Effet, Element: j.Element})
-		c.emit(Evenement{Type: "invoque", Acteur: f.ID, Element: j.Element, Texte: f.Nom + " invoque une créature de Souffle."})
-	case data.FPiege:
-		t := c.cibleEnnemie(f, cibleID, false)
+		t := c.cibleEnnemie(l, cx.cibleID, contact)
 		if t == nil {
-			return
+			c.info(l, "Aucune cible à portée.")
+			return nil
 		}
-		c.ajouterStatut(t, &Statut{Type: SPiege, Tours: 3, Valeur: j.Intensite, Base: base * 1.2, Effet: j.Effet, Element: j.Element, Source: f.ID})
-		c.emit(Evenement{Type: "piege_pose", Acteur: f.ID, Cible: t.ID, Element: j.Element, Texte: f.Nom + " tend un piège sous les pieds de " + t.Nom + "."})
-	default: // trait, lame, lien
-		contact := j.Forme == data.FLame
-		if contact && f.Rang > 2 {
-			c.emit(Evenement{Type: "info", Acteur: f.ID, Texte: "Trop loin : la lame de Souffle se dissipe."})
-			return
-		}
-		t := c.cibleEnnemie(f, cibleID, contact)
-		if t == nil {
-			c.emit(Evenement{Type: "info", Acteur: f.ID, Texte: "Aucune cible à portée."})
-			return
-		}
-		cibles := []*Combattant{t}
-		if aMod(j.ModsForme, data.MEtendre) {
-			for _, o := range c.ennemis(f) {
-				if o != t && (o.Rang == t.Rang+1 || o.Rang == t.Rang-1) {
-					cibles = append(cibles, o)
-					break
-				}
+		out := []cibleEffet{{t, 1, true}}
+		if e.Cible == grammar.CEnnemiEtendu || e.Cible == grammar.CContactEtendu {
+			if o := voisine(t); o != nil {
+				out = append(out, cibleEffet{o, partSecondaire(e, 0.7), true})
 			}
 		}
-		for i, cible := range cibles {
-			b := base
-			if i > 0 {
-				b *= 0.7
+		return out
+	case grammar.CEnnemis:
+		var out []cibleEffet
+		for _, t := range c.ennemis(l) {
+			if !t.A("disparu") {
+				out = append(out, cibleEffet{t, 1, false})
 			}
-			c.toucher(f, cible, j, b, opts, contact)
+		}
+		return out
+	case grammar.CFront:
+		for _, t := range c.ennemis(l) {
+			if ciblable(t) {
+				return []cibleEffet{{t, 1, true}}
+			}
+		}
+	case grammar.CAleatoire:
+		var l2 []*Combattant
+		for _, t := range c.ennemis(l) {
+			if ciblable(t) {
+				l2 = append(l2, t)
+			}
+		}
+		if len(l2) > 0 {
+			return []cibleEffet{{l2[c.rng.Intn(len(l2))], 1, true}}
+		}
+	case grammar.CAttaquant, grammar.CDeclencheur:
+		if cx.autre != nil && cx.autre.Vivant() {
+			return []cibleEffet{{cx.autre, 1, false}}
 		}
 	}
+	return nil
 }
 
-// effetOpts : modulation des effets par les modificateurs.
-type effetOpts struct {
-	bonus    int     // tours en plus
-	mult     int     // multiplicateur de durée
-	silence  bool    // impossible à purifier
-	propage  bool    // effet propagé à une autre cible
-	lien     bool    // forme Lien : effet renforcé
-	intensMu float64 // multiplicateur d'intensité supplémentaire
-	element  string  // élément du jutsu (le venin s'accumule)
-}
-
-func optsDe(j *grammar.Jutsu) effetOpts {
-	o := effetOpts{mult: 1, intensMu: 1, element: j.Element}
-	for _, m := range j.ModsEffet {
-		switch m {
-		case data.MEtendre:
-			o.bonus += 2
-		case data.MPersistance, data.MRetarder:
-			o.mult = 2
-		case data.MSilence:
-			o.silence = true
-		case data.MMultiplier:
-			o.propage = true
+// appliquer exécute une liste d'effets.
+func (c *Combat) appliquer(cx contexte, effets []grammar.Effet) {
+	for _, e := range effets {
+		if !cx.lanceur.Vivant() || c.Fini {
+			return
 		}
+		c.effet(&cx, e)
 	}
-	if j.Forme == data.FLien {
-		o.lien = true
-		o.bonus++
-		o.intensMu = 1.5
-	}
-	return o
 }
 
-func (o effetOpts) duree(n int) int {
-	m := o.mult
-	if m == 0 {
-		m = 1
-	}
-	return (n + o.bonus) * m
-}
-
-// toucher : un jutsu offensif atteint une cible.
-func (c *Combat) toucher(f, t *Combattant, j *grammar.Jutsu, base float64, opts effetOpts, contact bool) {
-	if !t.Vivant() {
+func (c *Combat) effet(cx *contexte, e grammar.Effet) {
+	l := cx.lanceur
+	switch e.Op {
+	case grammar.OpBond:
+		if l.A("immobilise") {
+			c.info(l, l.Nom+" est immobilisé et ne peut pas bondir.")
+			return
+		}
+		rang := 1
+		if e.Vers != "avant" {
+			rang = len(c.Vivants(l.Camp))
+		}
+		c.placer(l, rang)
+		c.emit(Evenement{Type: "deplacement", Acteur: l.ID, Valeur: l.Rang, Texte: fmt.Sprintf("%s bondit au rang %d.", l.Nom, l.Rang)})
 		return
-	}
-	frappes, mult := 1, 1.0
-	if aMod(j.ModsForme, data.MMultiplier) {
-		frappes, mult = 2, 0.6
-	}
-	for n := 0; n < frappes && t.Vivant(); n++ {
-		if j.Forme != data.FCercle {
-			if c.intercepter(f, t) {
-				continue
-			}
-			if j.Forme == data.FTrait && c.chance(esquive(t)/2) {
-				c.emit(Evenement{Type: "esquive", Acteur: f.ID, Cible: t.ID, Texte: t.Nom + " esquive le jutsu."})
-				continue
-			}
-		}
-		d := c.infliger(f, t, base*mult, j.Element, false)
-		if !t.Vivant() {
-			break
-		}
-		c.passifElement(f, t, j, base*mult, d)
-		c.appliquerEffet(f, t, j.Effet, j.Intensite*opts.intensMu, base, d, opts)
-		if j.Effet2 != "" && t.Vivant() {
-			c.appliquerEffet(f, t, j.Effet2, j.Intensite*opts.intensMu*0.6, base, d, opts)
-		}
-		if contact {
-			c.riposter(t, f)
-		}
-	}
-	if opts.propage && f.Vivant() {
-		for _, o := range c.ennemis(f) {
-			if o != t {
-				c.emit(Evenement{Type: "info", Acteur: f.ID, Cible: o.ID, Texte: "L'effet se propage à " + o.Nom + "."})
-				c.appliquerEffet(f, o, j.Effet, j.Intensite*0.7, base, 0, effetOpts{mult: 1, intensMu: 1})
+	case grammar.OpClone:
+		for i := 0; i < max(1, e.Nombre); i++ {
+			if !c.creerClone(l, e.Duree, e.Valeur) {
+				c.info(l, "Plus de place dans les rangs : le clone ne peut pas naître.")
 				break
 			}
+			c.emit(Evenement{Type: "clone", Acteur: l.ID, Element: cx.element, Texte: l.Nom + " se dédouble !"})
+		}
+		return
+	case grammar.OpSoin:
+		for i := 0; i < max(1, e.Frappes); i++ {
+			c.soigner(l, l, cx.p*e.Mult)
+		}
+		return
+	case grammar.OpPurifier:
+		c.purifier(l)
+		return
+	case grammar.OpInvocation:
+		c.ajouterStatut(l, &Statut{Type: SInvocation, Tours: e.Duree, Element: cx.element, Source: l.ID, Puissance: cx.p, Indissipable: cx.indissipable, Effets: e.Effets})
+		c.emit(Evenement{Type: "invoque", Acteur: l.ID, Element: cx.element, Texte: l.Nom + " invoque une créature de Souffle."})
+		return
+	case grammar.OpDeclencheur:
+		c.ajouterStatut(l, &Statut{Type: SDeclencheur, Tours: e.Duree, Valeur: e.Valeur, Element: cx.element, Source: l.ID, Puissance: cx.p, Indissipable: cx.indissipable, Effets: e.Effets})
+		c.emit(Evenement{Type: "statut", Cible: l.ID, Texte: "Le Souffle de " + l.Nom + " veille sur ses blessures."})
+		return
+	case grammar.OpDiffere:
+		cp := *cx
+		cp.passif = false
+		c.differes = append(c.differes, differe{effets: e.Effets, cx: cp, tours: e.Duree})
+		return
+	case grammar.OpAnnuler:
+		if cx.annule != nil {
+			*cx.annule = true
+		}
+		return
+	}
+	cibles := c.resoudre(cx, e)
+	for _, ce := range cibles {
+		c.effetSur(cx, e, ce)
+	}
+	// Propagation à un second adversaire.
+	if e.Propage > 0 && len(cibles) > 0 && cibles[0].t.Camp != l.Camp {
+		var autres []*Combattant
+		for _, o := range c.ennemis(l) {
+			deja := false
+			for _, ce := range cibles {
+				deja = deja || ce.t == o
+			}
+			if !deja && ciblable(o) {
+				autres = append(autres, o)
+			}
+		}
+		if len(autres) > 0 {
+			o := autres[c.rng.Intn(len(autres))]
+			c.emit(Evenement{Type: "info", Acteur: l.ID, Cible: o.ID, Texte: "Le Souffle se propage à " + o.Nom + "."})
+			c.effetSur(cx, e, cibleEffet{o, e.Propage, true})
 		}
 	}
 }
 
-// passifElement : la signature de chaque élément.
-func (c *Combat) passifElement(f, t *Combattant, j *grammar.Jutsu, base float64, d int) {
-	switch j.Element {
-	case "feu", "lave", "cendre":
-		if j.Effet != data.XConsumer {
-			c.ajouterStatut(t, &Statut{Type: SConsume, Tours: 2, Valeur: base * 0.12, Element: j.Element})
+// reussite : jet d'une entrave ou d'une illusion contre la volonté de la
+// cible. La puissance du jutsu compte, comme la maîtrise.
+func (c *Combat) reussite(cx *contexte, t *Combattant, bonus, part float64) bool {
+	r := (8 + 0.8*float64(t.Gnanga) + 0.4*float64(t.Manhis)) * 1.1
+	p := 0.55 + 0.35*(cx.p-r)/(cx.p+r) + bonus + 0.1*float64(cx.maitrise)/100
+	if cx.indissipable {
+		p += 0.05
+	}
+	p *= 0.5 + 0.5*part
+	return c.chance(math.Max(0.15, math.Min(0.95, p)))
+}
+
+func (c *Combat) effetSur(cx *contexte, e grammar.Effet, ce cibleEffet) {
+	l, t, k := cx.lanceur, ce.t, ce.part
+	hostile := t.Camp != l.Camp
+	frappe := e.Op == grammar.OpDegats || e.Op == grammar.OpDrain
+	if hostile && ce.unique && !frappe {
+		if t = c.atteindre(l, t, true); t == nil {
+			return
 		}
+		hostile = t.Camp != l.Camp
+	}
+	switch e.Op {
+	case grammar.OpDegats, grammar.OpDrain:
+		for i := 0; i < max(1, e.Frappes) && l.Vivant(); i++ {
+			tt := t
+			if hostile && ce.unique {
+				if tt = c.atteindre(l, t, true); tt == nil {
+					continue
+				}
+			}
+			if !tt.Vivant() {
+				break
+			}
+			d := c.infliger(l, tt, cx.p*e.Mult*k, e.Nature, cx.element, false)
+			if e.Op == grammar.OpDrain && d > 0 {
+				c.soigner(l, l, float64(d)*e.Valeur)
+			}
+			if cx.passif && tt.Vivant() && tt.Camp != l.Camp {
+				cx.passif = false
+				c.passifElement(cx, tt, cx.p*e.Mult, d)
+			}
+			if ce.unique && tt.Camp != l.Camp {
+				c.riposter(tt, l)
+			}
+		}
+	case grammar.OpDot:
+		c.ajouterStatut(t, &Statut{Type: SConsume, Tours: e.Duree, Valeur: cx.p * e.Mult * k, Element: cx.element, Nature: e.Nature, Source: l.ID, Puissance: cx.p, Indissipable: cx.indissipable})
+		c.emit(Evenement{Type: "statut", Cible: t.ID, Element: cx.element, Texte: t.Nom + " se consume."})
+	case grammar.OpStatut:
+		c.poserStatut(cx, e, t, k, hostile)
+	case grammar.OpBouclier:
+		v := int(math.Round(cx.p * e.Mult * k))
+		t.Absorption += v
+		c.emit(Evenement{Type: "bouclier", Acteur: l.ID, Cible: t.ID, Valeur: v, Element: cx.element, Texte: fmt.Sprintf("Un bouclier de Souffle couvre %s (%d).", t.Nom, v)})
+	case grammar.OpDeplacer:
+		if hostile && !c.reussite(cx, t, e.Valeur, k) {
+			c.emit(Evenement{Type: "resiste", Cible: t.ID, Texte: t.Nom + " tient bon et ne bouge pas."})
+			return
+		}
+		rang := len(c.Vivants(t.Camp))
+		if e.Vers == "avant" {
+			rang = 1
+		}
+		c.placer(t, rang)
+		c.emit(Evenement{Type: "deplacement", Acteur: t.ID, Valeur: t.Rang, Texte: fmt.Sprintf("%s est projeté au rang %d.", t.Nom, t.Rang)})
+	case grammar.OpDissiper:
+		c.dissiper(cx, t)
+	case grammar.OpInterrompre:
+		c.interrompre(t, "par le Souffle de "+l.Nom)
+	case grammar.OpPiege:
+		c.ajouterStatut(t, &Statut{Type: SPiege, Tours: e.Duree, Element: cx.element, Source: l.ID, Puissance: cx.p * k, Indissipable: cx.indissipable, Effets: e.Effets})
+		c.emit(Evenement{Type: "piege_pose", Acteur: l.ID, Cible: t.ID, Element: cx.element, Texte: l.Nom + " tend un piège sous les pieds de " + t.Nom + "."})
+	case grammar.OpRiposte:
+		c.ajouterStatut(t, &Statut{Type: SRiposte, Tours: e.Duree, Element: cx.element, Source: l.ID, Puissance: cx.p * k, Indissipable: cx.indissipable, Effets: e.Effets, nouveau: true})
+		c.emit(Evenement{Type: "statut", Acteur: l.ID, Cible: t.ID, Element: cx.element, Texte: "Le Souffle de " + l.Nom + " veille sur " + t.Nom + " : qui l'attaque le paiera."})
+	}
+}
+
+// textesPoses : le journal des statuts dont la valeur est en PV.
+var textesPoses = map[string]string{
+	"regen": "ses blessures se referment peu à peu", "sangsue": "une sangsue de Souffle le vide",
+	"baume": "un baume agira après le combat", "second_souffle": "un second souffle veille",
+}
+
+var entravesAuHasard = []string{"immobilise", "desarme", "scelle", "sans_garde"}
+
+func (c *Combat) poserStatut(cx *contexte, e grammar.Effet, t *Combattant, k float64, hostile bool) {
+	l := cx.lanceur
+	typ := e.Statut
+	if typ == "hasard" {
+		typ = entravesAuHasard[c.rng.Intn(len(entravesAuHasard))]
+	}
+	if hostile && grammar.StatutsControle[e.Statut] {
+		bonus := e.Valeur
+		if typ == "confus" || typ == "aveugle" {
+			bonus = 0
+		}
+		if !c.reussite(cx, t, bonus, k) {
+			c.emit(Evenement{Type: "resiste", Cible: t.ID, Texte: t.Nom + " résiste au Souffle de " + l.Nom + "."})
+			return
+		}
+	}
+	val := e.Valeur * k
+	switch typ {
+	case "regen", "sangsue", "baume", "second_souffle":
+		val = cx.p * e.Valeur * k
+	case "leurre":
+		val = e.Valeur
+	}
+	tours := e.Duree
+	if tours <= 0 {
+		tours = 99 // tout le combat
+	}
+	c.ajouterStatut(t, &Statut{Type: typ, Tours: tours, Valeur: val, Element: cx.element, Source: l.ID, Puissance: cx.p, Indissipable: cx.indissipable, nouveau: true})
+	texte := textesPoses[typ]
+	if texte == "" {
+		texte = strings.NewReplacer("{v}", fmt.Sprint(int(math.Round(val*100))), "{n}", fmt.Sprint(int(math.Round(val)))).Replace(grammar.TextesStatut[typ])
+	}
+	c.emit(Evenement{Type: "statut", Acteur: l.ID, Cible: t.ID, Element: cx.element, Texte: t.Nom + " : " + texte + "."})
+	if typ == "scelle" || typ == "endormi" {
+		c.interrompre(t, "net")
+	}
+}
+
+// dissiper retire les protections d'une cible, sauf celles qu'un Souffle
+// plus puissant a posées ou que le Silure a scellées ; les clones s'évanouissent.
+func (c *Combat) dissiper(cx *contexte, t *Combattant) {
+	var reste []*Statut
+	retire, tenu := 0, 0
+	for _, s := range t.Statuts {
+		if Bienfaits[s.Type] && s.Tours > 0 {
+			if s.Indissipable || s.Puissance > cx.p*1.25 {
+				tenu++
+			} else {
+				retire++
+				continue
+			}
+		}
+		reste = append(reste, s)
+	}
+	t.Statuts = reste
+	if t.Absorption > 0 {
+		t.Absorption = 0
+		retire++
+	}
+	for _, o := range c.Combattants {
+		if o.Clone && o.Original == t.ID && o.Vivant() {
+			c.dissiperClone(o, "Le clone de "+t.Nom+" se dissipe.")
+			retire++
+		}
+	}
+	if retire > 0 {
+		c.emit(Evenement{Type: "purification", Cible: t.ID, Texte: fmt.Sprintf("Les protections de %s se dissipent (%d).", t.Nom, retire)})
+	}
+	if tenu > 0 {
+		c.emit(Evenement{Type: "resiste", Cible: t.ID, Texte: "Certaines protections de " + t.Nom + " résistent."})
+	}
+}
+
+// purifier retire les maux du lanceur (sauf ceux scellés par le Silure).
+func (c *Combat) purifier(t *Combattant) {
+	var reste []*Statut
+	retire := 0
+	for _, s := range t.Statuts {
+		if Maux[s.Type] && !s.Indissipable {
+			retire++
+			continue
+		}
+		reste = append(reste, s)
+	}
+	t.Statuts = reste
+	if retire > 0 {
+		c.emit(Evenement{Type: "purification", Cible: t.ID, Texte: fmt.Sprintf("%s se purifie (%d maux effacés).", t.Nom, retire)})
+	}
+}
+
+// passifElement : la signature de chaque élément, au premier coup porté.
+func (c *Combat) passifElement(cx *contexte, t *Combattant, base float64, d int) {
+	l := cx.lanceur
+	switch cx.element {
+	case "feu", "lave", "cendre":
+		c.ajouterStatut(t, &Statut{Type: SConsume, Tours: 2, Valeur: base * 0.12, Element: cx.element, Nature: grammar.NMagique, Source: l.ID, Puissance: cx.p})
 	case "eau", "maree":
-		c.soigner(f, f, float64(d)*0.1)
+		if d > 0 {
+			c.soigner(l, l, float64(d)*0.1)
+		}
 	case "son", "onde":
 		c.interrompre(t, "par une onde sonore")
 	case "gravite", "seisme":
@@ -330,160 +540,20 @@ func (c *Combat) passifElement(f, t *Combattant, j *grammar.Jutsu, base float64,
 			c.emit(Evenement{Type: "deplacement", Acteur: t.ID, Valeur: 1, Texte: t.Nom + " est attiré au premier rang !"})
 		}
 	case "sel", "cristal":
-		c.purifier(t)
+		c.dissiper(cx, t)
 	case "sable", "harmattan":
-		if c.chance(25) {
-			c.ajouterStatut(t, &Statut{Type: SAveugle, Tours: 1, Valeur: 0.4, Element: j.Element})
+		if c.chance(0.25) {
+			c.ajouterStatut(t, &Statut{Type: "aveugle", Tours: 1, Valeur: 0.4, Element: cx.element, Source: l.ID, Puissance: cx.p, nouveau: true})
+			c.emit(Evenement{Type: "statut", Cible: t.ID, Element: cx.element, Texte: t.Nom + " a du sable dans les yeux."})
 		}
 	case "foudre", "tempete", "magnetisme":
-		if c.chance(20) {
-			c.ajouterStatut(t, &Statut{Type: SEntrave, Tours: 1, Element: j.Element})
-			c.emit(Evenement{Type: "statut", Cible: t.ID, Element: j.Element, Texte: t.Nom + " est paralysé."})
+		if c.chance(0.2) {
+			c.ajouterStatut(t, &Statut{Type: "immobilise", Tours: 1, Element: cx.element, Source: l.ID, Puissance: cx.p, nouveau: true})
+			c.emit(Evenement{Type: "statut", Cible: t.ID, Element: cx.element, Texte: t.Nom + " est paralysé."})
 		}
 	case "essaim", "fleau":
 		if t.Vivant() {
-			c.infliger(f, t, base*0.15, j.Element, true)
+			c.infliger(l, t, base*0.15, grammar.NPur, cx.element, true)
 		}
 	}
-}
-
-// purifier retire les bienfaits d'une cible (sauf ceux scellés par le Silence).
-func (c *Combat) purifier(t *Combattant) {
-	var reste []*Statut
-	retire := false
-	for _, s := range t.Statuts {
-		bienfait := s.Type == SVoile || s.Type == SRenfort || s.Type == SRegen || s.Type == SRiposte
-		if bienfait && !s.Silence {
-			retire = true
-			continue
-		}
-		reste = append(reste, s)
-	}
-	t.Statuts = reste
-	if t.Absorption > 0 {
-		t.Absorption = 0
-		retire = true
-	}
-	if retire {
-		c.emit(Evenement{Type: "purification", Cible: t.ID, Texte: "Le Sel purifie " + t.Nom + " : ses protections s'effacent."})
-	}
-}
-
-// appliquerEffet applique un effet de jutsu. Les effets de soutien placés
-// en second sur un jutsu offensif profitent au lanceur.
-func (c *Combat) appliquerEffet(f, t *Combattant, effet string, intens, base float64, degats int, o effetOpts) {
-	if effet == "" {
-		return
-	}
-	if o.mult == 0 {
-		o.mult = 1
-	}
-	switch effet {
-	case data.XConsumer:
-		c.ajouterStatut(t, &Statut{Type: SConsume, Tours: o.duree(3), Valeur: base * 0.25 * intens, Element: o.element, Silence: o.silence})
-		c.emit(Evenement{Type: "statut", Cible: t.ID, Texte: t.Nom + " est rongé par le Souffle."})
-	case data.XLier:
-		c.ajouterStatut(t, &Statut{Type: SEntrave, Tours: o.duree(2), Silence: o.silence})
-		c.emit(Evenement{Type: "statut", Cible: t.ID, Texte: t.Nom + " est entravé."})
-	case data.XAveugler:
-		c.ajouterStatut(t, &Statut{Type: SAveugle, Tours: o.duree(2), Valeur: math.Min(0.7, 0.4*intens), Silence: o.silence})
-		c.emit(Evenement{Type: "statut", Cible: t.ID, Texte: t.Nom + " est aveuglé."})
-	case data.XRepousser:
-		if t.Rang < len(c.Vivants(t.Camp)) {
-			c.placer(t, t.Rang+1)
-			c.emit(Evenement{Type: "deplacement", Acteur: t.ID, Valeur: t.Rang, Texte: t.Nom + " est repoussé au rang " + fmt.Sprint(t.Rang) + "."})
-		}
-		c.interrompre(t, "par le choc")
-	case data.XDrainer:
-		c.soigner(f, f, float64(degats)*0.5*intens)
-		gain := int(float64(degats) * 0.2 * intens)
-		f.Souffle = min(f.SouffleMax, f.Souffle+gain)
-	case data.XBriser:
-		c.ajouterStatut(t, &Statut{Type: SAffaibli, Tours: o.duree(3), Valeur: 0.5, Silence: o.silence})
-		t.Absorption = 0
-		c.emit(Evenement{Type: "statut", Cible: t.ID, Texte: "Les défenses de " + t.Nom + " sont brisées."})
-		c.interrompre(t, "net")
-	case data.XMarquer:
-		c.ajouterStatut(t, &Statut{Type: SMarque, Tours: o.duree(3), Valeur: 0.25 * intens, Silence: o.silence})
-		c.emit(Evenement{Type: "statut", Cible: t.ID, Texte: t.Nom + " est marqué."})
-	// Effets de soutien en effet secondaire : ils profitent au lanceur.
-	case data.XSoigner:
-		c.soigner(f, f, math.Max(float64(degats)*0.4, base*0.2)*intens)
-	case data.XRenforcer:
-		c.ajouterStatut(f, &Statut{Type: SRenfort, Tours: o.duree(2), Valeur: 0.2 * intens})
-	case data.XDissimuler:
-		c.ajouterStatut(f, &Statut{Type: SVoile, Tours: o.duree(1), Valeur: 0.5})
-	}
-}
-
-// lancerSoutien : jutsu dont l'effet principal vise les alliés.
-func (c *Combat) lancerSoutien(f *Combattant, j *grammar.Jutsu, cibleID string, base float64) {
-	opts := optsDe(j)
-	allies := c.Vivants(f.Camp)
-	var cibles []*Combattant
-	switch j.Forme {
-	case data.FCercle, data.FMur, data.FInvocation:
-		cibles = allies
-	case data.FArmure, data.FPas, data.FDouble:
-		cibles = []*Combattant{f}
-	default:
-		t := c.Get(cibleID)
-		if t == nil || !t.Vivant() || t.Camp != f.Camp {
-			t = plusBlesse(allies)
-		}
-		cibles = []*Combattant{t}
-	}
-	switch j.Forme {
-	case data.FMur:
-		abs := int(base * 1.2)
-		c.Murs[f.Camp] = &Mur{Absorption: abs, Tours: 2 + opts.bonus, Element: j.Element, Lanceur: f.ID}
-		c.emit(Evenement{Type: "mur", Acteur: f.ID, Valeur: abs, Element: j.Element, Texte: fmt.Sprintf("Un mur protecteur se dresse (%d).", abs)})
-	case data.FArmure:
-		f.Absorption += int(base)
-	case data.FPas:
-		if f.Rang > 1 {
-			c.placer(f, f.Rang-1)
-		} else {
-			c.placer(f, NbRangs)
-		}
-	case data.FDouble:
-		c.ajouterStatut(f, &Statut{Type: SLeurre, Tours: 2})
-	}
-	for _, t := range cibles {
-		c.soutenir(f, t, j.Effet, j.Intensite*opts.intensMu, base, opts, j.Forme == data.FInvocation)
-		if EffetSoutienSecondaire(j.Effet2) {
-			c.soutenir(f, t, j.Effet2, j.Intensite*0.6, base, opts, false)
-		}
-	}
-}
-
-// EffetSoutienSecondaire : l'effet secondaire d'un soutien est-il aussi un soutien ?
-func EffetSoutienSecondaire(e string) bool { return e != "" && grammar.EffetSoutien(e) }
-
-func (c *Combat) soutenir(f, t *Combattant, effet string, intens, base float64, o effetOpts, durable bool) {
-	switch effet {
-	case data.XSoigner:
-		if durable || o.bonus > 0 || o.mult > 1 {
-			c.ajouterStatut(t, &Statut{Type: SRegen, Tours: o.duree(3), Valeur: base * 0.3 * intens})
-		}
-		if !durable {
-			c.soigner(f, t, base*0.9*intens)
-		}
-	case data.XRenforcer:
-		c.ajouterStatut(t, &Statut{Type: SRenfort, Tours: o.duree(3), Valeur: 0.25 * intens, Silence: o.silence})
-		c.emit(Evenement{Type: "statut", Cible: t.ID, Texte: t.Nom + " est renforcé."})
-	case data.XDissimuler:
-		c.ajouterStatut(t, &Statut{Type: SVoile, Tours: o.duree(2), Valeur: 0.5, Silence: o.silence})
-		c.emit(Evenement{Type: "statut", Cible: t.ID, Texte: t.Nom + " se fond dans le Souffle."})
-	}
-}
-
-func plusBlesse(l []*Combattant) *Combattant {
-	var best *Combattant
-	for _, f := range l {
-		if best == nil || float64(f.PV)/float64(f.PVMax) < float64(best.PV)/float64(best.PVMax) {
-			best = f
-		}
-	}
-	return best
 }

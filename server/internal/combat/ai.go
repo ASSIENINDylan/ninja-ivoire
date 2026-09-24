@@ -11,6 +11,7 @@ import (
 const (
 	IABete  = "bete"  // ne fait que frapper et avancer
 	IANinja = "ninja" // utilise tout son arsenal
+	IAClone = "clone" // un clone imite son original : il frappe
 )
 
 type option struct {
@@ -18,11 +19,11 @@ type option struct {
 	score  float64
 }
 
-// choisirIA évalue chaque action possible et garde la meilleure.
-// L'IA lit la situation : elle soigne les blessés, profite des faiblesses
-// élémentaires, et cherche à briser les longues incantations adverses.
+// choisirIA évalue chaque action possible et garde la meilleure. L'IA lit
+// la situation : elle soigne ses blessures, entrave qui menace, scelle les
+// longues incantations et profite des faiblesses élémentaires.
 func (c *Combat) choisirIA(f *Combattant) Action {
-	if f.Incantation != nil {
+	if f.Incantation != nil && !f.A("scelle") {
 		return Action{Acteur: f.ID, Type: AIncanter}
 	}
 	var opts []option
@@ -34,64 +35,47 @@ func (c *Combat) choisirIA(f *Combattant) Action {
 	menace := c.menaceIncantation(ennemis)
 
 	// Frapper.
-	if !(f.Arme.Distance == false && (f.Rang > 2 || f.statut(SEntrave) != nil)) {
+	if !f.A("desarme") && (f.Arme.Distance || f.Rang <= 2) {
 		for _, t := range ennemis {
-			if !f.Arme.Distance && t.Rang > 2 {
+			if !ciblable(t) || (!f.Arme.Distance && t.Rang > 2) {
 				continue
 			}
-			est := float64(f.Arme.Puissance+f.Fangan) * 40 / (40 + defenseDe(t))
+			est := float64(f.Arme.Puissance+f.Fangan) * facteurDefense(t, grammar.NPhysique)
 			ajouter(Action{Type: AFrapper, Cible: t.ID}, c.valeurDegats(t, est, 1))
 		}
 	}
 
 	// Jutsus.
-	if f.IA != IABete {
+	if f.IA == IANinja && !f.A("scelle") {
 		mpt := f.MudrasParTour()
 		for _, j := range f.Jutsus {
 			if CoutReel(j, f.maitriseDe(j)) > f.Souffle {
 				continue
 			}
 			tours := float64((j.Longueur() + mpt - 1) / mpt)
-			base := c.puissance(f, j, 1)
-			seq := j.Sequence
-			if j.Soutien {
-				if s := c.valeurSoutien(f, j, base); s > 0 {
-					cible := plusBlesse(c.Vivants(f.Camp))
-					ajouter(Action{Type: AIncanter, Sequence: seq, Cible: cible.ID}, s/tours)
-				}
-				continue
-			}
-			switch j.Forme {
-			case data.FMur, data.FArmure, data.FDouble:
-				v := base * 0.3
-				if menace > 0 || f.PV*2 < f.PVMax {
-					v = base*0.8 + menace
-				}
-				if (j.Forme == data.FMur && c.Murs[f.Camp] != nil) || (j.Forme == data.FArmure && f.Absorption > 0) {
-					v *= 0.2
-				}
-				ajouter(Action{Type: AIncanter, Sequence: seq}, v/tours)
-				continue
-			case data.FCercle, data.FInvocation:
-				total := 0.0
+			p := c.puissance(f, j, 1)
+			cibles := []*Combattant{nil}
+			if !j.Soutien {
+				cibles = nil
 				for _, t := range ennemis {
-					total += c.valeurDegats(t, base*data.Multiplier(j.Element, t.Element), tours)
+					if ciblable(t) {
+						cibles = append(cibles, t)
+					}
 				}
-				if j.Forme == data.FInvocation {
-					total *= 2.2
-				}
-				ajouter(Action{Type: AIncanter, Sequence: seq}, total/tours+bonusEffet(j, base))
-				continue
 			}
-			for _, t := range ennemis {
-				if j.Forme == data.FLame && (f.Rang > 2 || t.Rang > 2) {
-					continue
+			for _, t := range cibles {
+				v := 0.0
+				for _, e := range j.Effets {
+					v += c.valeurEffet(f, e, t, p, tours)
 				}
-				v := c.valeurDegats(t, base*data.Multiplier(j.Element, t.Element), tours)
-				if t.Incantation != nil && interromptJutsu(j) && tours <= float64(t.Incantation.Total-t.Incantation.Progres+1) {
-					v += 12 * float64(t.Incantation.Total)
+				if j.Delai {
+					v *= 0.8
 				}
-				ajouter(Action{Type: AIncanter, Sequence: seq, Cible: t.ID}, v/tours+bonusEffet(j, base))
+				id := ""
+				if t != nil {
+					id = t.ID
+				}
+				ajouter(Action{Type: AIncanter, Sequence: j.Sequence, Cible: id}, v/tours)
 			}
 		}
 	}
@@ -101,14 +85,18 @@ func (c *Combat) choisirIA(f *Combattant) Action {
 	if f.PV*10 < f.PVMax*3 && menace > 0 {
 		garde = 10 + menace
 	}
-	ajouter(Action{Type: AGarde}, garde)
-	if f.IA != IABete && f.Souffle*3 < f.SouffleMax {
+	if !f.A("sans_garde") {
+		ajouter(Action{Type: AGarde}, garde)
+	}
+	if f.IA == IANinja && f.Souffle*3 < f.SouffleMax {
 		ajouter(Action{Type: AConcentrer}, 6)
 	}
-	if !f.Arme.Distance && f.Rang > 2 {
+	if !f.Arme.Distance && f.Rang > 2 && !f.A("immobilise") {
 		ajouter(Action{Type: ADeplacer, Rang: 1}, 8)
 	}
-
+	if len(opts) == 0 {
+		return Action{Acteur: f.ID, Type: AGarde}
+	}
 	best := opts[0]
 	for _, o := range opts[1:] {
 		if o.score > best.score {
@@ -116,14 +104,6 @@ func (c *Combat) choisirIA(f *Combattant) Action {
 		}
 	}
 	return best.action
-}
-
-func defenseDe(t *Combattant) float64 {
-	d := float64(t.Defense) + float64(t.Fangan)*0.5
-	if t.statut(SAffaibli) != nil {
-		d *= 0.5
-	}
-	return d
 }
 
 // valeurDegats : les dégâts valent plus s'ils achèvent la cible ou
@@ -150,44 +130,170 @@ func (c *Combat) menaceIncantation(ennemis []*Combattant) float64 {
 	return m
 }
 
-func interromptJutsu(j *grammar.Jutsu) bool {
-	return j.Element == "son" || j.Element == "onde" || j.Effet == data.XRepousser || j.Effet == data.XBriser ||
-		j.Effet2 == data.XRepousser || j.Effet2 == data.XBriser
-}
+func manque(f *Combattant) float64 { return float64(f.PVMax - f.PV) }
 
-func bonusEffet(j *grammar.Jutsu, base float64) float64 {
-	b := 0.0
-	for _, e := range []string{j.Effet, j.Effet2} {
-		switch e {
-		case data.XConsumer:
-			b += base * 0.5
-		case data.XLier, data.XAveugler, data.XMarquer:
-			b += base * 0.3
-		case data.XDrainer, data.XBriser:
-			b += base * 0.2
-		}
+// valeurEffet estime ce que rapporte un effet (en « PV équivalents »).
+func (c *Combat) valeurEffet(f *Combattant, e grammar.Effet, t *Combattant, p, tours float64) float64 {
+	ennemis := c.ennemis(f)
+	nbCibles := 1.0
+	switch e.Cible {
+	case grammar.CEnnemis:
+		nbCibles = float64(len(ennemis))
+	case grammar.CEnnemiEtendu, grammar.CContactEtendu:
+		nbCibles = 1.5
+	case grammar.CAllies:
+		nbCibles = float64(len(c.Reels(f.Camp)))
 	}
-	return b
-}
-
-func (c *Combat) valeurSoutien(f *Combattant, j *grammar.Jutsu, base float64) float64 {
-	switch j.Effet {
-	case data.XSoigner:
-		manque := 0.0
-		for _, a := range c.Vivants(f.Camp) {
-			if a.PV*10 < a.PVMax*6 {
-				manque += float64(a.PVMax - a.PV)
+	if t == nil && len(ennemis) > 0 {
+		t = ennemis[0]
+	}
+	if (e.Cible == grammar.CContact || e.Cible == grammar.CContactEtendu) && (f.Rang > 2 || (t != nil && t.Rang > 2)) {
+		return 0
+	}
+	danger := 1.0
+	if f.PV*2 < f.PVMax {
+		danger = 2
+	}
+	switch e.Op {
+	case grammar.OpDegats, grammar.OpDrain:
+		if t == nil {
+			return 0
+		}
+		est := p * e.Mult * float64(max(1, e.Frappes)) * facteurDefense(t, e.Nature)
+		if e.Nature != grammar.NPur {
+			est *= data.Multiplier(f.Element, t.Element)
+		}
+		v := c.valeurDegats(t, est, tours) * nbCibles
+		if e.Op == grammar.OpDrain {
+			v += math.Min(est*e.Valeur, manque(f)) * danger * 0.6
+		}
+		return v
+	case grammar.OpDot:
+		return p * e.Mult * float64(e.Duree) * 0.7 * nbCibles
+	case grammar.OpSoin:
+		if f.PV*10 > f.PVMax*7 {
+			return 0
+		}
+		return math.Min(p*e.Mult, manque(f)) * danger
+	case grammar.OpBouclier:
+		if f.Absorption > 0 {
+			return 0
+		}
+		return p * e.Mult * 0.5 * nbCibles * danger
+	case grammar.OpStatut:
+		return c.valeurStatut(f, e, t, p) * nbCibles
+	case grammar.OpDeplacer:
+		return 4
+	case grammar.OpBond:
+		return 1
+	case grammar.OpClone:
+		return 10 * float64(max(1, e.Nombre)) * danger
+	case grammar.OpDissiper:
+		if t == nil {
+			return 0
+		}
+		n := 0
+		for _, s := range t.Statuts {
+			if Bienfaits[s.Type] {
+				n++
 			}
 		}
-		return math.Min(manque, base*1.5) * 1.2
-	case data.XRenforcer:
-		if f.statut(SRenfort) == nil {
-			return base * 0.4
+		return 8 * float64(n)
+	case grammar.OpPurifier:
+		n := 0
+		for _, s := range f.Statuts {
+			if Maux[s.Type] {
+				n++
+			}
 		}
-	case data.XDissimuler:
-		if f.statut(SVoile) == nil {
-			return base * 0.3
+		return 8 * float64(n)
+	case grammar.OpInterrompre:
+		if t != nil && t.Incantation != nil && !t.Incantation.Silence {
+			return 10 + 5*float64(t.Incantation.Total)
 		}
+		return 0
+	case grammar.OpRiposte, grammar.OpPiege, grammar.OpInvocation, grammar.OpDeclencheur, grammar.OpDiffere:
+		v := 0.0
+		for _, x := range e.Effets {
+			v += c.valeurEffet(f, x, t, p, tours)
+		}
+		switch e.Op {
+		case grammar.OpInvocation:
+			v *= float64(e.Duree) * 0.8
+		case grammar.OpRiposte:
+			v *= 1.2
+		case grammar.OpPiege:
+			v *= 0.8
+		case grammar.OpDeclencheur:
+			v *= 0.6
+		default:
+			v *= 0.9
+		}
+		return v
+	}
+	return 0
+}
+
+func (c *Combat) valeurStatut(f *Combattant, e grammar.Effet, t *Combattant, p float64) float64 {
+	d := float64(max(1, e.Duree))
+	danger := 1.0
+	if f.PV*2 < f.PVMax {
+		danger = 2
+	}
+	sur := f
+	if e.Cible != grammar.CSoi && e.Cible != grammar.CAllies {
+		sur = t
+	}
+	if sur == nil || sur.A(e.Statut) {
+		return 0
+	}
+	chance := 1.0
+	if grammar.StatutsControle[e.Statut] {
+		chance = 0.6
+	}
+	switch e.Statut {
+	case "def_phys", "def_mag":
+		return 6 * e.Valeur * d * danger * 3
+	case "renvoi":
+		return 8 * e.Valeur * d
+	case "parade", "reflet", "deviation":
+		return 9 * danger
+	case "esquive":
+		return 12 * e.Valeur * d * danger
+	case "intangible_phys", "intangible_mag", "invisible":
+		return 7 * d * danger
+	case "disparu":
+		return 5 * danger * danger
+	case "leurre":
+		return 6 * e.Valeur * danger
+	case "regen":
+		return math.Min(p*e.Valeur*d, manque(f)) * 0.8
+	case "baume":
+		return p * e.Valeur * 0.15
+	case "second_souffle":
+		return 6 * danger * danger
+	case "marque":
+		return p * e.Valeur * d * 0.8
+	case "sangsue":
+		return p * e.Valeur * d
+	case "scelle":
+		v := 6.0 * d
+		if sur.Incantation != nil {
+			v += 5 * float64(sur.Incantation.Total)
+		}
+		return v * chance
+	case "desarme":
+		return 7 * d * chance
+	case "endormi":
+		return 10 * d * chance
+	case "confus", "aveugle":
+		return 14 * e.Valeur * d * chance
+	case "egare":
+		return 5 * d * chance
+	case "immobilise", "sans_garde", "hasard":
+		return 4 * d * chance
+	case "retenu":
+		return 1
 	}
 	return 0
 }

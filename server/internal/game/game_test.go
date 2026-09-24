@@ -149,9 +149,10 @@ func TestCarteDeplacements(t *testing.T) {
 			if _, err := p.Deplacer(v.X, v.Y); err != ErrCombatEnCours {
 				t.Errorf("on ne se déplace pas pendant un combat : %v", err)
 			}
+			ici := n.Position
 			res2, _ := p.Fuir()
-			if !res2.Fin.Defaite || n.Position != [2]int{v.X, v.Y} {
-				t.Errorf("après la défaite, on renaît au village : %v", n.Position)
+			if !res2.Fin.Defaite || n.Position != ici {
+				t.Errorf("qui fuit reste où il est, sans renaître : %v", n.Position)
 			}
 			return
 		}
@@ -234,5 +235,50 @@ func TestFavoris(t *testing.T) {
 	}
 	if _, err := p.Favori("panthere>mante>braise", true); err != ErrJutsuInconnu {
 		t.Errorf("un jutsu inconnu ne peut pas être favori : %v", err)
+	}
+}
+
+func TestSeulsLesFavorisEnCombat(t *testing.T) {
+	p := nouvellePartie(t)
+	n := p.Ninja
+	connus := [][]string{
+		{"lamantin", "martin_pecheur", "braise"}, {"lamantin", "martin_pecheur", "kola"}, {"lamantin", "mante", "braise"},
+		{"lamantin", "mante", "liane"}, {"lamantin", "tortue", "kola"}, {"lamantin", "tortue", "braise"},
+	}
+	for _, seq := range connus {
+		if _, err := p.Dojo(seq); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(n.Favoris) != FavorisMax || n.EstFavori("lamantin>tortue>braise") {
+		t.Fatalf("favoris : %v", n.Favoris)
+	}
+	if _, err := p.DemarrerCombat("chacals"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := p.Agir(combat.Action{Type: combat.AIncanter, Sequence: connus[5]}); err != ErrPasFavori {
+		t.Errorf("un jutsu connu hors des favoris doit être refusé : %v", err)
+	}
+	if _, err := p.Agir(combat.Action{Type: combat.AIncanter, Sequence: connus[0]}); err != nil {
+		t.Errorf("un favori doit passer : %v", err)
+	}
+	if _, err := p.Agir(combat.Action{Type: combat.AIncanter, Sequence: []string{"lamantin", "martin_pecheur", "liane"}}); err != nil && err != ErrPasDeCombat {
+		t.Errorf("une suite inconnue doit passer (découverte) : %v", err)
+	}
+}
+
+func TestBlessuresDurables(t *testing.T) {
+	p := nouvellePartie(t)
+	n := p.Ninja
+	now := p.Maintenant()
+	n.MajPV(now)
+	n.PV = n.PVMax() / 2
+	n.PVMaj = now.Unix()
+	if c := n.Combattant(now); c.PV != n.PVMax()/2 {
+		t.Errorf("le combat doit commencer avec les blessures : %d", c.PV)
+	}
+	n.MajPV(now.Add(RegenPVSecondes * time.Second))
+	if n.PV != n.PVMax() {
+		t.Errorf("après une demi-heure, le ninja est guéri : %d/%d", n.PV, n.PVMax())
 	}
 }

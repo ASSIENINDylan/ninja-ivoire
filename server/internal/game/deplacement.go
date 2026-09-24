@@ -84,6 +84,8 @@ func (n *Ninja) Renaitre(t time.Time) {
 	n.Position = [2]int{v.X, v.Y}
 	n.Endurance = EnduranceMax
 	n.EnduranceMaj = t.Unix()
+	n.PV = n.PVMax()
+	n.PVMaj = t.Unix()
 }
 
 // peutSeReposer : villages de sa région, et villages du Cœur (zone sûre).
@@ -170,7 +172,9 @@ func (p *Partie) Reposer() (*ResultatCarte, error) {
 	}
 	n.Endurance = EnduranceMax
 	n.EnduranceMaj = p.Maintenant().Unix()
-	return &ResultatCarte{Ninja: p.vueNinja(), Message: "Vous vous reposez : votre endurance est au maximum."}, p.sauver()
+	n.PV = n.PVMax()
+	n.PVMaj = p.Maintenant().Unix()
+	return &ResultatCarte{Ninja: p.vueNinja(), Message: "Vous vous reposez : vos blessures sont pansées et votre endurance est au maximum."}, p.sauver()
 }
 
 // Defier lance la rencontre du lieu où se trouve le ninja.

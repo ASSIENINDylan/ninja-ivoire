@@ -60,7 +60,7 @@ var (
 		Jutsus: [][]string{{"tambour", "martin_pecheur", "belier"}, {"tambour", "case", "racine"}}}
 	pantherePNJ = &ModelePNJ{Nom: "Panthère des bois", Apparence: "chacal", IA: combat.IABete, Fangan: 11, Manhis: 16, PV: 85,
 		Arme: combat.Arme{Nom: "ses griffes", Puissance: 8}}
-	gardePortail = &ModelePNJ{Nom: "Gardien du portail", Apparence: "gardien", Element: "terre", IA: combat.IANinja, Fangan: 16, Gnanga: 12, Manhis: 8, PV: 260,
+	gardePortail = &ModelePNJ{Nom: "Gardien du portail", Apparence: "gardien", Element: "terre", IA: combat.IANinja, Fangan: 20, Gnanga: 16, Manhis: 8, PV: 380,
 		Arme:   combat.Arme{Nom: "une massue de pierre", Puissance: 12},
 		Jutsus: [][]string{{"buffle", "tortue", "lion", "belier"}, {"buffle", "mante", "hache"}, {"buffle", "case", "liane"}}}
 )
@@ -129,21 +129,28 @@ func AllRencontres() []*Rencontre { return rencontreList }
 // (celui de la zone où elle a lieu).
 func (r *Rencontre) Instancier(niveau int) []*combat.Combattant {
 	var out []*combat.Combattant
+	// Un groupe se partage la force : chacun est un peu plus faible qu'un
+	// adversaire seul.
+	groupe := 1.0
+	if len(r.Ennemis) > 1 {
+		groupe = 0.8
+	}
 	for i, m := range r.Ennemis {
 		lv := max(1, niveau)
 		f := &combat.Combattant{
 			ID: fmt.Sprintf("pnj%d", i+1), Nom: m.Nom, Camp: 1, Rang: i + 1, Apparence: m.Apparence,
-			Niveau: lv, Fangan: m.Fangan + lv, Gnanga: m.Gnanga + lv, Manhis: m.Manhis + lv/2,
-			Element: m.Element, IA: m.IA, Arme: m.Arme,
+			Niveau: lv, Fangan: int(float64(m.Fangan+lv) * groupe), Gnanga: int(float64(m.Gnanga+lv) * groupe),
+			Manhis: m.Manhis + lv/2, Element: m.Element, IA: m.IA, Arme: m.Arme,
 		}
 		if m.Element != "" {
 			f.Elements = []string{m.Element}
 		}
-		f.PVMax = m.PV + lv*8
+		f.PVMax = int(float64(m.PV+lv*8) * groupe)
 		f.PV = f.PVMax
 		f.SouffleMax = 40 + f.Gnanga*3
 		f.Souffle = f.SouffleMax
 		f.Defense = f.Fangan / 2
+		f.DefenseMag = f.Gnanga / 2
 		for _, seq := range m.Jutsus {
 			if j, e := grammar.Analyser(seq); e == nil {
 				f.Jutsus = append(f.Jutsus, j)

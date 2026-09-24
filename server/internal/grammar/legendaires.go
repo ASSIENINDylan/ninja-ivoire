@@ -69,16 +69,18 @@ type Legendaire struct {
 	Effet2     string
 	ModsForme  []string
 	ModsEffet  []string
-	Puissance  float64
-	Intensite  float64
+	Bonus      float64 // multiplie la puissance
+	Extra      []Effet // effets propres au légendaire
 	Cout       int
 	Texte      string
 	Conditions Conditions
 }
 
-// Jutsu construit le jutsu correspondant au légendaire.
+// Jutsu construit le jutsu correspondant au légendaire : son profil suit
+// la grammaire (élément, forme, effets, modificateurs), avec une puissance
+// accrue et des effets propres.
 func (l *Legendaire) Jutsu() *Jutsu {
-	return &Jutsu{
+	j := &Jutsu{
 		Cle:        Cle(l.Sequence),
 		Nom:        l.Nom,
 		Nature:     "Jutsu légendaire",
@@ -91,62 +93,66 @@ func (l *Legendaire) Jutsu() *Jutsu {
 		ModsForme:  l.ModsForme,
 		ModsEffet:  l.ModsEffet,
 		Legendaire: l.ID,
-		Puissance:  l.Puissance,
-		Intensite:  l.Intensite,
-		Cout:       l.Cout,
-		Soutien:    EffetSoutien(l.Effet),
-		Texte:      l.Texte,
 	}
+	profiler(j)
+	j.Coefs.N = arrondi3(j.Coefs.N * l.Bonus)
+	extra := clonerEffets(l.Extra)
+	fixerNature(extra, j.DegatsNature)
+	j.Effets = append(j.Effets, extra...)
+	j.Cout = l.Cout
+	j.Soutien = EstSoutien(j)
+	j.Texte = l.Texte + "\n" + decrire(j)
+	return j
 }
 
 var legendaireList = []Legendaire{
 	{ID: "colere_panthere", Nom: "Colère de la Panthère",
 		Sequence: []string{"panthere", "panthere", "mante", "lion", "braise"},
 		Element:  "feu", Forme: data.FLame, Effet: data.XConsumer, ModsForme: []string{data.MAmplifier},
-		Puissance: 4.2, Intensite: 2, Cout: 40,
+		Bonus: 2.2, Extra: []Effet{dot(CContact, 0.5, 4)}, Cout: 40,
 		Texte:      "Le Souffle de Feu prend la forme d'une panthère qui déchire la cible et la consume longuement.",
 		Conditions: Conditions{NiveauMin: 8}},
 	{ID: "chant_lamantin", Nom: "Chant du Lamantin",
 		Sequence: []string{"lamantin", "lamantin", "case", "kola", "fleuve"},
 		Element:  "eau", Forme: data.FCercle, Effet: data.XSoigner, ModsEffet: []string{data.MEtendre},
-		Puissance: 2.6, Intensite: 2, Cout: 38,
-		Texte:      "Un chant venu des lagunes soigne tous les alliés et les régénère plusieurs tours. Il ne s'élève que la nuit.",
+		Bonus: 2.0, Extra: []Effet{st(CSoi, "baume", 0, 1.0)}, Cout: 38,
+		Texte:      "Un chant venu des lagunes referme les plaies du chanteur, longtemps après la bataille. Il ne s'élève que la nuit.",
 		Conditions: Conditions{NiveauMin: 10, Nuit: true}},
 	{ID: "tonnerre_man", Nom: "Tonnerre de la Dent de Man",
 		Sequence: []string{"aigle", "aigle", "martin_pecheur", "hache", "lion"},
 		Element:  "foudre", Forme: data.FTrait, Effet: data.XBriser, ModsEffet: []string{data.MAmplifier},
-		Puissance: 3.6, Intensite: 2.2, Cout: 42,
+		Bonus: 2.0, Extra: []Effet{st(CEnnemi, "scelle", 2, 0)}, Cout: 42,
 		Texte:      "La foudre tombe du sommet de la Dent de Man et pulvérise les défenses de la cible.",
 		Conditions: Conditions{NiveauMin: 12}},
 	{ID: "racines_fromager", Nom: "Racines du Fromager",
 		Sequence: []string{"chimpanze", "chimpanze", "araignee", "liane", "braise"},
 		Element:  "vegetal", Forme: data.FLien, Effet: data.XLier, Effet2: data.XConsumer,
-		Puissance: 2.2, Intensite: 2.5, Cout: 36,
+		Bonus: 2.0, Extra: []Effet{st(CEnnemi, "retenu", 5, 0)}, Cout: 36,
 		Texte:      "Les racines du grand fromager enserrent la cible, l'immobilisent et l'épuisent.",
 		Conditions: Conditions{NiveauMin: 10}},
 	{ID: "danse_calao", Nom: "Danse du Calao",
 		Sequence: []string{"calao", "calao", "martin_pecheur", "fourmi", "belier"},
 		Element:  "vent", Forme: data.FTrait, Effet: data.XRepousser, ModsForme: []string{data.MMultiplier},
-		Puissance: 3.0, Intensite: 1.8, Cout: 38,
+		Bonus: 1.8, Extra: []Effet{st(CSoi, "esquive", 2, 0.4)}, Cout: 38,
 		Texte:      "Une nuée de rafales en forme de calaos frappe deux fois et balaie les rangs adverses.",
 		Conditions: Conditions{NiveauMin: 12}},
 	{ID: "rempart_argile", Nom: "Rempart des Mosquées d'argile",
 		Sequence: []string{"buffle", "buffle", "tortue", "lion", "kola"},
 		Element:  "terre", Forme: data.FMur, Effet: data.XSoigner, ModsForme: []string{data.MAmplifier},
-		Puissance: 3.4, Intensite: 1.6, Cout: 40,
-		Texte:      "Un rempart d'argile hérissé de pieux protège tout le camp et soigne ceux qui s'y abritent.",
+		Bonus: 2.0, Extra: []Effet{st(CAllies, "def_phys", 3, 0.3)}, Cout: 40,
+		Texte:      "Un rempart d'argile hérissé de pieux protège tout le camp et régénère celui qui l'a bâti.",
 		Conditions: Conditions{NiveauMin: 8}},
 	{ID: "harmattan_anciens", Nom: "Harmattan des Anciens",
 		Sequence: []string{"scorpion", "calao", "case", "voile", "belier", "fleuve"},
 		Element:  "harmattan", Fusion: true, Forme: data.FCercle, Effet: data.XAveugler, Effet2: data.XRepousser, ModsEffet: []string{data.MEtendre},
-		Puissance: 3.2, Intensite: 2.4, Cout: 70,
+		Bonus: 1.8, Extra: []Effet{st(CEnnemis, "aveugle", 2, 0.4)}, Cout: 70,
 		Texte:      "Le vent sec du Nord se lève, aveugle et disperse toute l'armée adverse.",
 		Conditions: Conditions{NiveauMin: 60, Jour: true}},
 	{ID: "souffle_ivoire", Nom: "Souffle d'Ivoire",
 		Sequence: []string{"elephant", "elephant", "case", "kola", "racine", "baobab"},
 		Element:  "ivoire", Forme: data.FCercle, Effet: data.XSoigner, Effet2: data.XRenforcer, ModsEffet: []string{data.MPersistance},
-		Puissance: 6, Intensite: 3, Cout: 120,
-		Texte:      "Le Souffle originel, blanc et pur, relève tous les alliés et décuple leur force.",
+		Bonus: 2.5, Extra: []Effet{st(CSoi, "second_souffle", 6, 1.0)}, Cout: 120,
+		Texte:      "Le Souffle originel, blanc et pur : celui qui le porte ne tombe pas.",
 		Conditions: Conditions{NiveauMin: 100, PleineLune: true, Elements: []string{"ivoire"}}},
 }
 
@@ -273,11 +279,7 @@ func LegendairesHaches() (map[string]any, map[string]float64) {
 	prefixes := map[string]float64{}
 	for _, l := range legendaireList {
 		legs[Empreinte(Cle(l.Sequence))] = map[string]any{
-			"id": l.ID, "nom": l.Nom, "longueur": len(l.Sequence),
-			"element": l.Element, "fusion": l.Fusion, "forme": l.Forme,
-			"effet": l.Effet, "effet2": l.Effet2,
-			"mods_forme": nonNul(l.ModsForme), "mods_effet": nonNul(l.ModsEffet),
-			"puissance": l.Puissance, "intensite": l.Intensite, "cout": l.Cout, "texte": l.Texte,
+			"id": l.ID, "longueur": len(l.Sequence), "jutsu": l.Jutsu(),
 			"conditions": map[string]any{
 				"niveau_min": l.Conditions.NiveauMin, "nuit": l.Conditions.Nuit, "jour": l.Conditions.Jour,
 				"pleine_lune": l.Conditions.PleineLune, "elements": nonNul(l.Conditions.Elements),

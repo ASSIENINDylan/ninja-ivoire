@@ -3,6 +3,8 @@ package game
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -23,6 +25,8 @@ var (
 	ErrPasDeCombat   = errors.New("aucun combat en cours")
 	ErrRencontre     = errors.New("rencontre inconnue")
 	ErrNiveauTropBas = errors.New("niveau trop bas pour cette zone")
+	ErrPasFavori     = errors.New("ce jutsu n'est pas parmi vos 5 favoris : en combat, seuls vos favoris et les suites encore inconnues se lancent")
+	ErrRetenu        = errors.New("vous êtes retenu : impossible de fuir")
 )
 
 // Partie : la partie locale d'un joueur (prototype hors ligne).
@@ -33,7 +37,8 @@ type Partie struct {
 	combat       *combat.Combat
 	rencontre    *Rencontre
 	niveauCombat int
-	vus          int // découvertes du combat déjà inscrites au grimoire
+	vus          int  // découvertes du combat déjà inscrites au grimoire
+	fuite        bool // le joueur a fui : pas de renaissance
 	// Hasard tire un nombre dans [0, 1) (remplaçable dans les tests).
 	Hasard func() float64
 	// Maintenant donne l'heure réelle (remplaçable dans les tests).
@@ -99,6 +104,9 @@ type JutsuVue struct {
 	Sequence   []string `json:"sequence"`
 	Element    string   `json:"element"`
 	Forme      string   `json:"forme"`
+	Type       string   `json:"type"`
+	Degats     string   `json:"degats_nature,omitempty"`
+	Puissance  int      `json:"puissance"` // pour ce ninja, hors Soleil et Lune
 	Soutien    bool     `json:"soutien"`
 	Legendaire bool     `json:"legendaire"`
 	Texte      string   `json:"texte"`
@@ -130,8 +138,10 @@ func (p *Partie) vueJutsu(j *grammar.Jutsu) JutsuVue {
 		m, usages = k.Maitrise, k.Usages
 	}
 	mpt := 3 + p.Ninja.Gnanga/15
+	f := &combat.Combattant{Fangan: p.Ninja.Fangan, Gnanga: p.Ninja.Gnanga, Manhis: p.Ninja.Manhis}
 	return JutsuVue{
 		Cle: j.Cle, Nom: j.Nom, Nature: j.Nature, Sequence: j.Sequence, Element: j.Element, Forme: j.Forme,
+		Type: j.Type, Degats: j.DegatsNature, Puissance: int(math.Round(combat.Puissance(f, j, m, 1))),
 		Soutien: j.Soutien, Legendaire: j.Legendaire != "", Texte: j.Texte,
 		Cout: combat.CoutReel(j, m), Tours: (j.Longueur() + mpt - 1) / mpt,
 		Maitrise: m, Usages: usages, Favori: p.Ninja.EstFavori(j.Cle),
@@ -144,6 +154,7 @@ func (p *Partie) vueNinja() *NinjaVue {
 		return nil
 	}
 	n.MajEndurance(p.Maintenant())
+	n.MajPV(p.Maintenant())
 	v := &NinjaVue{
 		Ninja: n, RegionNom: data.Regions[n.Region].Nom, Situation: p.situation(),
 		PVMax: n.PVMax(), SouffleMax: n.SouffleMax(), XPProchain: XPPourNiveau(n.Niveau),
@@ -371,6 +382,7 @@ func (p *Partie) demarrer(r *Rencontre, niveau int) *combat.Combat {
 	p.rencontre = r
 	p.niveauCombat = niveau
 	p.vus = 0
+	p.fuite = false
 	return p.combat.Vue(0)
 }
 
@@ -383,6 +395,8 @@ type FinCombat struct {
 	Dje           int            `json:"dje"`
 	NiveauxGagnes int            `json:"niveaux_gagnes"`
 	Maitrise      map[string]int `json:"maitrise"` // nom du jutsu → maîtrise atteinte
+	Baume         int            `json:"baume"`    // PV rendus après le combat
+	PV            int            `json:"pv"`
 	Message       string         `json:"message"`
 }
 
@@ -402,6 +416,12 @@ func (p *Partie) Agir(a combat.Action) (*TourResultat, error) {
 		return nil, ErrPasDeCombat
 	}
 	a.Acteur = "joueur"
+	if a.Type == combat.AIncanter && len(a.Sequence) > 0 {
+		// En combat, seuls les favoris et les suites encore inconnues.
+		if j, _ := grammar.Analyser(a.Sequence); j != nil && p.Ninja.Grimoire[j.Cle] != nil && !p.Ninja.EstFavori(j.Cle) {
+			return nil, ErrPasFavori
+		}
+	}
 	evts, err := p.combat.JouerTour([]combat.Action{a})
 	if err != nil {
 		return nil, err
@@ -425,7 +445,11 @@ func (p *Partie) Fuir() (*TourResultat, error) {
 	if p.combat == nil || p.combat.Fini {
 		return nil, ErrPasDeCombat
 	}
+	if j := p.combat.Get("joueur"); j != nil && j.A("retenu") {
+		return nil, ErrRetenu
+	}
 	p.combat.Fini, p.combat.Vainqueur = true, 1
+	p.fuite = true
 	res := &TourResultat{
 		Evenements: []combat.Evenement{{Type: "fin", Valeur: 1, Texte: p.Ninja.Nom + " prend la fuite."}},
 		Combat:     p.combat.Vue(0),
@@ -445,25 +469,42 @@ func (p *Partie) terminer() *FinCombat {
 			fin.Maitrise[k.Nom] = k.Maitrise
 		}
 	}
-	switch c.Vainqueur {
-	case 0:
+	// Les blessures restent ; les baumes agissent après le combat.
+	now := p.Maintenant()
+	if j := c.Get("joueur"); j != nil {
+		n.PV = max(0, j.PV)
+		n.PVMaj = now.Unix()
+		if j.PV > 0 {
+			fin.Baume = min(j.Baume(), n.PVMax()-n.PV)
+			n.PV += fin.Baume
+		}
+	}
+	switch {
+	case c.Vainqueur == 0:
 		fin.Victoire = true
 		fin.XP, fin.Dje = r.Recompenses(p.niveauCombat)
 		n.Dje += fin.Dje
 		n.Victoires++
 		fin.NiveauxGagnes = n.GagnerXP(fin.XP)
 		fin.Message = "Victoire ! Vous gagnez de l'expérience et des Djê."
-	case 2:
+	case c.Vainqueur == 2:
 		fin.Nul = true
 		xp, _ := r.Recompenses(p.niveauCombat)
 		fin.XP = xp / 4
 		fin.NiveauxGagnes = n.GagnerXP(fin.XP)
 		fin.Message = "Match nul. Les deux camps se retirent, épuisés."
+	case p.fuite && n.PV > 0:
+		fin.Defaite = true
+		fin.Message = "Vous prenez la fuite, blessé mais vivant."
 	default:
 		n.Defaites++
-		n.Renaitre(p.Maintenant())
+		n.Renaitre(now)
 		fin.Defaite = true
 		fin.Message = "Défaite. Vous renaissez dans votre village. (Quand l'inventaire existera, vos objets iront au vainqueur.)"
 	}
+	if fin.Baume > 0 && n.PV > 0 {
+		fin.Message += fmt.Sprintf(" Un baume de Souffle referme vos plaies (+%d PV).", fin.Baume)
+	}
+	fin.PV = n.PV
 	return fin
 }

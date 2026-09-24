@@ -10034,7 +10034,9 @@
   "niveau_max": 100,
   "palier_element": 20,
   "points_par_niveau": 3,
+  "rangs_max": 4,
   "rayon_vision": 2,
+  "regen_pv_secondes": 1800,
   "regen_secondes": 60,
   "tour_max": 60
  },
@@ -10842,7 +10844,1529 @@
     "guérisseuse"
    ]
   },
-  "longueur_max": 8,
+  "bases_type": {
+   "defense": {
+    "f": 0.7,
+    "g": 0.5,
+    "m": 0.2,
+    "n": 1.2
+   },
+   "degats_magique": {
+    "f": 0.15,
+    "g": 1.05,
+    "m": 0.35,
+    "n": 1
+   },
+   "degats_physique": {
+    "f": 1,
+    "g": 0.15,
+    "m": 0.45,
+    "n": 1
+   },
+   "degats_pur": {
+    "f": 0.35,
+    "g": 0.35,
+    "m": 0.35,
+    "n": 0.85
+   },
+   "entrave": {
+    "f": 0.2,
+    "g": 0.8,
+    "m": 0.5,
+    "n": 1
+   },
+   "illusion": {
+    "f": 0.2,
+    "g": 0.6,
+    "m": 0.9,
+    "n": 1
+   },
+   "soin": {
+    "f": 0.4,
+    "g": 0.9,
+    "m": 0.2,
+    "n": 1.3
+   }
+  },
+  "cellules": {
+   "aveugler": {
+    "armure": [
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "reflet",
+      "duree": 3,
+      "valeur": 1
+     }
+    ],
+    "cercle": [
+     {
+      "op": "statut",
+      "cible": "allies",
+      "statut": "esquive",
+      "duree": 2,
+      "valeur": 0.35
+     }
+    ],
+    "double": [
+     {
+      "op": "clone",
+      "cible": "soi",
+      "duree": 3,
+      "valeur": 0.3,
+      "nombre": 1
+     }
+    ],
+    "invocation": [
+     {
+      "op": "clone",
+      "cible": "soi",
+      "duree": 2,
+      "valeur": 0.3,
+      "nombre": 2
+     }
+    ],
+    "lame": [
+     {
+      "op": "statut",
+      "cible": "contact",
+      "statut": "aveugle",
+      "duree": 3,
+      "valeur": 0.5
+     }
+    ],
+    "lien": [
+     {
+      "op": "statut",
+      "cible": "ennemi",
+      "statut": "endormi",
+      "duree": 2
+     }
+    ],
+    "mur": [
+     {
+      "op": "statut",
+      "cible": "ennemis",
+      "statut": "egare",
+      "duree": 2
+     }
+    ],
+    "pas": [
+     {
+      "op": "bond",
+      "cible": "soi",
+      "vers": "arriere"
+     },
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "invisible",
+      "duree": 1
+     }
+    ],
+    "piege": [
+     {
+      "op": "piege",
+      "cible": "ennemi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "annuler",
+        "cible": "declencheur"
+       }
+      ]
+     }
+    ],
+    "trait": [
+     {
+      "op": "statut",
+      "cible": "ennemi",
+      "statut": "confus",
+      "duree": 2,
+      "valeur": 0.5
+     }
+    ]
+   },
+   "briser": {
+    "armure": [
+     {
+      "op": "bouclier",
+      "cible": "soi",
+      "mult": 0.5
+     },
+     {
+      "op": "riposte",
+      "cible": "soi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "degats",
+        "cible": "attaquant",
+        "mult": 0.45,
+        "frappes": 1
+       }
+      ]
+     }
+    ],
+    "cercle": [
+     {
+      "op": "degats",
+      "cible": "ennemis",
+      "mult": 0.55,
+      "frappes": 1
+     }
+    ],
+    "double": [
+     {
+      "op": "degats",
+      "cible": "ennemi",
+      "mult": 0.6,
+      "frappes": 1
+     },
+     {
+      "op": "clone",
+      "cible": "soi",
+      "duree": 1,
+      "valeur": 0.3,
+      "nombre": 1
+     }
+    ],
+    "invocation": [
+     {
+      "op": "invocation",
+      "cible": "soi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "degats",
+        "cible": "aleatoire",
+        "mult": 0.45,
+        "frappes": 1
+       }
+      ]
+     }
+    ],
+    "lame": [
+     {
+      "op": "degats",
+      "cible": "contact",
+      "mult": 1.35,
+      "frappes": 1
+     }
+    ],
+    "lien": [
+     {
+      "op": "degats",
+      "cible": "ennemi",
+      "mult": 0.35,
+      "frappes": 1
+     },
+     {
+      "op": "dot",
+      "cible": "ennemi",
+      "mult": 0.3,
+      "duree": 3
+     }
+    ],
+    "mur": [
+     {
+      "op": "riposte",
+      "cible": "allies",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "degats",
+        "cible": "attaquant",
+        "mult": 0.5,
+        "frappes": 1
+       }
+      ]
+     }
+    ],
+    "pas": [
+     {
+      "op": "bond",
+      "cible": "soi",
+      "vers": "avant"
+     },
+     {
+      "op": "degats",
+      "cible": "front",
+      "mult": 0.8,
+      "frappes": 1
+     }
+    ],
+    "piege": [
+     {
+      "op": "piege",
+      "cible": "ennemi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "degats",
+        "cible": "declencheur",
+        "mult": 1.3,
+        "frappes": 1
+       }
+      ]
+     }
+    ],
+    "trait": [
+     {
+      "op": "degats",
+      "cible": "ennemi",
+      "mult": 1,
+      "frappes": 1
+     }
+    ]
+   },
+   "consumer": {
+    "armure": [
+     {
+      "op": "bouclier",
+      "cible": "soi",
+      "mult": 0.5
+     },
+     {
+      "op": "riposte",
+      "cible": "soi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "degats",
+        "cible": "attaquant",
+        "mult": 0.45,
+        "frappes": 1
+       }
+      ]
+     }
+    ],
+    "cercle": [
+     {
+      "op": "degats",
+      "cible": "ennemis",
+      "mult": 0.55,
+      "frappes": 1
+     }
+    ],
+    "double": [
+     {
+      "op": "degats",
+      "cible": "ennemi",
+      "mult": 0.6,
+      "frappes": 1
+     },
+     {
+      "op": "clone",
+      "cible": "soi",
+      "duree": 1,
+      "valeur": 0.3,
+      "nombre": 1
+     }
+    ],
+    "invocation": [
+     {
+      "op": "invocation",
+      "cible": "soi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "degats",
+        "cible": "aleatoire",
+        "mult": 0.45,
+        "frappes": 1
+       }
+      ]
+     }
+    ],
+    "lame": [
+     {
+      "op": "degats",
+      "cible": "contact",
+      "mult": 1.35,
+      "frappes": 1
+     }
+    ],
+    "lien": [
+     {
+      "op": "degats",
+      "cible": "ennemi",
+      "mult": 0.35,
+      "frappes": 1
+     },
+     {
+      "op": "dot",
+      "cible": "ennemi",
+      "mult": 0.3,
+      "duree": 3
+     }
+    ],
+    "mur": [
+     {
+      "op": "riposte",
+      "cible": "allies",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "degats",
+        "cible": "attaquant",
+        "mult": 0.5,
+        "frappes": 1
+       }
+      ]
+     }
+    ],
+    "pas": [
+     {
+      "op": "bond",
+      "cible": "soi",
+      "vers": "avant"
+     },
+     {
+      "op": "degats",
+      "cible": "front",
+      "mult": 0.8,
+      "frappes": 1
+     }
+    ],
+    "piege": [
+     {
+      "op": "piege",
+      "cible": "ennemi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "degats",
+        "cible": "declencheur",
+        "mult": 1.3,
+        "frappes": 1
+       }
+      ]
+     }
+    ],
+    "trait": [
+     {
+      "op": "degats",
+      "cible": "ennemi",
+      "mult": 1,
+      "frappes": 1
+     }
+    ]
+   },
+   "dissimuler": {
+    "armure": [
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "intangible_phys",
+      "duree": 2
+     }
+    ],
+    "cercle": [
+     {
+      "op": "statut",
+      "cible": "allies",
+      "statut": "intangible_phys",
+      "duree": 1
+     }
+    ],
+    "double": [
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "intangible_mag",
+      "duree": 2
+     }
+    ],
+    "invocation": [
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "leurre",
+      "duree": 3,
+      "valeur": 2
+     }
+    ],
+    "lame": [
+     {
+      "op": "dissiper",
+      "cible": "contact"
+     },
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "esquive",
+      "duree": 1,
+      "valeur": 0.3
+     }
+    ],
+    "lien": [
+     {
+      "op": "dissiper",
+      "cible": "ennemi"
+     },
+     {
+      "op": "statut",
+      "cible": "ennemi",
+      "statut": "marque",
+      "duree": 3,
+      "valeur": 0.2
+     }
+    ],
+    "mur": [
+     {
+      "op": "statut",
+      "cible": "allies",
+      "statut": "intangible_mag",
+      "duree": 1
+     }
+    ],
+    "pas": [
+     {
+      "op": "bond",
+      "cible": "soi",
+      "vers": "arriere"
+     },
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "esquive",
+      "duree": 2,
+      "valeur": 0.8
+     }
+    ],
+    "piege": [
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "disparu",
+      "duree": 1
+     }
+    ],
+    "trait": [
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "deviation",
+      "duree": 3,
+      "valeur": 1
+     }
+    ]
+   },
+   "drainer": {
+    "armure": [
+     {
+      "op": "riposte",
+      "cible": "soi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "drain",
+        "cible": "attaquant",
+        "nature": "pur",
+        "mult": 0.3,
+        "frappes": 1,
+        "valeur": 1
+       }
+      ]
+     }
+    ],
+    "cercle": [
+     {
+      "op": "drain",
+      "cible": "ennemis",
+      "nature": "magique",
+      "mult": 0.3,
+      "frappes": 1,
+      "valeur": 0.5
+     }
+    ],
+    "double": [
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "second_souffle",
+      "duree": 5,
+      "valeur": 0.5
+     }
+    ],
+    "invocation": [
+     {
+      "op": "invocation",
+      "cible": "soi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "drain",
+        "cible": "aleatoire",
+        "nature": "magique",
+        "mult": 0.3,
+        "frappes": 1,
+        "valeur": 0.6
+       }
+      ]
+     }
+    ],
+    "lame": [
+     {
+      "op": "drain",
+      "cible": "contact",
+      "nature": "physique",
+      "mult": 0.9,
+      "frappes": 1,
+      "valeur": 0.5
+     }
+    ],
+    "lien": [
+     {
+      "op": "statut",
+      "cible": "ennemi",
+      "statut": "sangsue",
+      "duree": 3,
+      "valeur": 0.3
+     }
+    ],
+    "mur": [
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "baume",
+      "valeur": 1.5
+     }
+    ],
+    "pas": [
+     {
+      "op": "bond",
+      "cible": "soi",
+      "vers": "arriere"
+     },
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "baume",
+      "valeur": 0.8
+     }
+    ],
+    "piege": [
+     {
+      "op": "piege",
+      "cible": "ennemi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "drain",
+        "cible": "declencheur",
+        "nature": "magique",
+        "mult": 1,
+        "frappes": 1,
+        "valeur": 0.6
+       }
+      ]
+     }
+    ],
+    "trait": [
+     {
+      "op": "drain",
+      "cible": "ennemi",
+      "nature": "magique",
+      "mult": 0.7,
+      "frappes": 1,
+      "valeur": 0.6
+     }
+    ]
+   },
+   "lier": {
+    "armure": [
+     {
+      "op": "riposte",
+      "cible": "soi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "statut",
+        "cible": "attaquant",
+        "statut": "desarme",
+        "duree": 2
+       }
+      ]
+     }
+    ],
+    "cercle": [
+     {
+      "op": "statut",
+      "cible": "ennemis",
+      "statut": "scelle",
+      "duree": 1
+     },
+     {
+      "op": "interrompre",
+      "cible": "ennemis"
+     }
+    ],
+    "double": [
+     {
+      "op": "statut",
+      "cible": "ennemi",
+      "statut": "desarme",
+      "duree": 2
+     },
+     {
+      "op": "statut",
+      "cible": "ennemi",
+      "statut": "sans_garde",
+      "duree": 2
+     }
+    ],
+    "invocation": [
+     {
+      "op": "invocation",
+      "cible": "soi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "statut",
+        "cible": "aleatoire",
+        "statut": "hasard",
+        "duree": 1
+       }
+      ]
+     }
+    ],
+    "lame": [
+     {
+      "op": "degats",
+      "cible": "contact",
+      "nature": "physique",
+      "mult": 0.3,
+      "frappes": 1
+     },
+     {
+      "op": "statut",
+      "cible": "contact",
+      "statut": "sans_garde",
+      "duree": 3
+     }
+    ],
+    "lien": [
+     {
+      "op": "statut",
+      "cible": "ennemi",
+      "statut": "scelle",
+      "duree": 3
+     },
+     {
+      "op": "interrompre",
+      "cible": "ennemi"
+     }
+    ],
+    "mur": [
+     {
+      "op": "statut",
+      "cible": "ennemis",
+      "statut": "desarme",
+      "duree": 1
+     }
+    ],
+    "pas": [
+     {
+      "op": "bond",
+      "cible": "soi",
+      "vers": "avant"
+     },
+     {
+      "op": "statut",
+      "cible": "front",
+      "statut": "scelle",
+      "duree": 2
+     }
+    ],
+    "piege": [
+     {
+      "op": "piege",
+      "cible": "ennemi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "statut",
+        "cible": "declencheur",
+        "statut": "scelle",
+        "duree": 2
+       }
+      ]
+     }
+    ],
+    "trait": [
+     {
+      "op": "statut",
+      "cible": "ennemi",
+      "statut": "desarme",
+      "duree": 2
+     }
+    ]
+   },
+   "marquer": {
+    "armure": [
+     {
+      "op": "bouclier",
+      "cible": "soi",
+      "mult": 0.5
+     },
+     {
+      "op": "riposte",
+      "cible": "soi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "degats",
+        "cible": "attaquant",
+        "mult": 0.45,
+        "frappes": 1
+       }
+      ]
+     }
+    ],
+    "cercle": [
+     {
+      "op": "degats",
+      "cible": "ennemis",
+      "mult": 0.55,
+      "frappes": 1
+     }
+    ],
+    "double": [
+     {
+      "op": "degats",
+      "cible": "ennemi",
+      "mult": 0.6,
+      "frappes": 1
+     },
+     {
+      "op": "clone",
+      "cible": "soi",
+      "duree": 1,
+      "valeur": 0.3,
+      "nombre": 1
+     }
+    ],
+    "invocation": [
+     {
+      "op": "invocation",
+      "cible": "soi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "degats",
+        "cible": "aleatoire",
+        "mult": 0.45,
+        "frappes": 1
+       }
+      ]
+     }
+    ],
+    "lame": [
+     {
+      "op": "degats",
+      "cible": "contact",
+      "mult": 1.35,
+      "frappes": 1
+     }
+    ],
+    "lien": [
+     {
+      "op": "degats",
+      "cible": "ennemi",
+      "mult": 0.35,
+      "frappes": 1
+     },
+     {
+      "op": "dot",
+      "cible": "ennemi",
+      "mult": 0.3,
+      "duree": 3
+     }
+    ],
+    "mur": [
+     {
+      "op": "riposte",
+      "cible": "allies",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "degats",
+        "cible": "attaquant",
+        "mult": 0.5,
+        "frappes": 1
+       }
+      ]
+     }
+    ],
+    "pas": [
+     {
+      "op": "bond",
+      "cible": "soi",
+      "vers": "avant"
+     },
+     {
+      "op": "degats",
+      "cible": "front",
+      "mult": 0.8,
+      "frappes": 1
+     }
+    ],
+    "piege": [
+     {
+      "op": "piege",
+      "cible": "ennemi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "degats",
+        "cible": "declencheur",
+        "mult": 1.3,
+        "frappes": 1
+       }
+      ]
+     }
+    ],
+    "trait": [
+     {
+      "op": "degats",
+      "cible": "ennemi",
+      "mult": 1,
+      "frappes": 1
+     }
+    ]
+   },
+   "renforcer": {
+    "armure": [
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "def_phys",
+      "duree": 4,
+      "valeur": 0.3
+     },
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "def_mag",
+      "duree": 4,
+      "valeur": 0.3
+     }
+    ],
+    "cercle": [
+     {
+      "op": "bouclier",
+      "cible": "allies",
+      "mult": 0.45
+     }
+    ],
+    "double": [
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "renvoi",
+      "duree": 3,
+      "valeur": 0.35
+     }
+    ],
+    "invocation": [
+     {
+      "op": "invocation",
+      "cible": "soi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "bouclier",
+        "cible": "soi",
+        "mult": 0.3
+       }
+      ]
+     }
+    ],
+    "lame": [
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "def_phys",
+      "duree": 3,
+      "valeur": 0.35
+     }
+    ],
+    "lien": [
+     {
+      "op": "bouclier",
+      "cible": "soi",
+      "mult": 1.1
+     }
+    ],
+    "mur": [
+     {
+      "op": "statut",
+      "cible": "allies",
+      "statut": "def_phys",
+      "duree": 2,
+      "valeur": 0.25
+     },
+     {
+      "op": "statut",
+      "cible": "allies",
+      "statut": "def_mag",
+      "duree": 2,
+      "valeur": 0.25
+     }
+    ],
+    "pas": [
+     {
+      "op": "bond",
+      "cible": "soi",
+      "vers": "arriere"
+     },
+     {
+      "op": "bouclier",
+      "cible": "soi",
+      "mult": 0.6
+     }
+    ],
+    "piege": [
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "parade",
+      "duree": 3,
+      "valeur": 1
+     }
+    ],
+    "trait": [
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "def_mag",
+      "duree": 3,
+      "valeur": 0.35
+     }
+    ]
+   },
+   "repousser": {
+    "armure": [
+     {
+      "op": "riposte",
+      "cible": "soi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "statut",
+        "cible": "attaquant",
+        "statut": "immobilise",
+        "duree": 2
+       }
+      ]
+     }
+    ],
+    "cercle": [
+     {
+      "op": "deplacer",
+      "cible": "ennemis",
+      "vers": "arriere"
+     },
+     {
+      "op": "interrompre",
+      "cible": "ennemis"
+     }
+    ],
+    "double": [
+     {
+      "op": "deplacer",
+      "cible": "ennemi",
+      "vers": "avant"
+     },
+     {
+      "op": "statut",
+      "cible": "ennemi",
+      "statut": "immobilise",
+      "duree": 2
+     }
+    ],
+    "invocation": [
+     {
+      "op": "invocation",
+      "cible": "soi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "statut",
+        "cible": "aleatoire",
+        "statut": "immobilise",
+        "duree": 1
+       }
+      ]
+     }
+    ],
+    "lame": [
+     {
+      "op": "statut",
+      "cible": "contact",
+      "statut": "immobilise",
+      "duree": 2
+     }
+    ],
+    "lien": [
+     {
+      "op": "statut",
+      "cible": "ennemi",
+      "statut": "immobilise",
+      "duree": 3
+     },
+     {
+      "op": "statut",
+      "cible": "ennemi",
+      "statut": "retenu",
+      "duree": 4
+     }
+    ],
+    "mur": [
+     {
+      "op": "statut",
+      "cible": "ennemis",
+      "statut": "retenu",
+      "duree": 3
+     },
+     {
+      "op": "statut",
+      "cible": "ennemis",
+      "statut": "immobilise",
+      "duree": 1
+     }
+    ],
+    "pas": [
+     {
+      "op": "bond",
+      "cible": "soi",
+      "vers": "avant"
+     },
+     {
+      "op": "deplacer",
+      "cible": "front",
+      "vers": "arriere"
+     }
+    ],
+    "piege": [
+     {
+      "op": "piege",
+      "cible": "ennemi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "statut",
+        "cible": "declencheur",
+        "statut": "immobilise",
+        "duree": 2
+       },
+       {
+        "op": "statut",
+        "cible": "declencheur",
+        "statut": "retenu",
+        "duree": 3
+       }
+      ]
+     }
+    ],
+    "trait": [
+     {
+      "op": "deplacer",
+      "cible": "ennemi",
+      "vers": "arriere"
+     },
+     {
+      "op": "interrompre",
+      "cible": "ennemi"
+     }
+    ]
+   },
+   "soigner": {
+    "armure": [
+     {
+      "op": "bouclier",
+      "cible": "soi",
+      "mult": 0.3
+     },
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "regen",
+      "duree": 3,
+      "valeur": 0.4
+     }
+    ],
+    "cercle": [
+     {
+      "op": "soin",
+      "cible": "soi",
+      "mult": 0.5
+     },
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "regen",
+      "duree": 2,
+      "valeur": 0.25
+     }
+    ],
+    "double": [
+     {
+      "op": "declencheur",
+      "cible": "soi",
+      "duree": 4,
+      "valeur": 0.3,
+      "effets": [
+       {
+        "op": "soin",
+        "cible": "soi",
+        "mult": 1.4
+       }
+      ]
+     }
+    ],
+    "invocation": [
+     {
+      "op": "invocation",
+      "cible": "soi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "soin",
+        "cible": "soi",
+        "mult": 0.35
+       }
+      ]
+     }
+    ],
+    "lame": [
+     {
+      "op": "soin",
+      "cible": "soi",
+      "mult": 0.6
+     },
+     {
+      "op": "purifier",
+      "cible": "soi"
+     }
+    ],
+    "lien": [
+     {
+      "op": "differe",
+      "cible": "soi",
+      "duree": 2,
+      "effets": [
+       {
+        "op": "soin",
+        "cible": "soi",
+        "mult": 1.8
+       }
+      ]
+     }
+    ],
+    "mur": [
+     {
+      "op": "statut",
+      "cible": "soi",
+      "statut": "regen",
+      "duree": 4,
+      "valeur": 0.3
+     }
+    ],
+    "pas": [
+     {
+      "op": "bond",
+      "cible": "soi",
+      "vers": "arriere"
+     },
+     {
+      "op": "soin",
+      "cible": "soi",
+      "mult": 0.7
+     }
+    ],
+    "piege": [
+     {
+      "op": "riposte",
+      "cible": "soi",
+      "duree": 3,
+      "effets": [
+       {
+        "op": "soin",
+        "cible": "soi",
+        "mult": 0.4
+       }
+      ]
+     }
+    ],
+    "trait": [
+     {
+      "op": "soin",
+      "cible": "soi",
+      "mult": 1
+     }
+    ]
+   }
+  },
+  "inclinaisons": {
+   "elements": {
+    "acide": [
+     -0.03125,
+     0.11249999999999999,
+     0.09375000000000001
+    ],
+    "astre": [
+     0.08,
+     0.16,
+     0.08
+    ],
+    "bois_sacre": [
+     0.11249999999999999,
+     0.11249999999999999,
+     -0.056249999999999994
+    ],
+    "brume": [
+     -0.05,
+     0.05,
+     0.14
+    ],
+    "cendre": [
+     0.03125,
+     0.09375,
+     0.09375
+    ],
+    "crepuscule": [
+     0.03125,
+     0.15000000000000002,
+     -0.006250000000000001
+    ],
+    "cristal": [
+     0.08125,
+     0.125,
+     -0.012500000000000002
+    ],
+    "eau": [
+     0,
+     0.1,
+     0.05
+    ],
+    "esprit": [
+     0,
+     0.2,
+     0.05
+    ],
+    "essaim": [
+     0,
+     0.03,
+     0.13
+    ],
+    "feu": [
+     0.05,
+     0.15,
+     0
+    ],
+    "fleau": [
+     -0.03125,
+     0.06875,
+     0.14375000000000002
+    ],
+    "foudre": [
+     0,
+     0.05,
+     0.12
+    ],
+    "glace": [
+     0,
+     0.0625,
+     0.125
+    ],
+    "gravite": [
+     0.14,
+     0.06,
+     -0.08
+    ],
+    "harmattan": [
+     0.0375,
+     0,
+     0.14375
+    ],
+    "ivoire": [
+     0.12,
+     0.12,
+     0.12
+    ],
+    "lave": [
+     0.125,
+     0.09375,
+     -0.03125
+    ],
+    "lumiere": [
+     0.05,
+     0.18,
+     0.05
+    ],
+    "lune": [
+     -0.05,
+     0.14,
+     0.04
+    ],
+    "magnetisme": [
+     0.075,
+     0.056249999999999994,
+     0.075
+    ],
+    "maree": [
+     -0.03125,
+     0.15000000000000002,
+     0.056249999999999994
+    ],
+    "metal": [
+     0.12,
+     0.04,
+     0
+    ],
+    "ombre": [
+     0.05,
+     0.05,
+     0.18
+    ],
+    "onde": [
+     -0.025,
+     0.075,
+     0.13125
+    ],
+    "sable": [
+     0.06,
+     0,
+     0.08
+    ],
+    "seisme": [
+     0.18125000000000002,
+     0.0375,
+     -0.08125
+    ],
+    "sel": [
+     0.03,
+     0.1,
+     0.03
+    ],
+    "soleil": [
+     0.1,
+     0.1,
+     -0.05
+    ],
+    "son": [
+     -0.04,
+     0.12,
+     0.06
+    ],
+    "songe": [
+     -0.0625,
+     0.11875,
+     0.11250000000000002
+    ],
+    "tempete": [
+     0,
+     0.03125,
+     0.16875
+    ],
+    "temps": [
+     0,
+     0.1,
+     0.2
+    ],
+    "terre": [
+     0.15,
+     0,
+     -0.05
+    ],
+    "vapeur": [
+     0.03125,
+     0.15625,
+     0.03125
+    ],
+    "vegetal": [
+     0.08,
+     0.08,
+     -0.04
+    ],
+    "venin": [
+     -0.05,
+     0.08,
+     0.1
+    ],
+    "vent": [
+     0,
+     0,
+     0.15
+    ],
+    "vide": [
+     0.18,
+     0.05,
+     0.05
+    ],
+    "vie": [
+     0.15,
+     0.1,
+     0
+    ]
+   },
+   "formes": {
+    "armure": [
+     0.08,
+     0,
+     0.02
+    ],
+    "cercle": [
+     0,
+     0.08,
+     0
+    ],
+    "double": [
+     0,
+     0,
+     0.1
+    ],
+    "invocation": [
+     0,
+     0.1,
+     0
+    ],
+    "lame": [
+     0.1,
+     0,
+     0
+    ],
+    "lien": [
+     0,
+     0.06,
+     0.04
+    ],
+    "mur": [
+     0.06,
+     0.03,
+     0
+    ],
+    "pas": [
+     0,
+     0,
+     0.12
+    ],
+    "piege": [
+     0.02,
+     0.06,
+     0.02
+    ],
+    "trait": [
+     0,
+     0,
+     0.08
+    ]
+   }
+  },
+  "longueur_max": 7,
   "max_modificateurs": 2,
   "messages_echec": {
    "effet": "Une forme se dessine… puis se dissipe, faute de but.",
@@ -10852,6 +12376,11 @@
    "inconnu": "Ce signe n'existe pas.",
    "modificateurs": "Trop de signes de maîtrise étouffent le jutsu.",
    "surplus": "Le jutsu était presque né : des signes en trop l'ont brisé."
+  },
+  "nature_effet": {
+   "briser": "physique",
+   "consumer": "magique",
+   "marquer": "pur"
   },
   "noms": {
    "epithetes_mod_effet": {
@@ -11381,6 +12910,13 @@
     "nom": "Trait"
    }
   },
+  "noms_types": {
+   "defense": "Défense",
+   "degats": "Dégâts",
+   "entrave": "Entrave",
+   "illusion": "Illusion",
+   "soin": "Soin"
+  },
   "prefixe_mod_forme": {
    "amplifier": [
     "Grand",
@@ -11407,17 +12943,23 @@
     "Muette"
    ]
   },
-  "puissance_forme": {
-   "armure": 1,
-   "cercle": 0.6,
-   "double": 0.5,
-   "invocation": 0.45,
-   "lame": 1.4,
-   "lien": 0.5,
-   "mur": 1.2,
-   "pas": 0.5,
-   "piege": 1.3,
-   "trait": 1
+  "sel_signature": "ninja-ivoire:signature:",
+  "statuts_controle": {
+   "aveugle": true,
+   "confus": true,
+   "desarme": true,
+   "egare": true,
+   "endormi": true,
+   "hasard": true,
+   "immobilise": true,
+   "retenu": true,
+   "sans_garde": true,
+   "scelle": true
+  },
+  "statuts_drapeau": {
+   "deviation": true,
+   "parade": true,
+   "reflet": true
   },
   "suffixe_mod_effet": {
    "amplifier": [
@@ -11445,55 +12987,59 @@
     "invisible"
    ]
   },
-  "texte_effet": {
-   "aveugler": "aveugle la cible (40 % de chances de rater)",
-   "briser": "brise les défenses et l'incantation de la cible",
-   "consumer": "consume la cible pendant 3 tours",
-   "dissimuler": "rend un allié insaisissable (esquive, actions cachées)",
-   "drainer": "rend au lanceur une partie des dégâts et du Souffle",
-   "lier": "entrave la cible (lente, ne peut ni frapper au contact ni bouger)",
-   "marquer": "marque la cible, qui subit plus de dégâts",
-   "renforcer": "renforce les dégâts d'un allié",
-   "repousser": "repousse la cible d'un rang et brise son incantation",
-   "soigner": "soigne un allié"
+  "textes_cible": {
+   "aleatoire": "un adversaire au hasard",
+   "allies": "tout son camp",
+   "attaquant": "l'attaquant",
+   "contact": "une cible au contact",
+   "contact_etendu": "une cible au contact et sa voisine",
+   "declencheur": "la victime",
+   "ennemi": "une cible",
+   "ennemi_etendu": "une cible et sa voisine",
+   "ennemis": "tous les adversaires",
+   "front": "l'adversaire du premier rang",
+   "soi": "le lanceur"
   },
-  "texte_forme": {
-   "armure": "Une armure qui absorbe les coups portés au lanceur.",
-   "cercle": "Une onde qui touche tous les adversaires, plus faiblement.",
-   "double": "Un double qui détourne la prochaine attaque.",
-   "invocation": "Une créature de Souffle qui attaque pendant trois tours.",
-   "lame": "Une lame de Souffle qui frappe fort au corps à corps (rangs 1 et 2).",
-   "lien": "Un lien qui touche peu mais renforce l'effet.",
-   "mur": "Un mur qui protège tout le camp et absorbe les coups.",
-   "pas": "Un déplacement éclair : le lanceur change de rang et esquive.",
-   "piege": "Un piège qui se déclenche quand la cible agit.",
-   "trait": "Un projectile qui frappe une cible à n'importe quel rang."
+  "textes_statut": {
+   "aveugle": "{v} % de chances de rater",
+   "baume": "à la fin du combat, soigne {v} % de la puissance",
+   "confus": "{v} % de chances de frapper son propre camp",
+   "def_mag": "défense magique +{v} %",
+   "def_phys": "défense physique +{v} %",
+   "desarme": "ne peut plus frapper",
+   "deviation": "détourne la prochaine attaque sur un allié de l'attaquant",
+   "disparu": "disparaît : ni ciblé ni touché",
+   "egare": "ses attaques partent au hasard",
+   "endormi": "endormi (un coup le réveille)",
+   "esquive": "esquive +{v} %",
+   "hasard": "une entrave au hasard",
+   "immobilise": "ne peut plus changer de rang",
+   "intangible_mag": "insensible aux dégâts magiques",
+   "intangible_phys": "insensible aux dégâts physiques",
+   "invisible": "impossible à cibler",
+   "leurre": "{n} leurre(s) encaissent les attaques",
+   "marque": "subit {v} % de dégâts en plus",
+   "parade": "pare entièrement le prochain coup",
+   "reflet": "renvoie le prochain jutsu à son lanceur",
+   "regen": "régénère {v} % de la puissance par tour",
+   "renvoi": "renvoie {v} % des dégâts reçus",
+   "retenu": "ne peut plus fuir",
+   "sangsue": "perd {v} % de la puissance par tour au profit du lanceur",
+   "sans_garde": "ne peut plus se mettre en garde",
+   "scelle": "ne peut plus former de mudras",
+   "second_souffle": "survit une fois à un coup fatal et récupère {v} % de la puissance"
   },
-  "texte_modificateur": {
-   "amplifier": [
-    "forme amplifiée",
-    "effet amplifié"
-   ],
-   "etendre": [
-    "atteint une cible voisine",
-    "effet prolongé de 2 tours"
-   ],
-   "multiplier": [
-    "frappe deux fois",
-    "effet propagé à une autre cible"
-   ],
-   "persistance": [
-    "la forme persiste un tour de plus",
-    "effet deux fois plus long"
-   ],
-   "retarder": [
-    "frappe au tour suivant, plus fort",
-    "effet retardé mais doublé"
-   ],
-   "silence": [
-    "incantation impossible à interrompre",
-    "effet impossible à purifier"
-   ]
+  "type_effet": {
+   "aveugler": "illusion",
+   "briser": "degats",
+   "consumer": "degats",
+   "dissimuler": "illusion",
+   "drainer": "soin",
+   "lier": "entrave",
+   "marquer": "degats",
+   "renforcer": "defense",
+   "repousser": "entrave",
+   "soigner": "soin"
   }
  },
  "legendaires": {
@@ -11543,22 +13089,54 @@
      "nuit": false,
      "pleine_lune": false
     },
-    "cout": 40,
-    "effet": "soigner",
-    "effet2": "",
-    "element": "terre",
-    "forme": "mur",
-    "fusion": false,
     "id": "rempart_argile",
-    "intensite": 1.6,
-    "longueur": 5,
-    "mods_effet": [],
-    "mods_forme": [
-     "amplifier"
-    ],
-    "nom": "Rempart des Mosquées d'argile",
-    "puissance": 3.4,
-    "texte": "Un rempart d'argile hérissé de pieux protège tout le camp et soigne ceux qui s'y abritent."
+    "jutsu": {
+     "cle": "buffle\u003ebuffle\u003etortue\u003elion\u003ekola",
+     "nom": "Rempart des Mosquées d'argile",
+     "nature": "Jutsu légendaire",
+     "sequence": [
+      "buffle",
+      "buffle",
+      "tortue",
+      "lion",
+      "kola"
+     ],
+     "element": "terre",
+     "fusion": false,
+     "forme": "mur",
+     "effet": "soigner",
+     "mods_forme": [
+      "amplifier"
+     ],
+     "legendaire": "rempart_argile",
+     "type": "soin",
+     "coefs": {
+      "f": 0.566,
+      "g": 1,
+      "m": 0.152,
+      "n": 4.352
+     },
+     "effets": [
+      {
+       "op": "statut",
+       "cible": "soi",
+       "statut": "regen",
+       "duree": 4,
+       "valeur": 0.3
+      },
+      {
+       "op": "statut",
+       "cible": "allies",
+       "statut": "def_phys",
+       "duree": 3,
+       "valeur": 0.3
+      }
+     ],
+     "cout": 40,
+     "soutien": true,
+     "texte": "Un rempart d'argile hérissé de pieux protège tout le camp et régénère celui qui l'a bâti.\nSoin. Puissance = (8 + 0,566 × Fangan + 1,00 × Gnanga + 0,152 × Manhis) × 4,352.\nLe lanceur : régénère 30 % de la puissance par tour, 4 tours.\nTout son camp : défense physique +30 %, 3 tours."
+    },
+    "longueur": 5
    },
    "4d9cd4bab8f09b78f8da3b65403bc4d1308d125810207f00142ea074ff6d03d7": {
     "conditions": {
@@ -11568,22 +13146,54 @@
      "nuit": false,
      "pleine_lune": false
     },
-    "cout": 42,
-    "effet": "briser",
-    "effet2": "",
-    "element": "foudre",
-    "forme": "trait",
-    "fusion": false,
     "id": "tonnerre_man",
-    "intensite": 2.2,
-    "longueur": 5,
-    "mods_effet": [
-     "amplifier"
-    ],
-    "mods_forme": [],
-    "nom": "Tonnerre de la Dent de Man",
-    "puissance": 3.6,
-    "texte": "La foudre tombe du sommet de la Dent de Man et pulvérise les défenses de la cible."
+    "jutsu": {
+     "cle": "aigle\u003eaigle\u003emartin_pecheur\u003ehache\u003elion",
+     "nom": "Tonnerre de la Dent de Man",
+     "nature": "Jutsu légendaire",
+     "sequence": [
+      "aigle",
+      "aigle",
+      "martin_pecheur",
+      "hache",
+      "lion"
+     ],
+     "element": "foudre",
+     "fusion": false,
+     "forme": "trait",
+     "effet": "briser",
+     "mods_effet": [
+      "amplifier"
+     ],
+     "legendaire": "tonnerre_man",
+     "type": "degats",
+     "degats_nature": "physique",
+     "coefs": {
+      "f": 1.046,
+      "g": 0.214,
+      "m": 0.684,
+      "n": 2.48
+     },
+     "effets": [
+      {
+       "op": "degats",
+       "cible": "ennemi",
+       "nature": "physique",
+       "mult": 1.2,
+       "frappes": 1
+      },
+      {
+       "op": "statut",
+       "cible": "ennemi",
+       "statut": "scelle",
+       "duree": 2
+      }
+     ],
+     "cout": 42,
+     "soutien": false,
+     "texte": "La foudre tombe du sommet de la Dent de Man et pulvérise les défenses de la cible.\nDégâts physiques. Puissance = (8 + 1,046 × Fangan + 0,214 × Gnanga + 0,684 × Manhis) × 2,48.\nDégâts physiques à une cible : 120 % de la puissance.\nUne cible : ne peut plus former de mudras, 2 tours."
+    },
+    "longueur": 5
    },
    "4dad5294b8a66ae27ff6f8bfc09cd5a2affb22fd1643b549e3ff0dc901e68a79": {
     "conditions": {
@@ -11593,22 +13203,66 @@
      "nuit": false,
      "pleine_lune": false
     },
-    "cout": 70,
-    "effet": "aveugler",
-    "effet2": "repousser",
-    "element": "harmattan",
-    "forme": "cercle",
-    "fusion": true,
     "id": "harmattan_anciens",
-    "intensite": 2.4,
-    "longueur": 6,
-    "mods_effet": [
-     "etendre"
-    ],
-    "mods_forme": [],
-    "nom": "Harmattan des Anciens",
-    "puissance": 3.2,
-    "texte": "Le vent sec du Nord se lève, aveugle et disperse toute l'armée adverse."
+    "jutsu": {
+     "cle": "scorpion\u003ecalao\u003ecase\u003evoile\u003ebelier\u003efleuve",
+     "nom": "Harmattan des Anciens",
+     "nature": "Jutsu légendaire",
+     "sequence": [
+      "scorpion",
+      "calao",
+      "case",
+      "voile",
+      "belier",
+      "fleuve"
+     ],
+     "element": "harmattan",
+     "fusion": true,
+     "forme": "cercle",
+     "effet": "aveugler",
+     "effet2": "repousser",
+     "mods_effet": [
+      "etendre"
+     ],
+     "legendaire": "harmattan_anciens",
+     "type": "illusion",
+     "coefs": {
+      "f": 0.252,
+      "g": 0.675,
+      "m": 0.95,
+      "n": 3.182
+     },
+     "effets": [
+      {
+       "op": "statut",
+       "cible": "allies",
+       "statut": "esquive",
+       "duree": 2,
+       "valeur": 0.39
+      },
+      {
+       "op": "deplacer",
+       "cible": "ennemis",
+       "valeur": 0.05,
+       "vers": "arriere"
+      },
+      {
+       "op": "interrompre",
+       "cible": "ennemis"
+      },
+      {
+       "op": "statut",
+       "cible": "ennemis",
+       "statut": "aveugle",
+       "duree": 2,
+       "valeur": 0.4
+      }
+     ],
+     "cout": 70,
+     "soutien": false,
+     "texte": "Le vent sec du Nord se lève, aveugle et disperse toute l'armée adverse.\nIllusion. Puissance = (8 + 0,252 × Fangan + 0,675 × Gnanga + 0,95 × Manhis) × 3,182.\nTout son camp : esquive +39 %, 2 tours.\nRepousse tous les adversaires au dernier rang (réussite +5 %).\nBrise l'incantation de tous les adversaires.\nTous les adversaires : 40 % de chances de rater, 2 tours."
+    },
+    "longueur": 6
    },
    "740380bf11c734f3ef9c898455ef824ee991d61136194ae4bed9ced32556d523": {
     "conditions": {
@@ -11618,22 +13272,59 @@
      "nuit": true,
      "pleine_lune": false
     },
-    "cout": 38,
-    "effet": "soigner",
-    "effet2": "",
-    "element": "eau",
-    "forme": "cercle",
-    "fusion": false,
     "id": "chant_lamantin",
-    "intensite": 2,
-    "longueur": 5,
-    "mods_effet": [
-     "etendre"
-    ],
-    "mods_forme": [],
-    "nom": "Chant du Lamantin",
-    "puissance": 2.6,
-    "texte": "Un chant venu des lagunes soigne tous les alliés et les régénère plusieurs tours. Il ne s'élève que la nuit."
+    "jutsu": {
+     "cle": "lamantin\u003elamantin\u003ecase\u003ekola\u003efleuve",
+     "nom": "Chant du Lamantin",
+     "nature": "Jutsu légendaire",
+     "sequence": [
+      "lamantin",
+      "lamantin",
+      "case",
+      "kola",
+      "fleuve"
+     ],
+     "element": "eau",
+     "fusion": false,
+     "forme": "cercle",
+     "effet": "soigner",
+     "mods_effet": [
+      "etendre"
+     ],
+     "legendaire": "chant_lamantin",
+     "type": "soin",
+     "coefs": {
+      "f": 0.405,
+      "g": 1.089,
+      "m": 0.227,
+      "n": 3.224
+     },
+     "effets": [
+      {
+       "op": "soin",
+       "cible": "soi",
+       "mult": 0.5
+      },
+      {
+       "op": "statut",
+       "cible": "allies",
+       "statut": "regen",
+       "duree": 2,
+       "valeur": 0.25,
+       "part": 0.7
+      },
+      {
+       "op": "statut",
+       "cible": "soi",
+       "statut": "baume",
+       "valeur": 1
+      }
+     ],
+     "cout": 38,
+     "soutien": true,
+     "texte": "Un chant venu des lagunes referme les plaies du chanteur, longtemps après la bataille. Il ne s'élève que la nuit.\nSoin. Puissance = (8 + 0,405 × Fangan + 1,089 × Gnanga + 0,227 × Manhis) × 3,224.\nSoigne le lanceur : 50 % de la puissance.\nTout son camp : régénère 25 % de la puissance par tour, 2 tours. (Cibles secondaires : 70 %.)\nLe lanceur : à la fin du combat, soigne 100 % de la puissance."
+    },
+    "longueur": 5
    },
    "75d602f00006a8f6e3e7052db628add925f22612bcd82f7e3c72ccf25739f412": {
     "conditions": {
@@ -11645,22 +13336,66 @@
      "nuit": false,
      "pleine_lune": true
     },
-    "cout": 120,
-    "effet": "soigner",
-    "effet2": "renforcer",
-    "element": "ivoire",
-    "forme": "cercle",
-    "fusion": false,
     "id": "souffle_ivoire",
-    "intensite": 3,
-    "longueur": 6,
-    "mods_effet": [
-     "persistance"
-    ],
-    "mods_forme": [],
-    "nom": "Souffle d'Ivoire",
-    "puissance": 6,
-    "texte": "Le Souffle originel, blanc et pur, relève tous les alliés et décuple leur force."
+    "jutsu": {
+     "cle": "elephant\u003eelephant\u003ecase\u003ekola\u003eracine\u003ebaobab",
+     "nom": "Souffle d'Ivoire",
+     "nature": "Jutsu légendaire",
+     "sequence": [
+      "elephant",
+      "elephant",
+      "case",
+      "kola",
+      "racine",
+      "baobab"
+     ],
+     "element": "ivoire",
+     "fusion": false,
+     "forme": "cercle",
+     "effet": "soigner",
+     "effet2": "renforcer",
+     "mods_effet": [
+      "persistance"
+     ],
+     "legendaire": "souffle_ivoire",
+     "type": "soin",
+     "coefs": {
+      "f": 0.505,
+      "g": 1.08,
+      "m": 0.347,
+      "n": 7.073
+     },
+     "effets": [
+      {
+       "op": "soin",
+       "cible": "soi",
+       "mult": 0.5
+      },
+      {
+       "op": "statut",
+       "cible": "soi",
+       "statut": "regen",
+       "duree": 5,
+       "valeur": 0.25
+      },
+      {
+       "op": "bouclier",
+       "cible": "allies",
+       "mult": 0.23
+      },
+      {
+       "op": "statut",
+       "cible": "soi",
+       "statut": "second_souffle",
+       "duree": 6,
+       "valeur": 1
+      }
+     ],
+     "cout": 120,
+     "soutien": true,
+     "texte": "Le Souffle originel, blanc et pur : celui qui le porte ne tombe pas.\nSoin. Puissance = (8 + 0,505 × Fangan + 1,08 × Gnanga + 0,347 × Manhis) × 7,073.\nSoigne le lanceur : 50 % de la puissance.\nLe lanceur : régénère 25 % de la puissance par tour, 5 tours.\nBouclier de Souffle sur tout son camp : 23 % de la puissance en PV temporaires.\nLe lanceur : survit une fois à un coup fatal et récupère 100 % de la puissance, 6 tours."
+    },
+    "longueur": 6
    },
    "8a07b440f0e565cb294866ad02e973c7ae30d900596ad570f4a71dc0b72b0755": {
     "conditions": {
@@ -11670,22 +13405,55 @@
      "nuit": false,
      "pleine_lune": false
     },
-    "cout": 40,
-    "effet": "consumer",
-    "effet2": "",
-    "element": "feu",
-    "forme": "lame",
-    "fusion": false,
     "id": "colere_panthere",
-    "intensite": 2,
-    "longueur": 5,
-    "mods_effet": [],
-    "mods_forme": [
-     "amplifier"
-    ],
-    "nom": "Colère de la Panthère",
-    "puissance": 4.2,
-    "texte": "Le Souffle de Feu prend la forme d'une panthère qui déchire la cible et la consume longuement."
+    "jutsu": {
+     "cle": "panthere\u003epanthere\u003emante\u003elion\u003ebraise",
+     "nom": "Colère de la Panthère",
+     "nature": "Jutsu légendaire",
+     "sequence": [
+      "panthere",
+      "panthere",
+      "mante",
+      "lion",
+      "braise"
+     ],
+     "element": "feu",
+     "fusion": false,
+     "forme": "lame",
+     "effet": "consumer",
+     "mods_forme": [
+      "amplifier"
+     ],
+     "legendaire": "colere_panthere",
+     "type": "degats",
+     "degats_nature": "magique",
+     "coefs": {
+      "f": 0.303,
+      "g": 1.211,
+      "m": 0.346,
+      "n": 3.683
+     },
+     "effets": [
+      {
+       "op": "degats",
+       "cible": "contact",
+       "nature": "magique",
+       "mult": 1.35,
+       "frappes": 1
+      },
+      {
+       "op": "dot",
+       "cible": "contact",
+       "nature": "magique",
+       "mult": 0.5,
+       "duree": 4
+      }
+     ],
+     "cout": 40,
+     "soutien": false,
+     "texte": "Le Souffle de Feu prend la forme d'une panthère qui déchire la cible et la consume longuement.\nDégâts magiques. Puissance = (8 + 0,303 × Fangan + 1,211 × Gnanga + 0,346 × Manhis) × 3,683.\nDégâts magiques à une cible au contact : 135 % de la puissance.\nUne cible au contact se consume : 50 % de la puissance par tour, 4 tours."
+    },
+    "longueur": 5
    },
    "987155ec6bcb0396229a32ed44a741997fce746ab80b78dda7cfe7b2d61b2ec6": {
     "conditions": {
@@ -11695,20 +13463,68 @@
      "nuit": false,
      "pleine_lune": false
     },
-    "cout": 36,
-    "effet": "lier",
-    "effet2": "consumer",
-    "element": "vegetal",
-    "forme": "lien",
-    "fusion": false,
     "id": "racines_fromager",
-    "intensite": 2.5,
-    "longueur": 5,
-    "mods_effet": [],
-    "mods_forme": [],
-    "nom": "Racines du Fromager",
-    "puissance": 2.2,
-    "texte": "Les racines du grand fromager enserrent la cible, l'immobilisent et l'épuisent."
+    "jutsu": {
+     "cle": "chimpanze\u003echimpanze\u003earaignee\u003eliane\u003ebraise",
+     "nom": "Racines du Fromager",
+     "nature": "Jutsu légendaire",
+     "sequence": [
+      "chimpanze",
+      "chimpanze",
+      "araignee",
+      "liane",
+      "braise"
+     ],
+     "element": "vegetal",
+     "fusion": false,
+     "forme": "lien",
+     "effet": "lier",
+     "effet2": "consumer",
+     "legendaire": "racines_fromager",
+     "type": "entrave",
+     "coefs": {
+      "f": 0.292,
+      "g": 0.991,
+      "m": 0.546,
+      "n": 2.48
+     },
+     "effets": [
+      {
+       "op": "statut",
+       "cible": "ennemi",
+       "statut": "scelle",
+       "duree": 3
+      },
+      {
+       "op": "interrompre",
+       "cible": "ennemi"
+      },
+      {
+       "op": "degats",
+       "cible": "ennemi",
+       "nature": "magique",
+       "mult": 0.18,
+       "frappes": 1
+      },
+      {
+       "op": "dot",
+       "cible": "ennemi",
+       "nature": "magique",
+       "mult": 0.15,
+       "duree": 2
+      },
+      {
+       "op": "statut",
+       "cible": "ennemi",
+       "statut": "retenu",
+       "duree": 5
+      }
+     ],
+     "cout": 36,
+     "soutien": false,
+     "texte": "Les racines du grand fromager enserrent la cible, l'immobilisent et l'épuisent.\nEntrave. Puissance = (8 + 0,292 × Fangan + 0,991 × Gnanga + 0,546 × Manhis) × 2,48.\nUne cible : ne peut plus former de mudras, 3 tours.\nBrise l'incantation de une cible.\nDégâts magiques à une cible : 18 % de la puissance.\nUne cible se consume : 15 % de la puissance par tour, 2 tours.\nUne cible : ne peut plus fuir, 5 tours."
+    },
+    "longueur": 5
    },
    "b24c466dab985bf5a6cb1c8e13ae97500f6ddda30df8839ddd9236a360768587": {
     "conditions": {
@@ -11718,22 +13534,56 @@
      "nuit": false,
      "pleine_lune": false
     },
-    "cout": 38,
-    "effet": "repousser",
-    "effet2": "",
-    "element": "vent",
-    "forme": "trait",
-    "fusion": false,
     "id": "danse_calao",
-    "intensite": 1.8,
-    "longueur": 5,
-    "mods_effet": [],
-    "mods_forme": [
-     "multiplier"
-    ],
-    "nom": "Danse du Calao",
-    "puissance": 3,
-    "texte": "Une nuée de rafales en forme de calaos frappe deux fois et balaie les rangs adverses."
+    "jutsu": {
+     "cle": "calao\u003ecalao\u003emartin_pecheur\u003efourmi\u003ebelier",
+     "nom": "Danse du Calao",
+     "nature": "Jutsu légendaire",
+     "sequence": [
+      "calao",
+      "calao",
+      "martin_pecheur",
+      "fourmi",
+      "belier"
+     ],
+     "element": "vent",
+     "fusion": false,
+     "forme": "trait",
+     "effet": "repousser",
+     "mods_forme": [
+      "multiplier"
+     ],
+     "legendaire": "danse_calao",
+     "type": "entrave",
+     "coefs": {
+      "f": 0.22,
+      "g": 0.744,
+      "m": 0.727,
+      "n": 2.009
+     },
+     "effets": [
+      {
+       "op": "deplacer",
+       "cible": "ennemi",
+       "vers": "arriere"
+      },
+      {
+       "op": "interrompre",
+       "cible": "ennemi"
+      },
+      {
+       "op": "statut",
+       "cible": "soi",
+       "statut": "esquive",
+       "duree": 2,
+       "valeur": 0.4
+      }
+     ],
+     "cout": 38,
+     "soutien": false,
+     "texte": "Une nuée de rafales en forme de calaos frappe deux fois et balaie les rangs adverses.\nEntrave. Puissance = (8 + 0,22 × Fangan + 0,744 × Gnanga + 0,727 × Manhis) × 2,009.\nRepousse une cible au dernier rang.\nBrise l'incantation de une cible.\nLe lanceur : esquive +40 %, 2 tours."
+    },
+    "longueur": 5
    }
   },
   "sel": "ninja-ivoire:"
@@ -12582,8 +14432,8 @@
       "distance": false
      },
      "element": "terre",
-     "fangan": 16,
-     "gnanga": 12,
+     "fangan": 20,
+     "gnanga": 16,
      "ia": "ninja",
      "jutsus": [
       [
@@ -12605,7 +14455,7 @@
      ],
      "manhis": 8,
      "nom": "Gardien du portail",
-     "pv": 260
+     "pv": 380
     }
    ],
    "id": "portail",
@@ -12643,6 +14493,43 @@
    "chacals",
    "renegat"
   ]
+ },
+ "statuts": {
+  "bienfaits": {
+   "baume": true,
+   "declencheur": true,
+   "def_mag": true,
+   "def_phys": true,
+   "deviation": true,
+   "disparu": true,
+   "esquive": true,
+   "intangible_mag": true,
+   "intangible_phys": true,
+   "invisible": true,
+   "invocation": true,
+   "leurre": true,
+   "parade": true,
+   "reflet": true,
+   "regen": true,
+   "renvoi": true,
+   "riposte": true,
+   "second_souffle": true
+  },
+  "maux": {
+   "aveugle": true,
+   "confus": true,
+   "consume": true,
+   "desarme": true,
+   "egare": true,
+   "endormi": true,
+   "immobilise": true,
+   "marque": true,
+   "piege": true,
+   "retenu": true,
+   "sangsue": true,
+   "sans_garde": true,
+   "scelle": true
+  }
  },
  "version": "0.1.0",
  "villages": [

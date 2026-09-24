@@ -56,6 +56,8 @@ type Ninja struct {
 	Arme             combat.Arme            `json:"arme"`
 	Victoires        int                    `json:"victoires"`
 	Position         [2]int                 `json:"position"`
+	PV               int                    `json:"pv"`     // les blessures restent d'un combat à l'autre
+	PVMaj            int64                  `json:"pv_maj"` // dernière régénération
 	Endurance        int                    `json:"endurance"`
 	EnduranceMaj     int64                  `json:"endurance_maj"`
 	Explore          string                 `json:"explore"`
@@ -270,9 +272,30 @@ func (n *Ninja) Combattant(t time.Time) *combat.Combattant {
 	return &combat.Combattant{
 		ID: "joueur", Nom: n.Nom, Camp: 0, Rang: 1, Joueur: true, Apparence: "ninja_" + n.TypeVillage,
 		Niveau: n.Niveau, Fangan: n.Fangan, Gnanga: n.Gnanga, Manhis: n.Manhis,
-		PV: n.PVMax(), PVMax: n.PVMax(), Souffle: n.SouffleMax(), SouffleMax: n.SouffleMax(),
-		Element: n.Elements[0], Elements: n.Elements, Arme: n.Arme, Defense: n.Fangan / 2,
+		PV: max(1, min(n.PV, n.PVMax())), PVMax: n.PVMax(), Souffle: n.SouffleMax(), SouffleMax: n.SouffleMax(),
+		Element: n.Elements[0], Elements: n.Elements, Arme: n.Arme, Defense: n.Fangan / 2, DefenseMag: n.Gnanga / 2,
 		Maitrise: maitrise, Permis: n.MudrasPermis(), Contexte: &ctx,
 		Precis: data.TypesVillage[n.TypeVillage].Resonance,
+	}
+}
+
+// RegenPVSecondes : il faut une demi-heure réelle pour guérir entièrement.
+const RegenPVSecondes = 1800
+
+// MajPV : les blessures guérissent avec le temps.
+func (n *Ninja) MajPV(t time.Time) {
+	pvMax := n.PVMax()
+	if n.PV <= 0 || n.PVMaj == 0 {
+		n.PV = pvMax // sauvegarde d'avant les blessures durables
+	}
+	if n.PV >= pvMax {
+		n.PV = pvMax
+		n.PVMaj = t.Unix()
+		return
+	}
+	gain := int(float64(pvMax) * float64(t.Unix()-n.PVMaj) / RegenPVSecondes)
+	if gain > 0 {
+		n.PV = min(pvMax, n.PV+gain)
+		n.PVMaj = t.Unix()
 	}
 }
