@@ -362,6 +362,13 @@ Le cœur de la forêt de Taï, le sommet du mont Nimba, les profondeurs des lagu
 | **Les Sans-Visage** | Libérer les forces anciennes | Réveiller des esprits scellés et maîtriser les éléments mythiques | Rituels, possession, Ombre |
 | **La Main d'Or** | Tout s'achète | Contrôler les richesses (or, cacao, ports) et manipuler les régions entre elles | Espions, assassins, corruption |
 
+## 8 bis. Direction artistique (Décidé)
+- **Images générées par IA**, selon une bible graphique stricte : voir [DIRECTION_ARTISTIQUE.md](DIRECTION_ARTISTIQUE.md).
+- **Ambiance** : la technique de Darkest Dungeon (encre, ombres fortes, peinture texturée), dans des couleurs ivoiriennes chaudes, avec le jour et la nuit selon l'heure réelle.
+- **Combats** : en 2D, vus de côté, avec des personnages peints et animés.
+- **Carte** : une grande carte peinte de la Côte d'Ivoire et, au centre, la scène illustrée du lieu où l'on se trouve.
+- **Méthode** : une première scène complète (combat en savane) validée avant de produire le reste.
+
 ## 9. Technique (Proposé)
 
 - **Client PC** : Godot 4 (gratuit, excellent en 2D, export Windows / Mac / Linux).
