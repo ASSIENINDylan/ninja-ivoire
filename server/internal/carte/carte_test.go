@@ -133,3 +133,28 @@ func indexRegion(id string) int {
 	}
 	return 0
 }
+
+func TestContenuDesCases(t *testing.T) {
+	compte := map[string]int{}
+	for i, cel := range Monde.Cellules {
+		if cel.Contenu == "" {
+			continue
+		}
+		compte[cel.Contenu]++
+		if cel.Lieu >= 0 || CoutTerrain[cel.Terrain] == 0 {
+			t.Fatalf("contenu sur un lieu ou une case infranchissable : %d", i)
+		}
+		if cel.Contenu == Camp && cel.Region == "coeur" {
+			t.Error("pas de camp de bandits dans le Cœur")
+		}
+		if n := NiveauRessource[cel.Contenu]; cel.Contenu != Camp && Monde.Zones[cel.Zone].Niveau < n {
+			t.Errorf("%s en zone de niveau %d", cel.Contenu, Monde.Zones[cel.Zone].Niveau)
+		}
+	}
+	t.Logf("contenus : %v", compte)
+	for _, r := range append([]string{Camp}, Ressources...) {
+		if compte[r] < 5 {
+			t.Errorf("trop peu de %s : %d", r, compte[r])
+		}
+	}
+}

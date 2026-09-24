@@ -60,6 +60,12 @@ var (
 		Jutsus: [][]string{{"tambour", "martin_pecheur", "belier"}, {"tambour", "case", "racine"}}}
 	pantherePNJ = &ModelePNJ{Nom: "Panthère des bois", Apparence: "chacal", IA: combat.IABete, Fangan: 11, Manhis: 16, PV: 85,
 		Arme: combat.Arme{Nom: "ses griffes", Puissance: 8}}
+	bandit = &ModelePNJ{Nom: "Bandit", Apparence: "brigand", Element: "terre", IA: combat.IANinja, Fangan: 9, Gnanga: 5, Manhis: 10, PV: 60,
+		Arme:   combat.Arme{Nom: "une machette", Puissance: 6},
+		Jutsus: [][]string{{"buffle", "mante", "liane"}}}
+	chefBandits = &ModelePNJ{Nom: "Chef des bandits", Apparence: "brigand", Element: "sable", IA: combat.IANinja, Fangan: 11, Gnanga: 8, Manhis: 11, PV: 90,
+		Arme:   combat.Arme{Nom: "un coupe-coupe", Puissance: 8},
+		Jutsus: [][]string{{"scorpion", "martin_pecheur", "braise"}, {"scorpion", "tortue", "kola"}}}
 	gardePortail = &ModelePNJ{Nom: "Gardien du portail", Apparence: "gardien", Element: "terre", IA: combat.IANinja, Fangan: 20, Gnanga: 16, Manhis: 8, PV: 380,
 		Arme:   combat.Arme{Nom: "une massue de pierre", Puissance: 12},
 		Jutsus: [][]string{{"buffle", "tortue", "lion", "belier"}, {"buffle", "mante", "hache"}, {"buffle", "case", "liane"}}}
@@ -87,6 +93,12 @@ var rencontreList = []*Rencontre{
 	{ID: "panthere", Nom: "Panthère des bois", Lieu: "Forêts du Sud", Niveau: 3, XP: 100, Dje: 30,
 		Description: "Une panthère silencieuse chasse entre les fromagers.",
 		Ennemis:     []*ModelePNJ{pantherePNJ}},
+	{ID: "bandits", Nom: "Bandits embusqués", Lieu: "Un gisement", Niveau: 1, XP: 50, Dje: 20,
+		Description: "Des bandits guettent ceux qui exploitent les ressources.",
+		Ennemis:     []*ModelePNJ{bandit, bandit}},
+	{ID: "camp_bandits", Nom: "Camp de bandits", Lieu: "Un camp en brousse", Niveau: 1, XP: 90, Dje: 45,
+		Description: "Un camp de bandits et leur chef. Vaincus, ils laissent leur butin ; ils reviennent au bout d'une demi-heure.",
+		Ennemis:     []*ModelePNJ{bandit, chefBandits, bandit}},
 	{ID: "portail", Nom: "Gardien du portail", Lieu: "Portail de région", Niveau: 15, XP: 800, Dje: 300,
 		Description: "Le gardien d'un portail de région. Chaque vendredi soir, il faut le vaincre pour lancer un siège.",
 		Ennemis:     []*ModelePNJ{gardePortail}},

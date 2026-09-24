@@ -138,6 +138,42 @@ func Nouveau(p *game.Partie) *Serveur {
 	s.mux.HandleFunc("POST /api/carte/defier", func(w http.ResponseWriter, r *http.Request) {
 		repondre(w)(p.Defier())
 	})
+	s.mux.HandleFunc("POST /api/carte/exploiter", func(w http.ResponseWriter, r *http.Request) {
+		repondre(w)(p.Exploiter())
+	})
+	s.mux.HandleFunc("POST /api/carte/affronter", func(w http.ResponseWriter, r *http.Request) {
+		repondre(w)(p.Affronter())
+	})
+	s.mux.HandleFunc("POST /api/carte/ignorer", func(w http.ResponseWriter, r *http.Request) {
+		repondre(w)(p.Ignorer())
+	})
+	s.mux.HandleFunc("POST /api/carte/camp", func(w http.ResponseWriter, r *http.Request) {
+		repondre(w)(p.AttaquerCamp())
+	})
+	s.mux.HandleFunc("POST /api/village/deposer", func(w http.ResponseWriter, r *http.Request) {
+		repondre(w)(p.Deposer())
+	})
+	s.mux.HandleFunc("POST /api/village/reprendre", func(w http.ResponseWriter, r *http.Request) {
+		repondre(w)(p.Reprendre())
+	})
+	s.mux.HandleFunc("POST /api/forge/fabriquer", func(w http.ResponseWriter, r *http.Request) {
+		var req struct{ Objet string }
+		if lire(w, r, &req) {
+			repondre(w)(p.Fabriquer(req.Objet))
+		}
+	})
+	s.mux.HandleFunc("POST /api/equipement/equiper", func(w http.ResponseWriter, r *http.Request) {
+		var req struct{ Objet string }
+		if lire(w, r, &req) {
+			repondre(w)(p.Equiper(req.Objet))
+		}
+	})
+	s.mux.HandleFunc("POST /api/equipement/retirer", func(w http.ResponseWriter, r *http.Request) {
+		var req struct{ Emplacement string }
+		if lire(w, r, &req) {
+			repondre(w)(p.Retirer(req.Emplacement))
+		}
+	})
 	return s
 }
 

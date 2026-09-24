@@ -62,6 +62,13 @@ type Ninja struct {
 	EnduranceMaj     int64                  `json:"endurance_maj"`
 	Explore          string                 `json:"explore"`
 	Defaites         int                    `json:"defaites"`
+	Exploitation     map[string]*Metier     `json:"exploitation"` // niveau d'exploitation par ressource
+	Sac              map[string]int         `json:"sac"`          // ressources portées (perdues à la défaite)
+	Coffre           map[string]int         `json:"coffre"`       // ressources à l'abri au village
+	Objets           []string               `json:"objets"`       // objets forgés non portés
+	Equipement       map[string]string      `json:"equipement"`   // emplacement → objet porté
+	Gisements        map[string]*Gisement   `json:"gisements"`    // gisements entamés
+	Camps            map[string]int64       `json:"camps"`        // camps vaincus → date de retour
 	Creation         time.Time              `json:"creation"`
 }
 
@@ -102,6 +109,7 @@ func NouveauNinja(nom, region, typeVillage string) (*Ninja, error) {
 		Creation: time.Now(),
 	}
 	n.initialiserCarte(n.Creation)
+	n.initialiserRessources()
 	switch r.Attribut {
 	case data.Fangan:
 		n.Fangan += BonusRegion
@@ -119,7 +127,7 @@ func XPPourNiveau(n int) int { return 40*n + 8*n*n }
 // PVMax du ninja.
 func (n *Ninja) PVMax() int {
 	pv := 60 + n.Fangan*4 + n.Niveau*6
-	return pv * (100 + data.TypesVillage[n.TypeVillage].BonusPV) / 100
+	return pv*(100+data.TypesVillage[n.TypeVillage].BonusPV)/100 + n.bonus().PV
 }
 
 // SouffleMax du ninja.
@@ -269,11 +277,13 @@ func (n *Ninja) Combattant(t time.Time) *combat.Combattant {
 		maitrise[k] = j.Maitrise
 	}
 	ctx := n.Contexte(t)
+	b := n.bonus()
 	return &combat.Combattant{
 		ID: "joueur", Nom: n.Nom, Camp: 0, Rang: 1, Joueur: true, Apparence: "ninja_" + n.TypeVillage,
-		Niveau: n.Niveau, Fangan: n.Fangan, Gnanga: n.Gnanga, Manhis: n.Manhis,
+		Niveau: n.Niveau, Fangan: n.Fangan, Gnanga: n.Gnanga, Manhis: n.Manhis + b.Manhis,
 		PV: max(1, min(n.PV, n.PVMax())), PVMax: n.PVMax(), Souffle: n.SouffleMax(), SouffleMax: n.SouffleMax(),
-		Element: n.Elements[0], Elements: n.Elements, Arme: n.Arme, Defense: n.Fangan / 2, DefenseMag: n.Gnanga / 2,
+		Element: n.Elements[0], Elements: n.Elements, Arme: n.ArmePortee(),
+		Defense: n.Fangan/2 + b.Defense, DefenseMag: n.Gnanga/2 + b.DefenseMag,
 		Maitrise: maitrise, Permis: n.MudrasPermis(), Contexte: &ctx,
 		Precis: data.TypesVillage[n.TypeVillage].Resonance,
 	}

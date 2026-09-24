@@ -58,6 +58,7 @@ type Cellule struct {
 	Zone    int    `json:"zone"`   // indice dans Carte.Zones, -1 hors du pays
 	Terrain string `json:"terrain"`
 	Lieu    int    `json:"lieu"` // indice dans Carte.Lieux, -1 sinon
+	Contenu string `json:"contenu,omitempty"` // camp de bandits ou ressource (voir contenu.go)
 }
 
 // Zone : un morceau de région, qui peut changer de mains lors des sièges.
@@ -237,6 +238,9 @@ func generer() *Carte {
 			l.Niveau = c.Zones[cel.Zone].Niveau
 		}
 	}
+
+	// 6. Contenu des cases : camps de bandits et ressources.
+	c.peupler()
 	return c
 }
 
@@ -551,9 +555,10 @@ func (c *Carte) Export() map[string]any {
 		return -1
 	}
 	n := L * H
-	reg, zon, ter, lie := make([]int, n), make([]int, n), make([]int, n), make([]int, n)
+	reg, zon, ter, lie, con := make([]int, n), make([]int, n), make([]int, n), make([]int, n), make([]int, n)
 	for i, cel := range c.Cellules {
 		reg[i], zon[i], ter[i], lie[i] = idx(regions, cel.Region), cel.Zone, idx(Terrains, cel.Terrain), cel.Lieu
+		con[i] = idx(Contenus, cel.Contenu)
 	}
 	var cont [][2]float64
 	for _, p := range c.Contour {
@@ -570,7 +575,8 @@ func (c *Carte) Export() map[string]any {
 	return map[string]any{
 		"l": L, "h": H, "lon_min": LonMin, "lat_max": LatMax, "pas": Pas,
 		"regions": regions, "terrains": Terrains, "noms_terrains": NomsTerrains, "couts": CoutTerrain,
-		"region": reg, "zone": zon, "terrain": ter, "lieu": lie,
+		"region": reg, "zone": zon, "terrain": ter, "lieu": lie, "contenu": con,
+		"contenus": Contenus, "noms_contenus": NomsContenus,
 		"zones": c.Zones, "lieux": c.Lieux, "contour": cont, "fleuves": fl,
 	}
 }

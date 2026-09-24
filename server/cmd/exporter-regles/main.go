@@ -85,6 +85,16 @@ func regles() map[string]any {
 			"regen_pv_secondes": game.RegenPVSecondes, "rangs_max": combat.RangsMax,
 		},
 		"statuts": map[string]any{"bienfaits": combat.Bienfaits, "maux": combat.Maux},
+		"ressources": map[string]any{
+			"liste": carte.Ressources, "noms": game.NomsRessources, "rendement": game.RendementBase,
+			"xp": game.XPMetier, "gisement_max": game.GisementMax, "gisement_regen": game.GisementRegenSecondes,
+			"cout_exploitation": game.CoutExploitation, "chance_evenement": game.ChanceEvenement,
+			"chance_presence": game.ChancePresence, "chance_camp": game.ChanceCampRepere,
+			"camp_repos": game.CampReposSecondes, "niveau_max": game.NiveauMetierMax,
+		},
+		"forge": map[string]any{
+			"objets": game.AllObjets(), "emplacements": game.Emplacements, "noms_emplacements": game.NomsEmplacements,
+		},
 	}
 }
 

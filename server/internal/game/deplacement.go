@@ -96,6 +96,7 @@ func (n *Ninja) peutSeReposer(l *carte.Lieu) bool {
 // ResultatCarte : ce que renvoie une action sur la carte.
 type ResultatCarte struct {
 	Ninja     *NinjaVue      `json:"ninja"`
+	Gain      map[string]int `json:"gain,omitempty"` // ressources récoltées
 	Message   string         `json:"message"`
 	Combat    *combat.Combat `json:"combat,omitempty"`
 	Rencontre string         `json:"rencontre,omitempty"` // nom de la rencontre
@@ -140,6 +141,7 @@ func (p *Partie) Deplacer(x, y int) (*ResultatCarte, error) {
 	n.Endurance -= cout
 	n.Position = [2]int{x, y}
 	n.Reveler(x, y, RayonVision)
+	p.presence = nil
 
 	res := &ResultatCarte{}
 	switch {
@@ -154,6 +156,18 @@ func (p *Partie) Deplacer(x, y int) (*ResultatCarte, error) {
 		res.Combat = p.demarrer(r, zone.Niveau)
 		res.Rencontre = r.Nom
 		res.Message = r.Nom + " vous barre la route !"
+	}
+	// Camps de bandits et gisements fréquentés.
+	if res.Combat == nil && cel.Lieu < 0 {
+		switch {
+		case cel.Contenu == carte.Camp && n.campActif(x, y, now) && p.Hasard() < ChanceCampRepere:
+			res.Combat = p.lancerCamp(cel)
+			res.Rencontre = Rencontres["camp_bandits"].Nom
+			res.Message = "Les bandits du camp vous ont repéré !"
+		case RendementBase[cel.Contenu] > 0 && p.Hasard() < ChancePresence:
+			p.presence = p.nouvellePresence(x, y, zone.Niveau)
+			res.Message = p.presence.Nom + " exploite déjà ce gisement."
+		}
 	}
 	res.Ninja = p.vueNinja()
 	return res, p.sauver()
@@ -218,6 +232,14 @@ type SituationVue struct {
 	Village      bool        `json:"village"` // est dans son propre village
 	EnduranceMax int         `json:"endurance_max"`
 	RegenDans    int         `json:"regen_dans"` // secondes avant le prochain point
+	Contenu      string      `json:"contenu"`    // camp, fer, peau, pierre, or, diamant ou ""
+	ContenuNom   string      `json:"contenu_nom"`
+	Gisement     *Gisement   `json:"gisement,omitempty"`
+	GisementMax  int         `json:"gisement_max"`
+	RegenGise    int         `json:"regen_gisement"` // secondes avant le prochain point du gisement
+	CampActif    bool        `json:"camp_actif"`
+	CampRetour   int         `json:"camp_retour"` // secondes avant le retour des bandits
+	Presence     *Presence   `json:"presence,omitempty"`
 }
 
 func (p *Partie) situation() *SituationVue {
@@ -232,6 +254,25 @@ func (p *Partie) situation() *SituationVue {
 	}
 	if n.Endurance < EnduranceMax {
 		s.RegenDans = int(n.EnduranceMaj + RegenSecondes - p.Maintenant().Unix())
+	}
+	now := p.Maintenant()
+	x, y := n.Position[0], n.Position[1]
+	s.Contenu, s.ContenuNom, s.GisementMax = cel.Contenu, carte.NomsContenus[cel.Contenu], GisementMax
+	switch {
+	case RendementBase[cel.Contenu] > 0:
+		g := n.gisement(x, y, now)
+		s.Gisement = &Gisement{Reste: g.Reste, Maj: g.Maj}
+		if g.Reste < GisementMax {
+			s.RegenGise = int(g.Maj + GisementRegenSecondes - now.Unix())
+		}
+	case cel.Contenu == carte.Camp:
+		s.CampActif = n.campActif(x, y, now)
+		if !s.CampActif {
+			s.CampRetour = int(n.Camps[cleCase(x, y)] - now.Unix())
+		}
+	}
+	if pr := p.presence; pr != nil && pr.X == x && pr.Y == y {
+		s.Presence = pr
 	}
 	return s
 }

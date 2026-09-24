@@ -38,7 +38,9 @@ type Partie struct {
 	rencontre    *Rencontre
 	niveauCombat int
 	vus          int  // découvertes du combat déjà inscrites au grimoire
-	fuite        bool // le joueur a fui : pas de renaissance
+	fuite        bool      // le joueur a fui : pas de renaissance
+	presence     *Presence // ninja croisé sur la case
+	campCle      string    // case du camp de bandits attaqué
 	// Hasard tire un nombre dans [0, 1) (remplaçable dans les tests).
 	Hasard func() float64
 	// Maintenant donne l'heure réelle (remplaçable dans les tests).
@@ -65,6 +67,7 @@ func Charger(chemin string) (*Partie, error) {
 		}
 		n.initialiserCarte(time.Now())
 		n.initialiserFavoris()
+		n.initialiserRessources()
 		// Les noms des jutsus peuvent évoluer d'une version à l'autre.
 		for _, k := range n.Grimoire {
 			if j, e := grammar.Analyser(k.Sequence); e == nil {
@@ -383,6 +386,7 @@ func (p *Partie) demarrer(r *Rencontre, niveau int) *combat.Combat {
 	p.niveauCombat = niveau
 	p.vus = 0
 	p.fuite = false
+	p.campCle = ""
 	return p.combat.Vue(0)
 }
 
@@ -396,6 +400,8 @@ type FinCombat struct {
 	NiveauxGagnes int            `json:"niveaux_gagnes"`
 	Maitrise      map[string]int `json:"maitrise"` // nom du jutsu → maîtrise atteinte
 	Baume         int            `json:"baume"`    // PV rendus après le combat
+	Butin         map[string]int `json:"butin,omitempty"`  // ressources gagnées
+	Perdu         map[string]int `json:"perdu,omitempty"`  // ressources perdues à la défaite
 	PV            int            `json:"pv"`
 	Message       string         `json:"message"`
 }
@@ -487,6 +493,15 @@ func (p *Partie) terminer() *FinCombat {
 		n.Victoires++
 		fin.NiveauxGagnes = n.GagnerXP(fin.XP)
 		fin.Message = "Victoire ! Vous gagnez de l'expérience et des Djê."
+		if p.campCle != "" {
+			// Le camp est vaincu pour un temps ; son butin revient au vainqueur.
+			n.Camps[p.campCle] = now.Unix() + CampReposSecondes
+			fin.Butin = p.butinCamp()
+			for r, q := range fin.Butin {
+				n.Sac[r] += q
+			}
+			fin.Message += " Le camp est pillé : son butin rejoint votre sac."
+		}
 	case c.Vainqueur == 2:
 		fin.Nul = true
 		xp, _ := r.Recompenses(p.niveauCombat)
@@ -500,7 +515,14 @@ func (p *Partie) terminer() *FinCombat {
 		n.Defaites++
 		n.Renaitre(now)
 		fin.Defaite = true
-		fin.Message = "Défaite. Vous renaissez dans votre village. (Quand l'inventaire existera, vos objets iront au vainqueur.)"
+		fin.Message = "Défaite. Vous renaissez dans votre village."
+		// Le vainqueur emporte le sac et les objets non portés ; le coffre est sûr.
+		if len(n.Sac) > 0 || len(n.Objets) > 0 {
+			fin.Perdu = n.Sac
+			n.Sac = map[string]int{}
+			n.Objets = []string{}
+			fin.Message += " Le vainqueur emporte votre sac et vos objets non portés (le coffre du village, lui, est intact)."
+		}
 	}
 	if fin.Baume > 0 && n.PV > 0 {
 		fin.Message += fmt.Sprintf(" Un baume de Souffle referme vos plaies (+%d PV).", fin.Baume)
