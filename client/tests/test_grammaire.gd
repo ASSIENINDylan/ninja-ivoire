@@ -20,7 +20,7 @@ func _init() -> void:
 			if b == null:
 				diff = "jutsu attendu, échec obtenu %s" % res.echec
 			else:
-				for k in ["nom", "element", "forme", "effet", "texte", "cout", "soutien", "fusion"]:
+				for k in ["nom", "nature", "element", "forme", "effet", "texte", "cout", "soutien", "fusion"]:
 					if not _egal(a.get(k), b.get(k)):
 						diff += " %s: %s ≠ %s" % [k, a.get(k), b.get(k)]
 				for k in ["effet2", "legendaire"]:

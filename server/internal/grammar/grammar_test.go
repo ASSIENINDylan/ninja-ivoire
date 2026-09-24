@@ -12,8 +12,8 @@ func TestJutsuSimple(t *testing.T) {
 	if e != nil {
 		t.Fatalf("échec inattendu : %+v", e)
 	}
-	if j.Nom != "Trait de Feu dévorant" {
-		t.Errorf("nom = %q", j.Nom)
+	if j.Nom != "Braise : Dard du frelon" || j.Nature != "Trait de Feu dévorant" {
+		t.Errorf("nom = %q, nature = %q", j.Nom, j.Nature)
 	}
 	if j.Element != "feu" || j.Forme != data.FTrait || j.Effet != data.XConsumer {
 		t.Errorf("jutsu mal analysé : %+v", j)
@@ -29,8 +29,23 @@ func TestOrdreDesModificateursCompte(t *testing.T) {
 	if a.Nom == b.Nom || a.Puissance == b.Puissance {
 		t.Errorf("l'ordre ne change rien : %q / %q", a.Nom, b.Nom)
 	}
-	if a.Nom != "Grande Lame de Feu dévorante" || b.Nom != "Lame de Feu dévorante au paroxysme" {
+	if a.Nom != "Braise : Grand Croc de la hyène" || b.Nom != "Braise : Croc de la hyène — au paroxysme" {
 		t.Errorf("noms : %q / %q", a.Nom, b.Nom)
+	}
+}
+
+func TestNomsPoetiques(t *testing.T) {
+	j, _ := Analyser([]string{"lamantin", "araignee", "liane", "braise", "fleuve"})
+	if j.Nom != "Lagune : Toile d'Ananzè, qui dévore — sans fin" {
+		t.Errorf("nom = %q", j.Nom)
+	}
+	for id, v := range voies {
+		if data.Elements[id] == nil || v == "" {
+			t.Errorf("voie sans élément : %q", id)
+		}
+	}
+	if len(voies) != len(data.AllElements()) {
+		t.Errorf("%d voies pour %d éléments", len(voies), len(data.AllElements()))
 	}
 }
 

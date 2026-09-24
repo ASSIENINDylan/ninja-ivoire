@@ -81,6 +81,7 @@ func (l *Legendaire) Jutsu() *Jutsu {
 	return &Jutsu{
 		Cle:        Cle(l.Sequence),
 		Nom:        l.Nom,
+		Nature:     "Jutsu légendaire",
 		Sequence:   append([]string(nil), l.Sequence...),
 		Element:    l.Element,
 		Fusion:     l.Fusion,

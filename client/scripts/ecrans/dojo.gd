@@ -112,6 +112,7 @@ func _essayer() -> void:
 			_resultat.add_child(UI.label("JUTSU LÉGENDAIRE !" if j.legendaire else "Nouveau jutsu !", 20, Pal.OR_VIF, true))
 		_resultat.add_child(UI.texte(j.nom, 28 if j.nom.length() < 30 else 22, col.lightened(0.25), 400))
 		_resultat.get_child(_resultat.get_child_count() - 1).add_theme_font_override("font", Pal.police_titre)
+		_resultat.add_child(UI.label(j.get("nature", ""), 15, Pal.IVOIRE_DOUX))
 		_resultat.add_child(UI.glyphes(j.sequence, 30))
 		_resultat.add_child(UI.texte(j.texte, 15, Pal.IVOIRE_DOUX, 400))
 		_resultat.add_child(UI.label("Souffle : %d   ·   %d tour(s) d'incantation   ·   maîtrise %d" % [j.cout, j.tours, j.maitrise], 14, Pal.OR))

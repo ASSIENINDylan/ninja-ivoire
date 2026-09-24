@@ -83,7 +83,7 @@ static func analyser(seq: Array) -> Dictionary:
 
 static func _jutsu_legendaire(l: Dictionary, seq: Array) -> Dictionary:
 	return {
-		"cle": cle(seq), "nom": l.nom, "sequence": seq.duplicate(), "element": l.element, "fusion": l.fusion,
+		"cle": cle(seq), "nom": l.nom, "nature": "Jutsu légendaire", "sequence": seq.duplicate(), "element": l.element, "fusion": l.fusion,
 		"forme": l.forme, "effet": l.effet, "effet2": l.effet2, "mods_forme": l.mods_forme.duplicate(),
 		"mods_effet": l.mods_effet.duplicate(), "legendaire": l.id, "puissance": float(l.puissance),
 		"intensite": float(l.intensite), "cout": int(l.cout), "soutien": effet_soutien(l.effet), "texte": l.texte,
@@ -125,10 +125,32 @@ static func _calculer(j: Dictionary) -> void:
 	j.cout = int(cout + 0.5)
 	j.soutien = effet_soutien(j.effet)
 	j.nom = _nommer(j)
+	j.nature = _nature(j)
 	j.texte = _decrire(j)
 
 
+## Nom poétique : « Braise : Croc de la hyène ».
 static func _nommer(j: Dictionary) -> String:
+	var n: Dictionary = Regles.g.noms
+	var img: Dictionary = n.images[j.forme][j.effet]
+	var genre := 1 if img.feminin else 0
+	var tete := PackedStringArray()
+	for m in j.mods_forme:
+		tete.append(Regles.g.prefixe_mod_forme[m][genre])
+	tete.append(img.texte)
+	var nom: String = n.voies[j.element] + " : " + " ".join(tete)
+	if j.effet2 != "":
+		nom += ", " + n.suites_effet[j.effet2]
+	if j.mods_effet.size() > 0:
+		var ep := PackedStringArray()
+		for m in j.mods_effet:
+			ep.append(n.epithetes_mod_effet[m])
+		nom += " — " + ", ".join(ep)
+	return nom
+
+
+## Nom descriptif : « Lame de Feu dévorante ».
+static func _nature(j: Dictionary) -> String:
 	var nf: Dictionary = Regles.g.noms_formes[j.forme]
 	var genre := 1 if nf.feminin else 0
 	var parts := PackedStringArray()

@@ -54,6 +54,12 @@ func Charger(chemin string) (*Partie, error) {
 		if n.Grimoire == nil {
 			n.Grimoire = map[string]*JutsuConnu{}
 		}
+		// Les noms des jutsus peuvent évoluer d'une version à l'autre.
+		for _, k := range n.Grimoire {
+			if j, e := grammar.Analyser(k.Sequence); e == nil {
+				k.Nom = j.Nom
+			}
+		}
 		p.Ninja = &n
 	}
 	return p, nil
@@ -83,6 +89,7 @@ func (p *Partie) sauver() error {
 type JutsuVue struct {
 	Cle        string   `json:"cle"`
 	Nom        string   `json:"nom"`
+	Nature     string   `json:"nature"`
 	Sequence   []string `json:"sequence"`
 	Element    string   `json:"element"`
 	Forme      string   `json:"forme"`
@@ -116,7 +123,7 @@ func (p *Partie) vueJutsu(j *grammar.Jutsu) JutsuVue {
 	}
 	mpt := 3 + p.Ninja.Gnanga/15
 	return JutsuVue{
-		Cle: j.Cle, Nom: j.Nom, Sequence: j.Sequence, Element: j.Element, Forme: j.Forme,
+		Cle: j.Cle, Nom: j.Nom, Nature: j.Nature, Sequence: j.Sequence, Element: j.Element, Forme: j.Forme,
 		Soutien: j.Soutien, Legendaire: j.Legendaire != "", Texte: j.Texte,
 		Cout: combat.CoutReel(j, m), Tours: (j.Longueur() + mpt - 1) / mpt,
 		Maitrise: m, Usages: usages,

@@ -267,7 +267,7 @@ func _construire_liste(j: Dictionary) -> void:
 		b.add_theme_font_size_override("font_size", 13)
 		b.add_theme_color_override("font_color", Jeu.couleur_element(ju.element).lightened(0.35))
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.tooltip_text = ju.texte
+		b.tooltip_text = ju.get("nature", "") + "\n" + ju.texte
 		b.disabled = _occupe or ju.cout > j.souffle
 		var cible := "joueur" if ju.soutien else _cible
 		b.pressed.connect(_envoyer.bind({"type": "incanter", "sequence": ju.sequence, "cible": cible}))

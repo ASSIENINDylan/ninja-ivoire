@@ -828,6 +828,492 @@
    "modificateurs": "Trop de signes de maîtrise étouffent le jutsu.",
    "surplus": "Le jutsu était presque né : des signes en trop l'ont brisé."
   },
+  "noms": {
+   "epithetes_mod_effet": {
+    "amplifier": "au paroxysme",
+    "etendre": "sans fin",
+    "multiplier": "en essaim",
+    "persistance": "tenace",
+    "retarder": "à retardement",
+    "silence": "sans bruit"
+   },
+   "images": {
+    "armure": {
+     "aveugler": {
+      "feminin": true,
+      "texte": "Carapace miroitante"
+     },
+     "briser": {
+      "feminin": false,
+      "texte": "Écailles du pangolin"
+     },
+     "consumer": {
+      "feminin": true,
+      "texte": "Cuirasse vorace"
+     },
+     "dissimuler": {
+      "feminin": false,
+      "texte": "Manteau du caméléon"
+     },
+     "drainer": {
+      "feminin": true,
+      "texte": "Peau de sangsue"
+     },
+     "lier": {
+      "feminin": true,
+      "texte": "Écorce collante"
+     },
+     "marquer": {
+      "feminin": true,
+      "texte": "Peau peinte au kaolin"
+     },
+     "renforcer": {
+      "feminin": true,
+      "texte": "Cuirasse des anciens"
+     },
+     "repousser": {
+      "feminin": true,
+      "texte": "Cuirasse du rhinocéros"
+     },
+     "soigner": {
+      "feminin": true,
+      "texte": "Peau du baobab"
+     }
+    },
+    "cercle": {
+     "aveugler": {
+      "feminin": true,
+      "texte": "Danse des lucioles"
+     },
+     "briser": {
+      "feminin": true,
+      "texte": "Ronde des masques brisés"
+     },
+     "consumer": {
+      "feminin": true,
+      "texte": "Ronde dévorante"
+     },
+     "dissimuler": {
+      "feminin": false,
+      "texte": "Cercle du secret"
+     },
+     "drainer": {
+      "feminin": false,
+      "texte": "Cercle des assoiffés"
+     },
+     "lier": {
+      "feminin": true,
+      "texte": "Ronde des chaînes"
+     },
+     "marquer": {
+      "feminin": true,
+      "texte": "Ronde des présages"
+     },
+     "renforcer": {
+      "feminin": true,
+      "texte": "Danse des guerriers"
+     },
+     "repousser": {
+      "feminin": true,
+      "texte": "Onde du grand tambour"
+     },
+     "soigner": {
+      "feminin": false,
+      "texte": "Chant de la veillée"
+     }
+    },
+    "double": {
+     "aveugler": {
+      "feminin": false,
+      "texte": "Reflet trompeur"
+     },
+     "briser": {
+      "feminin": false,
+      "texte": "Jumeau fracassant"
+     },
+     "consumer": {
+      "feminin": false,
+      "texte": "Reflet vorace"
+     },
+     "dissimuler": {
+      "feminin": true,
+      "texte": "Ombre du caméléon"
+     },
+     "drainer": {
+      "feminin": true,
+      "texte": "Ombre qui boit"
+     },
+     "lier": {
+      "feminin": false,
+      "texte": "Jumeau piégeur"
+     },
+     "marquer": {
+      "feminin": false,
+      "texte": "Reflet accusateur"
+     },
+     "renforcer": {
+      "feminin": false,
+      "texte": "Jumeau du champion"
+     },
+     "repousser": {
+      "feminin": false,
+      "texte": "Double furieux"
+     },
+     "soigner": {
+      "feminin": false,
+      "texte": "Double bienveillant"
+     }
+    },
+    "invocation": {
+     "aveugler": {
+      "feminin": false,
+      "texte": "Masque éblouissant"
+     },
+     "briser": {
+      "feminin": false,
+      "texte": "Masque du destructeur"
+     },
+     "consumer": {
+      "feminin": false,
+      "texte": "Esprit dévoreur"
+     },
+     "dissimuler": {
+      "feminin": false,
+      "texte": "Esprit de la brousse"
+     },
+     "drainer": {
+      "feminin": false,
+      "texte": "Esprit affamé"
+     },
+     "lier": {
+      "feminin": false,
+      "texte": "Masque du geôlier"
+     },
+     "marquer": {
+      "feminin": false,
+      "texte": "Totem accusateur"
+     },
+     "renforcer": {
+      "feminin": false,
+      "texte": "Masque du champion"
+     },
+     "repousser": {
+      "feminin": false,
+      "texte": "Génie du tourbillon"
+     },
+     "soigner": {
+      "feminin": false,
+      "texte": "Esprit de la source"
+     }
+    },
+    "lame": {
+     "aveugler": {
+      "feminin": false,
+      "texte": "Revers du caméléon"
+     },
+     "briser": {
+      "feminin": true,
+      "texte": "Hache du forgeron"
+     },
+     "consumer": {
+      "feminin": false,
+      "texte": "Croc de la hyène"
+     },
+     "dissimuler": {
+      "feminin": true,
+      "texte": "Lame de minuit"
+     },
+     "drainer": {
+      "feminin": true,
+      "texte": "Morsure de la chauve-souris"
+     },
+     "lier": {
+      "feminin": true,
+      "texte": "Serre de l'aigle pêcheur"
+     },
+     "marquer": {
+      "feminin": true,
+      "texte": "Entaille du lignage"
+     },
+     "renforcer": {
+      "feminin": false,
+      "texte": "Sabre du champion"
+     },
+     "repousser": {
+      "feminin": true,
+      "texte": "Charge du buffle"
+     },
+     "soigner": {
+      "feminin": true,
+      "texte": "Main de la sage-femme"
+     }
+    },
+    "lien": {
+     "aveugler": {
+      "feminin": false,
+      "texte": "Bandeau du conteur"
+     },
+     "briser": {
+      "feminin": true,
+      "texte": "Chaîne brise-os"
+     },
+     "consumer": {
+      "feminin": true,
+      "texte": "Étreinte du python"
+     },
+     "dissimuler": {
+      "feminin": false,
+      "texte": "Pagne du secret"
+     },
+     "drainer": {
+      "feminin": true,
+      "texte": "Liane assoiffée"
+     },
+     "lier": {
+      "feminin": true,
+      "texte": "Toile d'Ananzè"
+     },
+     "marquer": {
+      "feminin": true,
+      "texte": "Cordelette du devin"
+     },
+     "renforcer": {
+      "feminin": false,
+      "texte": "Lien du sang"
+     },
+     "repousser": {
+      "feminin": false,
+      "texte": "Fouet du bouvier"
+     },
+     "soigner": {
+      "feminin": false,
+      "texte": "Fil de vie"
+     }
+    },
+    "mur": {
+     "aveugler": {
+      "feminin": false,
+      "texte": "Mur des miroirs"
+     },
+     "briser": {
+      "feminin": false,
+      "texte": "Rempart hérissé"
+     },
+     "consumer": {
+      "feminin": true,
+      "texte": "Palissade d'épines"
+     },
+     "dissimuler": {
+      "feminin": false,
+      "texte": "Voile du village"
+     },
+     "drainer": {
+      "feminin": true,
+      "texte": "Muraille affamée"
+     },
+     "lier": {
+      "feminin": false,
+      "texte": "Enclos du bouvier"
+     },
+     "marquer": {
+      "feminin": false,
+      "texte": "Mur aux signes"
+     },
+     "renforcer": {
+      "feminin": false,
+      "texte": "Rempart des ancêtres"
+     },
+     "repousser": {
+      "feminin": true,
+      "texte": "Digue furieuse"
+     },
+     "soigner": {
+      "feminin": true,
+      "texte": "Case de la guérisseuse"
+     }
+    },
+    "pas": {
+     "aveugler": {
+      "feminin": false,
+      "texte": "Envol du calao"
+     },
+     "briser": {
+      "feminin": false,
+      "texte": "Saut de l'éléphant"
+     },
+     "consumer": {
+      "feminin": false,
+      "texte": "Bond de la panthère"
+     },
+     "dissimuler": {
+      "feminin": false,
+      "texte": "Pas du caméléon"
+     },
+     "drainer": {
+      "feminin": true,
+      "texte": "Glissade de la sangsue"
+     },
+     "lier": {
+      "feminin": false,
+      "texte": "Pas de l'araignée"
+     },
+     "marquer": {
+      "feminin": false,
+      "texte": "Pas du chasseur"
+     },
+     "renforcer": {
+      "feminin": false,
+      "texte": "Pas de la danse guerrière"
+     },
+     "repousser": {
+      "feminin": true,
+      "texte": "Ruée du buffle"
+     },
+     "soigner": {
+      "feminin": false,
+      "texte": "Pas de la guérisseuse"
+     }
+    },
+    "piege": {
+     "aveugler": {
+      "feminin": false,
+      "texte": "Piège aux lucioles"
+     },
+     "briser": {
+      "feminin": true,
+      "texte": "Mâchoire broyeuse"
+     },
+     "consumer": {
+      "feminin": true,
+      "texte": "Gueule du crocodile"
+     },
+     "dissimuler": {
+      "feminin": false,
+      "texte": "Terrier secret"
+     },
+     "drainer": {
+      "feminin": true,
+      "texte": "Nasse du marigot"
+     },
+     "lier": {
+      "feminin": false,
+      "texte": "Collet du chasseur"
+     },
+     "marquer": {
+      "feminin": false,
+      "texte": "Appât du devin"
+     },
+     "renforcer": {
+      "feminin": true,
+      "texte": "Embuscade des braves"
+     },
+     "repousser": {
+      "feminin": true,
+      "texte": "Trappe du bélier"
+     },
+     "soigner": {
+      "feminin": true,
+      "texte": "Source cachée"
+     }
+    },
+    "trait": {
+     "aveugler": {
+      "feminin": false,
+      "texte": "Éclat du miroir"
+     },
+     "briser": {
+      "feminin": false,
+      "texte": "Javelot brise-bouclier"
+     },
+     "consumer": {
+      "feminin": false,
+      "texte": "Dard du frelon"
+     },
+     "dissimuler": {
+      "feminin": true,
+      "texte": "Plume du hibou"
+     },
+     "drainer": {
+      "feminin": false,
+      "texte": "Aiguillon de la sangsue"
+     },
+     "lier": {
+      "feminin": true,
+      "texte": "Flèche du piégeur"
+     },
+     "marquer": {
+      "feminin": true,
+      "texte": "Marque du kaolin"
+     },
+     "renforcer": {
+      "feminin": false,
+      "texte": "Appel du griot"
+     },
+     "repousser": {
+      "feminin": false,
+      "texte": "Trait du bélier"
+     },
+     "soigner": {
+      "feminin": true,
+      "texte": "Flèche du guérisseur"
+     }
+    }
+   },
+   "suites_effet": {
+    "aveugler": "qui éblouit",
+    "briser": "qui fend les défenses",
+    "consumer": "qui dévore",
+    "dissimuler": "qui efface",
+    "drainer": "qui boit la vie",
+    "lier": "qui enserre",
+    "marquer": "qui condamne",
+    "renforcer": "qui exalte",
+    "repousser": "qui balaie",
+    "soigner": "qui apaise"
+   },
+   "voies": {
+    "acide": "Acide",
+    "astre": "Étoiles",
+    "bois_sacre": "Bois sacré",
+    "brume": "Brume",
+    "cendre": "Cendre",
+    "crepuscule": "Crépuscule",
+    "cristal": "Cristal",
+    "eau": "Lagune",
+    "esprit": "Ancêtres",
+    "essaim": "Nuée",
+    "feu": "Braise",
+    "fleau": "Fléau",
+    "foudre": "Orage",
+    "glace": "Givre",
+    "gravite": "Abîme",
+    "harmattan": "Harmattan",
+    "ivoire": "Ivoire",
+    "lave": "Coulée",
+    "lumiere": "Aurore",
+    "lune": "Croissant",
+    "magnetisme": "Aimant",
+    "maree": "Grande Marée",
+    "metal": "Forge",
+    "ombre": "Nuit sans lune",
+    "onde": "Onde",
+    "sable": "Dune",
+    "seisme": "Faille",
+    "sel": "Sel",
+    "soleil": "Zénith",
+    "son": "Djembé",
+    "songe": "Songe",
+    "tempete": "Tornade",
+    "temps": "Temps",
+    "terre": "Latérite",
+    "vapeur": "Geyser",
+    "vegetal": "Fromager",
+    "venin": "Vipère",
+    "vent": "Alizé",
+    "vide": "Néant",
+    "vie": "Source"
+   }
+  },
   "noms_formes": {
    "armure": {
     "feminin": true,

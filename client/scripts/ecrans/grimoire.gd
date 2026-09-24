@@ -50,6 +50,7 @@ func construire() -> void:
 		if j.legendaire:
 			t.add_child(UI.label("légendaire", 14, Pal.OR_VIF))
 		cv.add_child(t)
+		cv.add_child(UI.label(j.get("nature", ""), 14, Pal.IVOIRE_DOUX))
 		cv.add_child(UI.glyphes(j.sequence, 30))
 		cv.add_child(UI.texte(j.texte, 14, Pal.IVOIRE_DOUX, 600))
 		var bas := UI.hbox(12)

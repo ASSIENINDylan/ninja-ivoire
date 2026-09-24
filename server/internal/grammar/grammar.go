@@ -28,6 +28,7 @@ const LongueurMax = 8
 type Jutsu struct {
 	Cle        string   `json:"cle"`
 	Nom        string   `json:"nom"`
+	Nature     string   `json:"nature"` // nom descriptif : « Lame de Feu dévorante »
 	Sequence   []string `json:"sequence"`
 	Element    string   `json:"element"`
 	Fusion     bool     `json:"fusion"`
@@ -214,6 +215,7 @@ func calculer(j *Jutsu) {
 	j.Cout = int(cout + 0.5)
 	j.Soutien = EffetSoutien(j.Effet)
 	j.Nom = nommer(j)
+	j.Nature = nature(j)
 	j.Texte = decrire(j)
 }
 
@@ -275,7 +277,8 @@ func genre(f bool) int {
 	return 0
 }
 
-func nommer(j *Jutsu) string {
+// nature donne le nom descriptif d'un jutsu, qui dit ce qu'il fait.
+func nature(j *Jutsu) string {
 	nf := nomsFormes[j.Forme]
 	g := genre(nf.feminin)
 	var parts []string
@@ -365,6 +368,7 @@ func Tables() map[string]any {
 		"texte_effet":        texteEffet,
 		"texte_modificateur": texteModificateur,
 		"messages_echec":     messagesEchec,
+		"noms":               tablesNoms(),
 		"max_modificateurs":  MaxModificateurs,
 		"longueur_max":       LongueurMax,
 	}

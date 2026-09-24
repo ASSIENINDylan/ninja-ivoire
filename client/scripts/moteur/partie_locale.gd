@@ -32,6 +32,11 @@ func _init(fichier: String = "user://ninja.save.json") -> void:
 		var n = JSON.parse_string(FileAccess.get_file_as_string(chemin))
 		if n is Dictionary and n.get("nom", "") != "":
 			ninja = n
+			# Les noms des jutsus peuvent évoluer d'une version à l'autre.
+			for k in ninja.grimoire.values():
+				var res := Grammaire.analyser(k.sequence)
+				if res.jutsu != null:
+					k.nom = res.jutsu.nom
 
 
 func _sauver() -> void:
@@ -194,7 +199,7 @@ func _vue_jutsu(j: Dictionary) -> Dictionary:
 		usages = int(k.usages)
 	var mpt := mudras_par_tour()
 	return {
-		"cle": j.cle, "nom": j.nom, "sequence": j.sequence, "element": j.element, "forme": j.forme,
+		"cle": j.cle, "nom": j.nom, "nature": j.get("nature", ""), "sequence": j.sequence, "element": j.element, "forme": j.forme,
 		"soutien": j.soutien, "legendaire": j.legendaire != "", "texte": j.texte,
 		"cout": CombatMoteur.cout_reel(j, m), "tours": (j.sequence.size() + mpt - 1) / mpt,
 		"maitrise": m, "usages": usages,
