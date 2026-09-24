@@ -105,6 +105,10 @@ func _scenario() -> void:
 	e._essayer()
 	await _attendre(1.0)
 
+	# Un sixième jutsu, hors des favoris, puis on échange un favori.
+	for sq in [["panthere", "tortue", "kola"], ["panthere", "martin_pecheur", "kola"], ["panthere", "mante", "liane"], ["panthere", "tortue", "braise"]]:
+		await Api.envoyer("/api/dojo", {"sequence": sq})
+	await Jeu.rafraichir()
 	Jeu.aller("grimoire")
 	await _attendre(0.8)
 	await _capture("06_grimoire")

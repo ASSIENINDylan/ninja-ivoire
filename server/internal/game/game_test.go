@@ -196,3 +196,43 @@ func TestCarteNiveauxReposEtDefis(t *testing.T) {
 		t.Errorf("défi : %v %+v", err, res)
 	}
 }
+
+func TestFavoris(t *testing.T) {
+	p := nouvellePartie(t)
+	suites := [][]string{
+		{"lamantin", "martin_pecheur", "liane"}, {"lamantin", "martin_pecheur", "kola"},
+		{"lamantin", "martin_pecheur", "braise"}, {"lamantin", "mante", "liane"},
+		{"lamantin", "mante", "braise"}, {"lamantin", "tortue", "kola"},
+	}
+	for _, s := range suites {
+		if _, err := p.Dojo(s); err != nil {
+			t.Fatal(err)
+		}
+	}
+	n := p.Ninja
+	if len(n.Favoris) != FavorisMax || n.EstFavori("lamantin>tortue>kola") {
+		t.Fatalf("les cinq premières découvertes sont favorites : %v", n.Favoris)
+	}
+	if _, err := p.Favori("lamantin>tortue>kola", true); err != ErrFavorisPleins {
+		t.Errorf("pas plus de cinq favoris : %v", err)
+	}
+	if _, err := p.Favori("lamantin>martin_pecheur>liane", false); err != nil {
+		t.Fatal(err)
+	}
+	v, err := p.Favori("lamantin>tortue>kola", true)
+	if err != nil || !n.EstFavori("lamantin>tortue>kola") || len(n.Favoris) != FavorisMax {
+		t.Errorf("échange de favori : %v %v", err, n.Favoris)
+	}
+	nb := 0
+	for _, j := range v.Jutsus {
+		if j.Favori {
+			nb++
+		}
+	}
+	if nb != FavorisMax {
+		t.Errorf("la vue marque %d favoris", nb)
+	}
+	if _, err := p.Favori("panthere>mante>braise", true); err != ErrJutsuInconnu {
+		t.Errorf("un jutsu inconnu ne peut pas être favori : %v", err)
+	}
+}

@@ -59,6 +59,7 @@ func Charger(chemin string) (*Partie, error) {
 			n.Grimoire = map[string]*JutsuConnu{}
 		}
 		n.initialiserCarte(time.Now())
+		n.initialiserFavoris()
 		// Les noms des jutsus peuvent évoluer d'une version à l'autre.
 		for _, k := range n.Grimoire {
 			if j, e := grammar.Analyser(k.Sequence); e == nil {
@@ -105,6 +106,7 @@ type JutsuVue struct {
 	Tours      int      `json:"tours"`
 	Maitrise   int      `json:"maitrise"`
 	Usages     int      `json:"usages"`
+	Favori     bool     `json:"favori"`
 }
 
 // NinjaVue : le ninja et ses valeurs calculées.
@@ -132,7 +134,7 @@ func (p *Partie) vueJutsu(j *grammar.Jutsu) JutsuVue {
 		Cle: j.Cle, Nom: j.Nom, Nature: j.Nature, Sequence: j.Sequence, Element: j.Element, Forme: j.Forme,
 		Soutien: j.Soutien, Legendaire: j.Legendaire != "", Texte: j.Texte,
 		Cout: combat.CoutReel(j, m), Tours: (j.Longueur() + mpt - 1) / mpt,
-		Maitrise: m, Usages: usages,
+		Maitrise: m, Usages: usages, Favori: p.Ninja.EstFavori(j.Cle),
 	}
 }
 

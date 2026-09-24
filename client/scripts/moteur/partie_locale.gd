@@ -22,6 +22,8 @@ const ERR := {
 	"infranchi": "le lac barre la route",
 	"pas_de_repos": "on ne se repose que dans un village de sa région ou du Cœur",
 	"rien_a_defier": "il n'y a personne à défier ici",
+	"jutsu_inconnu": "ce jutsu n'est pas dans votre grimoire",
+	"favoris_pleins": "5 jutsus favoris au maximum : retirez-en un d'abord",
 }
 
 var chemin := "user://ninja.save.json"
@@ -43,6 +45,7 @@ func _init(fichier: String = "user://ninja.save.json") -> void:
 		if n is Dictionary and n.get("nom", "") != "":
 			ninja = n
 			_initialiser_carte()
+			_initialiser_favoris()
 			# Les noms des jutsus peuvent évoluer d'une version à l'autre.
 			for k in ninja.grimoire.values():
 				var res := Grammaire.analyser(k.sequence)
@@ -142,6 +145,9 @@ func _apprendre(j: Dictionary, maitrise: int) -> bool:
 	}
 	if j.legendaire != "":
 		ninja.elements_a_choisir = int(ninja.elements_a_choisir) + 1
+	# Les premières découvertes deviennent favorites, jusqu'à cinq.
+	if ninja.favoris.size() < int(Regles.c.favoris_max):
+		ninja.favoris.append(j.cle)
 	return true
 
 
@@ -213,7 +219,7 @@ func _vue_jutsu(j: Dictionary) -> Dictionary:
 		"cle": j.cle, "nom": j.nom, "nature": j.get("nature", ""), "sequence": j.sequence, "element": j.element, "forme": j.forme,
 		"soutien": j.soutien, "legendaire": j.legendaire != "", "texte": j.texte,
 		"cout": CombatMoteur.cout_reel(j, m), "tours": (j.sequence.size() + mpt - 1) / mpt,
-		"maitrise": m, "usages": usages,
+		"maitrise": m, "usages": usages, "favori": ninja.get("favoris", []).has(j.cle),
 	}
 
 
@@ -287,7 +293,7 @@ func creer(nom: String, region: String, type_village: String) -> Dictionary:
 		"nom": nom, "region": region, "type_village": type_village,
 		"village": r.villages[Regles.village_index(type_village)],
 		"niveau": 1, "xp": 0, "points": 0, "fangan": depart, "gnanga": depart, "manhis": depart,
-		"elements": [r.element], "elements_a_choisir": 0, "grimoire": {}, "dje": 50,
+		"elements": [r.element], "elements_a_choisir": 0, "grimoire": {}, "favoris": [], "dje": 50,
 		"arme": {"nom": "un sabre court", "puissance": 6 + int(tv.bonus_arme), "distance": false},
 		"victoires": 0, "defaites": 0, "creation": Time.get_datetime_string_from_system(true),
 	}
@@ -496,6 +502,8 @@ func appel(methode: String, route: String, corps: Dictionary) -> Dictionary:
 			return repartir(int(corps.get("fangan", 0)), int(corps.get("gnanga", 0)), int(corps.get("manhis", 0)))
 		"POST /api/ninja/element":
 			return choisir_element(str(corps.get("element", "")))
+		"POST /api/ninja/favori":
+			return choisir_favori(str(corps.get("cle", "")), bool(corps.get("favori", false)))
 		"POST /api/dojo":
 			return dojo(corps.get("sequence", []))
 		"GET /api/rencontres":
@@ -666,3 +674,31 @@ func defier() -> Dictionary:
 	var r: Dictionary = Regles.rencontres[l.rencontre]
 	var vue := _demarrer(r, int(l.niveau))
 	return ok({"ninja": vue_ninja(), "combat": vue, "rencontre": r.nom, "message": l.nom + " : le combat commence."})
+
+
+# --- Favoris : les jutsus sous la main en combat ------------------------------------
+
+func _initialiser_favoris() -> void:
+	if ninja.get("favoris") == null:
+		var connus: Array = ninja.grimoire.values()
+		connus.sort_custom(func(a, b): return float(a.decouvert) < float(b.decouvert))
+		ninja.favoris = []
+		for k in connus:
+			if ninja.favoris.size() < int(Regles.c.favoris_max):
+				ninja.favoris.append(k.cle)
+	ninja.favoris = ninja.favoris.filter(func(c): return ninja.grimoire.has(c))
+
+
+func choisir_favori(cle: String, favori: bool) -> Dictionary:
+	if ninja == null:
+		return ko("pas_de_ninja")
+	if not ninja.grimoire.has(cle):
+		return ko("jutsu_inconnu")
+	if not favori:
+		ninja.favoris = ninja.favoris.filter(func(c): return c != cle)
+	elif not ninja.favoris.has(cle):
+		if ninja.favoris.size() >= int(Regles.c.favoris_max):
+			return ko("favoris_pleins")
+		ninja.favoris.append(cle)
+	_sauver()
+	return ok(vue_ninja())

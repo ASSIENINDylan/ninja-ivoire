@@ -95,6 +95,15 @@ func Nouveau(p *game.Partie) *Serveur {
 			repondre(w)(p.ChoisirElement(req.Element))
 		}
 	})
+	s.mux.HandleFunc("POST /api/ninja/favori", func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Cle    string
+			Favori bool
+		}
+		if lire(w, r, &req) {
+			repondre(w)(p.Favori(req.Cle, req.Favori))
+		}
+	})
 	s.mux.HandleFunc("POST /api/dojo", func(w http.ResponseWriter, r *http.Request) {
 		var req struct{ Sequence []string }
 		if lire(w, r, &req) {

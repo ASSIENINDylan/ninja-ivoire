@@ -26,7 +26,7 @@ Le jeu tourne entièrement sur le PC. `NinjaIvoire.exe` est l'exécutable offici
 | Village | Fiche du ninja, aperçu de la carte explorée, heure réelle et phase de la lune, choix d'élément |
 | Carte | La Côte d'Ivoire en 1 352 cases : 9 terrains, 7 régions, 56 zones à niveau, 21 villages, 46 villes, lieux mythiques, portails ; déplacement case par case, endurance, brouillard, rencontres |
 | Dojo | Composer jusqu'à 8 mudras, libérer le Souffle, découvrir un jutsu ou écouter la résonance |
-| Grimoire | Jutsus découverts, pour toujours, avec leur maîtrise |
+| Grimoire | Jutsus découverts, pour toujours, avec leur maîtrise ; jusqu'à 5 favoris (★) pour le combat |
 | Combat | Tours simultanés, trois rangs, incantation sur plusieurs tours, interruption, IA qui lit la situation |
 
 Les jutsus portent des noms poétiques (« Braise : Croc de la hyène », « Lagune : Toile d'Ananzè, qui dévore — sans fin »), avec leur nature en dessous (« Lame de Feu dévorante »).

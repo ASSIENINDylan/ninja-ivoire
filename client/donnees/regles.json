@@ -10024,6 +10024,7 @@
   "bonus_region": 3,
   "chance_rencontre": 0.15,
   "endurance_max": 60,
+  "favoris_max": 5,
   "maitrise_decouverte": 10,
   "maitrise_max": 100,
   "maitrise_parchemin": 50,

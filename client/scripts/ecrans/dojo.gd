@@ -116,6 +116,7 @@ func _essayer() -> void:
 		_resultat.add_child(UI.glyphes(j.sequence, 30))
 		_resultat.add_child(UI.texte(j.texte, 15, Pal.IVOIRE_DOUX, 400))
 		_resultat.add_child(UI.label("Souffle : %d   ·   %d tour(s) d'incantation   ·   maîtrise %d" % [j.cout, j.tours, j.maitrise], 14, Pal.OR))
+		_resultat.add_child(_bouton_favori(j))
 		if not d.nouveau:
 			_resultat.add_child(UI.label("Tu connais déjà ce jutsu.", 14, Pal.GRIS))
 		else:
@@ -160,3 +161,26 @@ func _ajouter_journal(seq: Array, d: Dictionary, score: int) -> void:
 	_journal.move_child(ligne, 0)
 	while _journal.get_child_count() > 14:
 		_journal.get_child(_journal.get_child_count() - 1).free()
+
+
+func _bouton_favori(j: Dictionary) -> Control:
+	var zone := UI.hbox(0)
+	_remplir_favori(zone, j)
+	return zone
+
+
+func _remplir_favori(zone: HBoxContainer, j: Dictionary) -> void:
+	for c in zone.get_children():
+		c.queue_free()
+	var fav: bool = j.get("favori", false)
+	var b := UI.bouton("★ Dans tes favoris (retirer)" if fav else "☆ Ajouter aux favoris de combat", func():
+		var r := await Api.envoyer("/api/ninja/favori", {"cle": j.cle, "favori": not fav})
+		if not r.ok:
+			erreur(r.erreur)
+			return
+		Jeu.ninja = r.data
+		j.favori = not fav
+		notifier("Favoris : %d / 5" % r.data.favoris.size(), Pal.OR_VIF, 1.5)
+		_remplir_favori(zone, j), 15)
+	b.add_theme_color_override("font_color", Pal.OR_VIF if fav else Pal.IVOIRE)
+	zone.add_child(b)

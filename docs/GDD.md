@@ -50,6 +50,7 @@
 3. **Interactions élémentaires :** voir la table des forces et faiblesses (§4). Certaines combinaisons entre coéquipiers créent des **jutsus combinés**.
 4. **Positions :** avant, milieu et arrière. La portée des jutsus et les rôles d'équipe en dépendent.
 5. **Loadout :** on emporte un nombre limité de jutsus, d'outils et de parchemins.
+   - **Jutsus favoris (Décidé) :** chaque ninja choisit **au maximum 5 jutsus favoris** dans son grimoire. Ce sont eux qu'il a sous la main en combat, sans fouiller dans tout ce qu'il maîtrise. Les 5 premiers jutsus découverts deviennent favoris d'office ; on les change à tout moment depuis le grimoire (★) ou le dojo. Le composeur de mudras reste disponible en combat pour tenter une suite nouvelle.
 6. **Le Souffle et la fatigue :** une ressource à gérer pendant le combat et d'une mission à l'autre.
 
 ## 3. Mudras et jutsus

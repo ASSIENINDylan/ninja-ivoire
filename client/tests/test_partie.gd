@@ -71,6 +71,7 @@ func _init() -> void:
 	verifier(r.ok and r.data.fin != null, "le combat contre 3 adversaires se termine")
 	print("Sans-Visage : %s en %d tours" % [r.data.fin.message if r.ok else r.erreur, tours])
 	_test_carte()
+	_test_favoris()
 	print("Test partie : %d échec(s)" % echecs)
 	quit(1 if echecs > 0 else 0)
 
@@ -133,3 +134,26 @@ func _test_carte() -> void:
 	p.ninja.niveau = int(l.niveau)
 	r = p.appel("POST", "/api/carte/defier", {})
 	verifier(r.ok and r.data.rencontre == "Patrouille du Cercle d'Acier", "défi des faubourgs de Néo-Ébrié")
+
+
+func _test_favoris() -> void:
+	var chemin := "user://test_favoris.save.json"
+	if FileAccess.file_exists(chemin):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(chemin))
+	var p := PartieLocale.new(chemin)
+	p.appel("POST", "/api/ninja", {"nom": "Ama", "region": "lagunes", "village": "moderne"})
+	for s in [["lamantin", "martin_pecheur", "liane"], ["lamantin", "martin_pecheur", "kola"], ["lamantin", "martin_pecheur", "braise"],
+			["lamantin", "mante", "liane"], ["lamantin", "mante", "braise"], ["lamantin", "tortue", "kola"]]:
+		p.appel("POST", "/api/dojo", {"sequence": s})
+	verifier(p.ninja.favoris.size() == 5 and not p.ninja.favoris.has("lamantin>tortue>kola"), "cinq premières découvertes favorites")
+	verifier(not p.appel("POST", "/api/ninja/favori", {"cle": "lamantin>tortue>kola", "favori": true}).ok, "pas plus de cinq favoris")
+	verifier(p.appel("POST", "/api/ninja/favori", {"cle": "lamantin>mante>liane", "favori": false}).ok, "retirer un favori")
+	var r := p.appel("POST", "/api/ninja/favori", {"cle": "lamantin>tortue>kola", "favori": true})
+	verifier(r.ok and p.ninja.favoris.has("lamantin>tortue>kola"), "ajouter un favori")
+	var nb := 0
+	for j in r.data.jutsus:
+		if j.favori:
+			nb += 1
+	verifier(nb == 5, "la vue marque cinq favoris")
+	var p2 := PartieLocale.new(chemin)
+	verifier(p2.ninja.favoris.size() == 5, "les favoris sont sauvegardés")

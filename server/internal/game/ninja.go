@@ -51,6 +51,7 @@ type Ninja struct {
 	Elements         []string               `json:"elements"`
 	ElementsAChoisir int                    `json:"elements_a_choisir"`
 	Grimoire         map[string]*JutsuConnu `json:"grimoire"`
+	Favoris          []string               `json:"favoris"` // au plus 5 clés de jutsus
 	Dje              int                    `json:"dje"`
 	Arme             combat.Arme            `json:"arme"`
 	Victoires        int                    `json:"victoires"`
@@ -93,6 +94,7 @@ func NouveauNinja(nom, region, typeVillage string) (*Ninja, error) {
 		Fangan:  AttributDepart, Gnanga: AttributDepart, Manhis: AttributDepart,
 		Elements: []string{r.Element},
 		Grimoire: map[string]*JutsuConnu{},
+		Favoris:  []string{},
 		Dje:      50,
 		Arme:     combat.Arme{Nom: "un sabre court", Puissance: 6 + tv.BonusArme},
 		Creation: time.Now(),
@@ -229,6 +231,10 @@ func (n *Ninja) Apprendre(j *grammar.Jutsu, maitrise int) bool {
 	if j.Legendaire != "" {
 		// Chaque légendaire connu ouvre un élément de plus.
 		n.ElementsAChoisir++
+	}
+	// Les premières découvertes deviennent favorites, jusqu'à cinq.
+	if len(n.Favoris) < FavorisMax {
+		n.Favoris = append(n.Favoris, j.Cle)
 	}
 	return true
 }

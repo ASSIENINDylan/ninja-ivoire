@@ -80,7 +80,7 @@ func regles() map[string]any {
 			"maitrise_max": game.MaitriseMax, "maitrise_decouverte": combat.MaitriseDecouverte,
 			"maitrise_pnj": combat.MaitrisePNJ, "tour_max": combat.TourMax,
 			"niveau_fusion": data.NiveauFusion, "nb_rangs": combat.NbRangs,
-			"endurance_max": game.EnduranceMax, "regen_secondes": game.RegenSecondes,
+			"favoris_max": game.FavorisMax, "endurance_max": game.EnduranceMax, "regen_secondes": game.RegenSecondes,
 			"chance_rencontre": game.ChanceRencontre, "rayon_vision": game.RayonVision,
 		},
 	}

@@ -112,7 +112,7 @@ func _construire_panneau() -> void:
 	h.add_child(milieu)
 	var onglets := UI.hbox(8)
 	milieu.add_child(onglets)
-	_onglet_jutsus = UI.bouton("Mes jutsus", func():
+	_onglet_jutsus = UI.bouton("★ Mes favoris", func():
 		_composer = false
 		_maj_interface(), 15)
 	_onglet_composer = UI.bouton("Composer une suite de mudras", func():
@@ -246,9 +246,13 @@ func _maj_interface() -> void:
 
 
 func _construire_liste(j: Dictionary) -> void:
-	var jutsus: Array = Jeu.ninja.jutsus if Jeu.ninja.jutsus != null else []
-	if jutsus.is_empty():
+	var tous: Array = Jeu.ninja.jutsus if Jeu.ninja.jutsus != null else []
+	var jutsus: Array = tous.filter(func(ju): return ju.get("favori", false))
+	if tous.is_empty():
 		_zone_jutsus.add_child(UI.texte("Tu ne connais encore aucun jutsu. Compose une suite de mudras (un élément, une forme, un but…) et découvre-la en plein combat.", 15, Pal.IVOIRE_DOUX))
+		return
+	if jutsus.is_empty():
+		_zone_jutsus.add_child(UI.texte("Aucun jutsu favori. Choisis-en jusqu'à 5 dans ton grimoire (★) : ce sont eux que tu auras sous la main en combat.", 15, Pal.IVOIRE_DOUX))
 		return
 	var defil := ScrollContainer.new()
 	defil.size_flags_vertical = Control.SIZE_EXPAND_FILL
