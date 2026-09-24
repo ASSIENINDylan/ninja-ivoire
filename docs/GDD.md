@@ -369,6 +369,7 @@ Le cœur de la forêt de Taï, le sommet du mont Nimba, les profondeurs des lagu
 - **Carte** : une grande carte peinte de la Côte d'Ivoire et, au centre, la scène illustrée du lieu où l'on se trouve.
 - **Interface** : parchemin, bois sculpté, bronze akan et motifs des toiles de Korhogo (maquettes validées).
 - **Allures de ninja** : 3, une par type de village (traditionnel, moderne, futuriste).
+- **Équipement visible** : ce que porte un ninja (arme, tête, corps, pieds, arme secondaire) se voit sur son personnage, en combat et au village, grâce à l'animation par pièces sur un squelette commun aux 3 allures. Un ninja vaincu apparaît sans son équipement.
 - **Méthode** : une première scène complète (combat en savane) validée avant de produire le reste.
 
 ## 9. Technique (Proposé)
