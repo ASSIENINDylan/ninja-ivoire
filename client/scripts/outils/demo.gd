@@ -214,5 +214,12 @@ func _scenario() -> void:
 				break
 	await _attendre(1.5)
 	await _capture("10_combat_fin")
+	# Mode test : passage au niveau 40, points et éléments à répartir.
+	Jeu.aller("village")
+	await _attendre(1.0)
+	await _capture("17_village_mode_test")
+	await _ecran()._passer_au_niveau(40)
+	await _attendre(1.0)
+	await _capture("18_village_niveau_40")
 	print("demo terminee")
 	Jeu.quitter()

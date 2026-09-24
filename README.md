@@ -18,6 +18,8 @@ Jeu PC de ninjas, stratégique et persistant, dont le monde est la **Côte d'Ivo
 
 Le jeu tourne entièrement sur le PC. `NinjaIvoire.exe` est l'exécutable officiel de Godot, non modifié ; le jeu lui-même est dans `NinjaIvoire.pck`.
 
+**Mode test** : au village, sous la fiche du ninja, choisis un niveau (40 par défaut) et clique sur « Y passer ». Le ninja gagne d'un coup ces niveaux, avec leurs points d'attribut (3 par niveau, à répartir avec « +1 » ou « +10 ») et leurs éléments à choisir (un tous les 20 niveaux). Les mudras de ces niveaux et de ces éléments s'ouvrent d'eux-mêmes au dojo.
+
 ## Ce que contient le prototype 0.1
 
 | Écran | Contenu |

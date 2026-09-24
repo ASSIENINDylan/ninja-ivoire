@@ -76,6 +76,33 @@ func TestNiveauxEtElements(t *testing.T) {
 	}
 }
 
+func TestModeTestNiveau(t *testing.T) {
+	p := nouvellePartie(t)
+	depart := *p.Ninja
+	v, err := p.PasserAuNiveau(40)
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := p.Ninja
+	if n.Niveau != 40 || n.XP != 0 || n.Points != depart.Points+39*PointsParNiveau || n.ElementsAChoisir != 2 {
+		t.Fatalf("niveau 40 attendu avec 117 points et 2 éléments à choisir : niv %d, points %d, choix %d", n.Niveau, n.Points, n.ElementsAChoisir)
+	}
+	if gain := n.Fangan + n.Gnanga + n.Manhis - depart.Fangan - depart.Gnanga - depart.Manhis; gain != 39 {
+		t.Errorf("l'attribut de la région gagne 1 par niveau : +%d", gain)
+	}
+	if n.PV != n.PVMax() || v.Niveau != 40 {
+		t.Errorf("le ninja est soigné et la vue à jour : PV %d/%d", n.PV, n.PVMax())
+	}
+	for _, c := range []int{40, 12, 101} {
+		if _, err := p.PasserAuNiveau(c); err != ErrNiveauTest {
+			t.Errorf("niveau %d refusé attendu : %v", c, err)
+		}
+	}
+	if _, err := p.Repartir(100, 10, 7); err != nil || n.Points != 0 {
+		t.Errorf("répartition libre des 117 points : %v, reste %d", err, n.Points)
+	}
+}
+
 func TestCombatComplet(t *testing.T) {
 	p := nouvellePartie(t)
 	if _, err := p.DemarrerCombat("brigand"); err != ErrNiveauTropBas {

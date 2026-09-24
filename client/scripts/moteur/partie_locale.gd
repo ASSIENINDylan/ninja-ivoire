@@ -11,6 +11,7 @@ const ERR := {
 	"points": "pas assez de points à répartir",
 	"element": "élément indisponible",
 	"pas_de_choix": "aucun élément à choisir pour l'instant",
+	"niveau_test": "niveau de test invalide : il doit dépasser le niveau actuel, jusqu'à 100",
 	"pas_de_ninja": "aucun ninja : créez-en un d'abord",
 	"ninja_existe": "un ninja existe déjà",
 	"combat_en_cours": "un combat est déjà en cours",
@@ -139,16 +140,21 @@ func _gagner_xp(xp: int) -> int:
 	var nmax := int(Regles.c.niveau_max)
 	while int(ninja.niveau) < nmax and int(ninja.xp) >= xp_pour_niveau(int(ninja.niveau)):
 		ninja.xp = int(ninja.xp) - xp_pour_niveau(int(ninja.niveau))
-		ninja.niveau = int(ninja.niveau) + 1
+		_monter()
 		gagnes += 1
-		ninja.points = int(ninja.points) + int(Regles.c.points_par_niveau)
-		var attr: String = Regles.regions[ninja.region].attribut
-		ninja[attr] = int(ninja[attr]) + 1
-		if int(ninja.niveau) % int(Regles.c.palier_element) == 0:
-			ninja.elements_a_choisir = int(ninja.elements_a_choisir) + 1
 	if int(ninja.niveau) == nmax:
 		ninja.xp = 0
 	return gagnes
+
+
+## Un niveau de plus, et ce qu'il rapporte.
+func _monter() -> void:
+	ninja.niveau = int(ninja.niveau) + 1
+	ninja.points = int(ninja.points) + int(Regles.c.points_par_niveau)
+	var attr: String = Regles.regions[ninja.region].attribut
+	ninja[attr] = int(ninja[attr]) + 1
+	if int(ninja.niveau) % int(Regles.c.palier_element) == 0:
+		ninja.elements_a_choisir = int(ninja.elements_a_choisir) + 1
 
 
 ## Inscrit un jutsu au grimoire ; renvoie true si c'est une nouveauté.
@@ -350,6 +356,25 @@ func repartir(f: int, g: int, m: int) -> Dictionary:
 	ninja.gnanga = int(ninja.gnanga) + g
 	ninja.manhis = int(ninja.manhis) + m
 	ninja.points = int(ninja.points) - (f + g + m)
+	_sauver()
+	return ok(vue_ninja())
+
+
+## Mode test : amène le ninja au niveau voulu, comme s'il avait gagné chaque
+## niveau (points à répartir, attribut de la région, éléments à choisir), et
+## le soigne.
+func passer_au_niveau(cible: int) -> Dictionary:
+	if ninja == null:
+		return ko("pas_de_ninja")
+	if combat != null and not combat.fini:
+		return ko("combat_en_cours")
+	if cible <= int(ninja.niveau) or cible > int(Regles.c.niveau_max):
+		return ko("niveau_test")
+	while int(ninja.niveau) < cible:
+		_monter()
+	ninja.xp = 0
+	ninja.pv = pv_max()
+	ninja.pv_maj = horloge.call()
 	_sauver()
 	return ok(vue_ninja())
 
@@ -574,6 +599,8 @@ func appel(methode: String, route: String, corps: Dictionary) -> Dictionary:
 			return abandonner()
 		"POST /api/ninja/attributs":
 			return repartir(int(corps.get("fangan", 0)), int(corps.get("gnanga", 0)), int(corps.get("manhis", 0)))
+		"POST /api/ninja/niveau":
+			return passer_au_niveau(int(corps.get("niveau", 0)))
 		"POST /api/ninja/element":
 			return choisir_element(str(corps.get("element", "")))
 		"POST /api/ninja/favori":

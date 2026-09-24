@@ -95,6 +95,12 @@ func Nouveau(p *game.Partie) *Serveur {
 			repondre(w)(p.Repartir(req.Fangan, req.Gnanga, req.Manhis))
 		}
 	})
+	s.mux.HandleFunc("POST /api/ninja/niveau", func(w http.ResponseWriter, r *http.Request) {
+		var req struct{ Niveau int }
+		if lire(w, r, &req) {
+			repondre(w)(p.PasserAuNiveau(req.Niveau))
+		}
+	})
 	s.mux.HandleFunc("POST /api/ninja/element", func(w http.ResponseWriter, r *http.Request) {
 		var req struct{ Element string }
 		if lire(w, r, &req) {

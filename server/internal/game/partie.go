@@ -261,6 +261,26 @@ func (p *Partie) Repartir(f, g, m int) (*NinjaVue, error) {
 	return p.vueNinja(), p.sauver()
 }
 
+// PasserAuNiveau (mode test) fait monter le ninja au niveau voulu et le
+// soigne.
+func (p *Partie) PasserAuNiveau(cible int) (*NinjaVue, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	n := p.Ninja
+	if n == nil {
+		return nil, ErrPasDeNinja
+	}
+	if p.combat != nil && !p.combat.Fini {
+		return nil, ErrCombatEnCours
+	}
+	if err := n.PasserAuNiveau(cible); err != nil {
+		return nil, err
+	}
+	n.PV = n.PVMax()
+	n.PVMaj = p.Maintenant().Unix()
+	return p.vueNinja(), p.sauver()
+}
+
 // ChoisirElement apprend un nouvel élément.
 func (p *Partie) ChoisirElement(id string) (*NinjaVue, error) {
 	p.mu.Lock()

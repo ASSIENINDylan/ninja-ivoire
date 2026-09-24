@@ -3,6 +3,8 @@ extends Ecran
 
 const ATTRIBUTS := [["fangan", "Fangan", "force : dégâts des armes, points de vie"], ["gnanga", "Gnanga", "technique : puissance des jutsus, Souffle, mudras par tour"], ["manhis", "Manhis", "agilité : initiative, esquive, coups critiques"]]
 
+const NIVEAU_MAX := 100  # comme le serveur (mode test)
+
 var _fiche: VBoxContainer
 var _droite: VBoxContainer
 var _carte: CarteMonde
@@ -96,8 +98,9 @@ func _remplir() -> void:
 		ligne.add_child(UI.label(a[2].split(":")[0], 13, Pal.GRIS))
 		ligne.add_child(UI.extensible())
 		if n.points > 0:
-			var b := UI.bouton("+", _ajouter_point.bind(a[0]), 16)
-			ligne.add_child(b)
+			ligne.add_child(UI.bouton("+1", _ajouter_point.bind(a[0], 1), 15))
+			if n.points >= 10:
+				ligne.add_child(UI.bouton("+10", _ajouter_point.bind(a[0], 10), 15))
 		_fiche.add_child(ligne)
 
 	_fiche.add_child(UI.espace(4))
@@ -115,6 +118,9 @@ func _remplir() -> void:
 	_fiche.add_child(UI.espace(4))
 	var jutsus: Array = n.jutsus if n.jutsus != null else []
 	_fiche.add_child(UI.label("%d jutsus connus   ·   %d victoires, %d défaites" % [jutsus.size(), n.victoires, n.defaites], 15, Pal.IVOIRE_DOUX))
+	if int(n.niveau) < NIVEAU_MAX:
+		_fiche.add_child(UI.espace(4))
+		_fiche.add_child(_panneau_test())
 	_fiche.add_child(UI.extensible())
 	_fiche.add_child(UI.bouton("Abandonner ce ninja", _abandonner, 14))
 
@@ -167,9 +173,40 @@ func _panneau_element() -> Control:
 	return carte
 
 
-func _ajouter_point(attr: String) -> void:
+## Mode test du prototype : monter d'un coup au niveau voulu, puis répartir
+## soi-même les points et choisir les éléments.
+func _panneau_test() -> Control:
+	var h := UI.hbox(8)
+	h.tooltip_text = "Ton ninja gagne d'un coup les niveaux, avec leurs points d'attribut et leurs éléments à choisir : tu les répartis ensuite toi-même."
+	h.add_child(UI.label("Mode test", 18, Pal.OCRE, true))
+	h.add_child(UI.extensible())
+	var choix := SpinBox.new()
+	choix.min_value = int(Jeu.ninja.niveau) + 1
+	choix.max_value = NIVEAU_MAX
+	choix.value = maxi(40, int(Jeu.ninja.niveau) + 1)
+	choix.prefix = "niveau"
+	choix.custom_minimum_size.x = 130
+	h.add_child(choix)
+	h.add_child(UI.bouton("Y passer", func(): _passer_au_niveau(int(choix.value)), 15))
+	return h
+
+
+func _passer_au_niveau(niveau: int) -> void:
+	var r := await Api.envoyer("/api/ninja/niveau", {"niveau": niveau})
+	if not r.ok:
+		erreur(r.erreur)
+		return
+	Jeu.ninja = r.data
+	var msg := "Te voilà niveau %d : répartis tes %d points d'attribut" % [niveau, int(r.data.points)]
+	if int(r.data.elements_a_choisir) > 0:
+		msg += " et choisis %d élément%s" % [int(r.data.elements_a_choisir), "s" if int(r.data.elements_a_choisir) > 1 else ""]
+	notifier(msg + ".", Pal.OR_VIF, 6.0)
+	_remplir()
+
+
+func _ajouter_point(attr: String, nb: int) -> void:
 	var corps := {"fangan": 0, "gnanga": 0, "manhis": 0}
-	corps[attr] = 1
+	corps[attr] = nb
 	var r := await Api.envoyer("/api/ninja/attributs", corps)
 	if not r.ok:
 		erreur(r.erreur)

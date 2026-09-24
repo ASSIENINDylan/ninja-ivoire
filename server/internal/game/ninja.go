@@ -81,6 +81,7 @@ var (
 	ErrPoints     = errors.New("pas assez de points à répartir")
 	ErrElement    = errors.New("élément indisponible")
 	ErrPasDeChoix = errors.New("aucun élément à choisir pour l'instant")
+	ErrNiveauTest = errors.New("niveau de test invalide : il doit dépasser le niveau actuel, jusqu'à 100")
 )
 
 // NouveauNinja crée un ninja de niveau 1 dans une région et un village.
@@ -171,26 +172,45 @@ func (n *Ninja) GagnerXP(xp int) int {
 	gagnes := 0
 	for n.Niveau < NiveauMax && n.XP >= XPPourNiveau(n.Niveau) {
 		n.XP -= XPPourNiveau(n.Niveau)
-		n.Niveau++
+		n.monter()
 		gagnes++
-		n.Points += PointsParNiveau
-		// L'attribut favorisé par la région grandit tout seul.
-		switch data.Regions[n.Region].Attribut {
-		case data.Fangan:
-			n.Fangan++
-		case data.Gnanga:
-			n.Gnanga++
-		case data.Manhis:
-			n.Manhis++
-		}
-		if n.Niveau%PalierElement == 0 {
-			n.ElementsAChoisir++
-		}
 	}
 	if n.Niveau == NiveauMax {
 		n.XP = 0
 	}
 	return gagnes
+}
+
+// monter fait gagner un niveau et ce qu'il rapporte.
+func (n *Ninja) monter() {
+	n.Niveau++
+	n.Points += PointsParNiveau
+	// L'attribut favorisé par la région grandit tout seul.
+	switch data.Regions[n.Region].Attribut {
+	case data.Fangan:
+		n.Fangan++
+	case data.Gnanga:
+		n.Gnanga++
+	case data.Manhis:
+		n.Manhis++
+	}
+	if n.Niveau%PalierElement == 0 {
+		n.ElementsAChoisir++
+	}
+}
+
+// PasserAuNiveau (mode test) amène le ninja au niveau voulu, comme s'il
+// avait gagné chaque niveau : points à répartir, attribut de la région,
+// éléments à choisir. Le joueur répartit ensuite lui-même.
+func (n *Ninja) PasserAuNiveau(cible int) error {
+	if cible <= n.Niveau || cible > NiveauMax {
+		return ErrNiveauTest
+	}
+	for n.Niveau < cible {
+		n.monter()
+	}
+	n.XP = 0
+	return nil
 }
 
 // Repartir distribue des points d'attribut.

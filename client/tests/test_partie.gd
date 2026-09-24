@@ -73,6 +73,7 @@ func _init() -> void:
 	print("Sans-Visage : %s en %d tours" % [r.data.fin.message if r.ok else r.erreur, tours])
 	_test_carte()
 	_test_favoris()
+	_test_mode_niveau()
 	print("Test partie : %d échec(s)" % echecs)
 	quit(1 if echecs > 0 else 0)
 
@@ -137,6 +138,25 @@ func _test_carte() -> void:
 	p.ninja.niveau = int(l.niveau)
 	r = p.appel("POST", "/api/carte/defier", {})
 	verifier(r.ok and r.data.rencontre == "Patrouille du Cercle d'Acier", "défi des faubourgs de Néo-Ébrié")
+
+
+func _test_mode_niveau() -> void:
+	var chemin := "user://test_niveau.save.json"
+	if FileAccess.file_exists(chemin):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(chemin))
+	var p := PartieLocale.new(chemin)
+	p.appel("POST", "/api/ninja", {"nom": "Koffi", "region": "lagunes", "village": "moderne"})
+	var manhis := int(p.ninja.manhis)
+	var r := p.appel("POST", "/api/ninja/niveau", {"niveau": 40})
+	verifier(r.ok and int(r.data.niveau) == 40, "mode test : niveau 40")
+	verifier(int(p.ninja.points) == 117 and int(p.ninja.elements_a_choisir) == 2, "117 points et 2 éléments à choisir")
+	verifier(int(p.ninja.manhis) == manhis + 39, "l'attribut de la région monte à chaque niveau")
+	verifier(int(p.ninja.pv) == p.pv_max(), "le ninja est soigné")
+	for c in [40, 12, 101]:
+		verifier(not p.appel("POST", "/api/ninja/niveau", {"niveau": c}).ok, "niveau %d refusé" % c)
+	verifier(p.appel("POST", "/api/ninja/attributs", {"fangan": 100, "gnanga": 10, "manhis": 7}).ok and int(p.ninja.points) == 0, "répartition libre")
+	verifier(p.appel("POST", "/api/ninja/element", {"element": "feu"}).ok and p.appel("POST", "/api/ninja/element", {"element": "vent"}).ok, "deux éléments choisis")
+	verifier(p.mudras_permis().has("panthere"), "les mudras du Feu s'ouvrent")
 
 
 func _test_favoris() -> void:
