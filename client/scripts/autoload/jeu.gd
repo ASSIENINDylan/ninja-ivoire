@@ -177,3 +177,12 @@ func couleur_mudra(id: String) -> Color:
 
 func mudra_permis(id: String) -> bool:
 	return ninja != null and ninja.permis.has(id)
+
+
+## Libellé du type d'un jutsu : « Dégâts magiques », « Entrave »…
+func libelle_type(ju: Dictionary) -> String:
+	var noms := {"degats": "Dégâts", "defense": "Défense", "entrave": "Entrave", "illusion": "Illusion", "soin": "Soin"}
+	var t: String = noms.get(ju.get("type", ""), "")
+	if ju.get("type", "") == "degats" and ju.get("degats_nature", "") != "":
+		t += " " + str(ju.degats_nature) + "s"
+	return t

@@ -71,6 +71,7 @@ jobs:
         run: |
           ~/godot/godot --headless --script res://tests/test_grammaire.gd
           ~/godot/godot --headless --script res://tests/test_partie.gd
+          ~/godot/godot --headless --script res://tests/test_combat.gd
 
       # L'exécutable est celui de Godot, non modifié ; le jeu est dans le .pck.
       # Aucun programme maison : c'est ce qui évite les alertes antivirus.

@@ -85,6 +85,10 @@ func _scenario() -> void:
 	if Api.partie != null:
 		Api.partie.hasard = randf
 
+	# Pour la démonstration, le ninja a déjà du métier (niveau 25).
+	if Api.partie != null:
+		Api.partie.ninja.niveau = 25
+		await Jeu.rafraichir()
 	Jeu.aller("dojo")
 	await _attendre(0.8)
 	e = _ecran()
@@ -100,13 +104,14 @@ func _scenario() -> void:
 	await _attendre(1.2)
 	await _capture("05_dojo_resonance")
 	e._barre.vider()
-	for id in ["panthere", "martin_pecheur", "liane", "braise"]:
+	for id in ["panthere", "perroquet", "voile"]:
 		e._barre.ajouter(id)
 	e._essayer()
-	await _attendre(1.0)
+	await _attendre(1.2)
+	await _capture("05b_dojo_illusion")
 
-	# Un sixième jutsu, hors des favoris, puis on échange un favori.
-	for sq in [["panthere", "tortue", "kola"], ["panthere", "martin_pecheur", "kola"], ["panthere", "mante", "liane"], ["panthere", "tortue", "braise"]]:
+	# D'autres jutsus : un soin, une entrave, une défense, et un sixième hors des favoris.
+	for sq in [["panthere", "martin_pecheur", "kola"], ["panthere", "araignee", "liane"], ["panthere", "tortue", "moustique"], ["panthere", "case", "belier"], ["panthere", "pangolin", "hache"]]:
 		await Api.envoyer("/api/dojo", {"sequence": sq})
 	await Jeu.rafraichir()
 	Jeu.aller("grimoire")
@@ -118,16 +123,21 @@ func _scenario() -> void:
 	await _attendre(1.2)
 	await _capture("07_combat")
 	e = _ecran()
-	e._envoyer({"type": "incanter", "sequence": ["panthere", "mante", "braise"], "cible": "pnj1"})
-	await _attendre(1.1)
-	await _capture("08_combat_action")
+	e._envoyer({"type": "incanter", "sequence": ["panthere", "perroquet", "voile"], "cible": ""})
 	for i in 30:
-		await _attendre(0.5)
+		await _attendre(0.25)
+		if not e._occupe:
+			break
+	await _attendre(0.6)
+	await _capture("08_combat_clone")
+	e._envoyer({"type": "incanter", "sequence": ["panthere", "araignee", "liane"], "cible": "pnj1"})
+	for i in 30:
+		await _attendre(0.25)
 		if not e._occupe:
 			break
 	e._composer = true
 	e._maj_interface()
-	for id in ["panthere", "martin_pecheur", "liane", "braise"]:
+	for id in ["panthere", "tortue", "hache"]:
 		e._barre.ajouter(id)
 	await _attendre(0.5)
 	await _capture("09_combat_composer")

@@ -40,11 +40,12 @@ func _init() -> void:
 	verifier(not p.appel("POST", "/api/combat", {"rencontre": "brigand"}).ok, "zone du brigand bloquée au niveau 1")
 	var victoires := 0
 	for essai in 6:
+		p.ninja.pv = p.pv_max()  # les blessures durent : on repart soigné
 		r = p.appel("POST", "/api/combat", {"rencontre": "chacals"})
 		verifier(r.ok, "début du combat : %s" % r.get("erreur", ""))
 		var fin = null
 		for t in 70:
-			var a := {"type": "incanter", "sequence": ["lamantin", "martin_pecheur", "liane"], "cible": "pnj1"} if t % 2 == 0 else {"type": "frapper", "cible": "pnj1"}
+			var a := {"type": "incanter", "sequence": ["lamantin", "martin_pecheur", "braise"], "cible": "pnj1"} if t % 2 == 0 else {"type": "frapper", "cible": "pnj1"}
 			r = p.appel("POST", "/api/combat/action", a)
 			verifier(r.ok, "tour de combat : %s" % r.get("erreur", ""))
 			if not r.ok:
@@ -66,7 +67,7 @@ func _init() -> void:
 	verifier(r.ok, "rituel des Sans-Visage")
 	var tours := 0
 	while r.ok and (r.data.get("fin") == null) and tours < 70:
-		r = p.appel("POST", "/api/combat/action", {"type": "incanter", "sequence": ["lamantin", "martin_pecheur", "liane"], "cible": "pnj1"})
+		r = p.appel("POST", "/api/combat/action", {"type": "incanter", "sequence": ["lamantin", "martin_pecheur", "braise"], "cible": "pnj1"})
 		tours += 1
 	verifier(r.ok and r.data.fin != null, "le combat contre 3 adversaires se termine")
 	print("Sans-Visage : %s en %d tours" % [r.data.fin.message if r.ok else r.erreur, tours])
@@ -122,10 +123,12 @@ func _test_carte() -> void:
 	verifier(combat_lance, "une rencontre surgit en brousse")
 	if combat_lance:
 		verifier(not p.appel("POST", "/api/carte/deplacer", {"x": int(v.x), "y": int(v.y)}).ok, "pas de déplacement en combat")
+		var ici: Array = p.ninja.position.duplicate()
 		r = p.appel("POST", "/api/combat/fuite", {})
 		verifier(r.ok and r.data.fin.defaite, "la fuite est une défaite")
-		verifier(int(p.ninja.position[0]) == int(v.x) and int(p.ninja.position[1]) == int(v.y), "on renaît au village")
+		verifier(p.ninja.position == ici, "qui fuit reste sur place, sans renaître")
 	# Repos et défi d'un lieu.
+	p.ninja.position = [int(v.x), int(v.y)]
 	p.ninja.endurance = 2
 	verifier(p.appel("POST", "/api/carte/reposer", {}).ok and int(p.ninja.endurance) == int(Regles.c.endurance_max), "repos au village")
 	var l = Regles.lieu_id("faubourgs_neo_ebrie")
@@ -157,3 +160,50 @@ func _test_favoris() -> void:
 	verifier(nb == 5, "la vue marque cinq favoris")
 	var p2 := PartieLocale.new(chemin)
 	verifier(p2.ninja.favoris.size() == 5, "les favoris sont sauvegardés")
+	# En combat : seuls les favoris et les suites inconnues.
+	r = p.appel("POST", "/api/combat", {"rencontre": "chacals"})
+	verifier(r.ok, "combat des favoris")
+	r = p.appel("POST", "/api/combat/action", {"type": "incanter", "sequence": ["lamantin", "mante", "liane"], "cible": "pnj1"})
+	verifier(not r.ok, "un jutsu connu hors des favoris est refusé en combat")
+	r = p.appel("POST", "/api/combat/action", {"type": "incanter", "sequence": ["lamantin", "martin_pecheur", "braise"], "cible": "pnj1"})
+	verifier(r.ok, "un favori se lance : %s" % r.get("erreur", ""))
+	if r.ok and r.data.fin == null:
+		r = p.appel("POST", "/api/combat/action", {"type": "incanter", "sequence": ["lamantin", "tortue", "braise"], "cible": "pnj1"})
+		verifier(r.ok, "une suite inconnue se lance : %s" % r.get("erreur", ""))
+	_test_blessures()
+
+
+func _test_blessures() -> void:
+	var chemin := "user://test_blessures.save.json"
+	if FileAccess.file_exists(chemin):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(chemin))
+	var p := PartieLocale.new(chemin)
+	p.appel("POST", "/api/ninja", {"nom": "Kofi", "region": "lagunes", "village": "moderne"})
+	var t0: int = int(Time.get_unix_time_from_system())
+	p.horloge = func() -> int: return t0
+	var r := p.appel("GET", "/api/etat", {})
+	verifier(int(r.data.ninja.pv) == p.pv_max(), "un nouveau ninja est en pleine forme")
+	p.ninja.pv = 10
+	p.ninja.pv_maj = t0
+	r = p.appel("POST", "/api/combat", {"rencontre": "chacals"})
+	var moi = null
+	for f in r.data.combattants:
+		if f.id == "joueur":
+			moi = f
+	verifier(moi != null and int(moi.pv) == 10, "le combat commence avec les blessures")
+	p.appel("POST", "/api/combat/fuite", {})
+	p.horloge = func() -> int: return t0 + int(Regles.c.regen_pv_secondes)
+	r = p.appel("GET", "/api/etat", {})
+	verifier(int(r.data.ninja.pv) == p.pv_max(), "une demi-heure guérit tout")
+	# Un baume agit après le combat.
+	var j: Dictionary = Grammaire.analyser(["lamantin", "tortue", "moustique"]).jutsu
+	verifier(j.type == "soin" and j.effets[0].statut == "baume", "Moustique + Tortue : baume d'après-combat")
+	var c := CombatMoteur.new("t", [p._combattant(Regles.maintenant()), PartieLocale._instancier(Regles.rencontres.chacals, 1)[0]], 1)
+	c._lancer(c.get_c("joueur"), j, "", 1.0, false)
+	verifier(CombatMoteur.baume(c.get_c("joueur")) > 0, "le baume attend la fin du combat")
+	# Un clone reste indiscernable pour l'adversaire.
+	var jc: Dictionary = Grammaire.analyser(["lamantin", "perroquet", "voile"]).jutsu
+	c._lancer(c.get_c("joueur"), jc, "", 1.0, false)
+	var vus: Array = c.vue(1).combattants.filter(func(f): return f.camp == 0)
+	verifier(vus.size() == 2 and vus[0].nom == vus[1].nom and vus[0].pv == vus[1].pv and not vus[0].clone and not vus[1].clone, "clone indiscernable")
+	verifier(c.vue(0).combattants.filter(func(f): return f.clone).size() == 1, "le joueur voit son clone")

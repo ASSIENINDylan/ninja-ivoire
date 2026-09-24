@@ -24,6 +24,8 @@ const ERR := {
 	"rien_a_defier": "il n'y a personne à défier ici",
 	"jutsu_inconnu": "ce jutsu n'est pas dans votre grimoire",
 	"favoris_pleins": "5 jutsus favoris au maximum : retirez-en un d'abord",
+	"pas_favori": "ce jutsu n'est pas parmi vos 5 favoris : en combat, seuls vos favoris et les suites encore inconnues se lancent",
+	"retenu": "vous êtes retenu : impossible de fuir",
 }
 
 var chemin := "user://ninja.save.json"
@@ -32,6 +34,7 @@ var combat: CombatMoteur = null
 var rencontre = null
 var niveau_combat := 1
 var _vus := 0
+var _fuite := false
 ## Tire un nombre dans [0, 1) (remplaçable dans les tests).
 var hasard: Callable = randf
 ## L'heure en secondes (remplaçable dans les tests).
@@ -171,9 +174,9 @@ func _combattant(moment: Dictionary) -> Dictionary:
 	return {
 		"id": "joueur", "nom": ninja.nom, "camp": 0, "rang": 1, "joueur": true, "apparence": "ninja_" + ninja.type_village,
 		"niveau": int(ninja.niveau), "fangan": int(ninja.fangan), "gnanga": int(ninja.gnanga), "manhis": int(ninja.manhis),
-		"pv": pv_max(), "pv_max": pv_max(), "souffle": souffle_max(), "souffle_max": souffle_max(),
+		"pv": maxi(1, mini(int(ninja.pv), pv_max())), "pv_max": pv_max(), "souffle": souffle_max(), "souffle_max": souffle_max(),
 		"element": ninja.elements[0], "elements": ninja.elements.duplicate(), "arme": ninja.arme.duplicate(),
-		"defense": int(ninja.fangan) / 2, "absorption": 0, "garde": false, "statuts": [], "incantation": null,
+		"defense": int(ninja.fangan) / 2, "defense_mag": int(ninja.gnanga) / 2, "clone": false, "absorption": 0, "garde": false, "statuts": [], "incantation": null,
 		"_maitrise": maitrise, "_permis": mudras_permis(),
 		"_contexte": {"niveau": int(ninja.niveau), "elements": ninja.elements.duplicate()},
 		"_precis": bool(Regles.villages[ninja.type_village].resonance),
@@ -183,19 +186,23 @@ func _combattant(moment: Dictionary) -> Dictionary:
 static func _instancier(r: Dictionary, niveau: int) -> Array:
 	var out := []
 	var i := 0
+	# Un groupe se partage la force : chacun est un peu plus faible.
+	var groupe := 0.8 if r.ennemis.size() > 1 else 1.0
 	for m in r.ennemis:
 		var lv := maxi(1, niveau)
 		var f := {
 			"id": "pnj%d" % (i + 1), "nom": m.nom, "camp": 1, "rang": i + 1, "joueur": false, "apparence": m.apparence,
-			"niveau": lv, "fangan": int(m.fangan) + lv, "gnanga": int(m.gnanga) + lv, "manhis": int(m.manhis) + lv / 2,
+			"niveau": lv, "fangan": int(float(int(m.fangan) + lv) * groupe), "gnanga": int(float(int(m.gnanga) + lv) * groupe),
+			"manhis": int(m.manhis) + lv / 2, "clone": false,
 			"element": m.element, "elements": [m.element] if m.element != "" else [], "arme": m.arme.duplicate(),
 			"absorption": 0, "garde": false, "statuts": [], "incantation": null, "_ia": m.ia, "_jutsus": [],
 		}
-		f.pv_max = int(m.pv) + lv * 8
+		f.pv_max = int(float(int(m.pv) + lv * 8) * groupe)
 		f.pv = f.pv_max
 		f.souffle_max = 40 + int(f.gnanga) * 3
 		f.souffle = f.souffle_max
 		f.defense = int(f.fangan) / 2
+		f.defense_mag = int(f.gnanga) / 2
 		for seq in (m.jutsus if m.jutsus != null else []):
 			var res := Grammaire.analyser(seq)
 			if res.jutsu != null:
@@ -215,8 +222,10 @@ func _vue_jutsu(j: Dictionary) -> Dictionary:
 		m = int(k.maitrise)
 		usages = int(k.usages)
 	var mpt := mudras_par_tour()
+	var f := {"fangan": ninja.fangan, "gnanga": ninja.gnanga, "manhis": ninja.manhis}
 	return {
 		"cle": j.cle, "nom": j.nom, "nature": j.get("nature", ""), "sequence": j.sequence, "element": j.element, "forme": j.forme,
+		"type": j.type, "degats_nature": j.degats_nature, "puissance": int(round(CombatMoteur.puissance_de(f, j, m, 1.0))),
 		"soutien": j.soutien, "legendaire": j.legendaire != "", "texte": j.texte,
 		"cout": CombatMoteur.cout_reel(j, m), "tours": (j.sequence.size() + mpt - 1) / mpt,
 		"maitrise": m, "usages": usages, "favori": ninja.get("favoris", []).has(j.cle),
@@ -227,6 +236,7 @@ func vue_ninja():
 	if ninja == null:
 		return null
 	_maj_endurance()
+	_maj_pv()
 	var v: Dictionary = ninja.duplicate(true)
 	v.situation = _situation()
 	v.region_nom = Regles.regions[ninja.region].nom
@@ -412,6 +422,7 @@ func _demarrer(r: Dictionary, niveau: int) -> Dictionary:
 	rencontre = r
 	niveau_combat = niveau
 	_vus = 0
+	_fuite = false
 	return combat.vue(0)
 
 
@@ -425,6 +436,11 @@ func agir(a: Dictionary) -> Dictionary:
 		return ko("pas_de_combat")
 	a = a.duplicate()
 	a.acteur = "joueur"
+	if a.get("type", "") == "incanter" and a.get("sequence", []).size() > 0:
+		# En combat, seuls les favoris et les suites encore inconnues.
+		var j = Grammaire.analyser(a.sequence).jutsu
+		if j != null and ninja.grimoire.has(j.cle) and not ninja.favoris.has(j.cle):
+			return ko("pas_favori")
 	var res := combat.jouer_tour([a])
 	if res.has("erreur"):
 		return ko(res.erreur)
@@ -443,8 +459,12 @@ func agir(a: Dictionary) -> Dictionary:
 func fuir() -> Dictionary:
 	if combat == null or combat.fini:
 		return ko("pas_de_combat")
+	var moi = combat.get_c("joueur")
+	if moi != null and CombatMoteur.a_statut(moi, "retenu"):
+		return ko("retenu")
 	combat.fini = true
 	combat.vainqueur = 1
+	_fuite = true
 	var sortie := {
 		"evenements": [{"type": "fin", "valeur": 1, "texte": ninja.nom + " prend la fuite.", "acteur": "", "cible": "", "element": "", "jutsu": ""}],
 		"combat": combat.vue(0), "fin": _terminer(),
@@ -462,26 +482,40 @@ func _terminer() -> Dictionary:
 		var k = ninja.grimoire.get(cle)
 		if k != null:
 			fin.maitrise[k.nom] = int(k.maitrise)
-	match combat.vainqueur:
-		0:
-			fin.victoire = true
-			var rec := recompenses(rencontre, niveau_combat)
-			fin.xp = rec[0]
-			fin.dje = rec[1]
-			ninja.dje = int(ninja.dje) + fin.dje
-			ninja.victoires = int(ninja.victoires) + 1
-			fin.niveaux_gagnes = _gagner_xp(fin.xp)
-			fin.message = "Victoire ! Vous gagnez de l'expérience et des Djê."
-		2:
-			fin.nul = true
-			fin.xp = int(recompenses(rencontre, niveau_combat)[0]) / 4
-			fin.niveaux_gagnes = _gagner_xp(fin.xp)
-			fin.message = "Match nul. Les deux camps se retirent, épuisés."
-		_:
-			ninja.defaites = int(ninja.defaites) + 1
-			_renaitre()
-			fin.defaite = true
-			fin.message = "Défaite. Vous renaissez dans votre village. (Quand l'inventaire existera, vos objets iront au vainqueur.)"
+	# Les blessures restent ; les baumes agissent après le combat.
+	fin.baume = 0
+	var moi = combat.get_c("joueur")
+	if moi != null:
+		ninja.pv = maxi(0, int(moi.pv))
+		ninja.pv_maj = horloge.call()
+		if int(moi.pv) > 0:
+			fin.baume = mini(CombatMoteur.baume(moi), pv_max() - int(ninja.pv))
+			ninja.pv = int(ninja.pv) + fin.baume
+	if combat.vainqueur == 0:
+		fin.victoire = true
+		var rec := recompenses(rencontre, niveau_combat)
+		fin.xp = rec[0]
+		fin.dje = rec[1]
+		ninja.dje = int(ninja.dje) + fin.dje
+		ninja.victoires = int(ninja.victoires) + 1
+		fin.niveaux_gagnes = _gagner_xp(fin.xp)
+		fin.message = "Victoire ! Vous gagnez de l'expérience et des Djê."
+	elif combat.vainqueur == 2:
+		fin.nul = true
+		fin.xp = int(recompenses(rencontre, niveau_combat)[0]) / 4
+		fin.niveaux_gagnes = _gagner_xp(fin.xp)
+		fin.message = "Match nul. Les deux camps se retirent, épuisés."
+	elif _fuite and int(ninja.pv) > 0:
+		fin.defaite = true
+		fin.message = "Vous prenez la fuite, blessé mais vivant."
+	else:
+		ninja.defaites = int(ninja.defaites) + 1
+		_renaitre()
+		fin.defaite = true
+		fin.message = "Défaite. Vous renaissez dans votre village. (Quand l'inventaire existera, vos objets iront au vainqueur.)"
+	if fin.baume > 0 and int(ninja.pv) > 0:
+		fin.message += " Un baume de Souffle referme vos plaies (+%d PV)." % fin.baume
+	fin.pv = int(ninja.pv)
 	return fin
 
 
@@ -573,6 +607,24 @@ func _renaitre() -> void:
 	ninja.position = [int(v.x), int(v.y)]
 	ninja.endurance = int(Regles.c.endurance_max)
 	ninja.endurance_maj = horloge.call()
+	ninja.pv = pv_max()
+	ninja.pv_maj = horloge.call()
+
+
+## Les blessures guérissent avec le temps (une demi-heure pour tout guérir).
+func _maj_pv() -> void:
+	var pmax := pv_max()
+	var t: int = horloge.call()
+	if int(ninja.get("pv", 0)) <= 0 or int(ninja.get("pv_maj", 0)) == 0:
+		ninja.pv = pmax
+	if int(ninja.pv) >= pmax:
+		ninja.pv = pmax
+		ninja.pv_maj = t
+		return
+	var gain := int(float(pmax) * float(t - int(ninja.pv_maj)) / float(Regles.c.regen_pv_secondes))
+	if gain > 0:
+		ninja.pv = mini(pmax, int(ninja.pv) + gain)
+		ninja.pv_maj = t
 
 
 func _peut_se_reposer(l) -> bool:
@@ -656,8 +708,10 @@ func reposer() -> Dictionary:
 		return ko("pas_de_repos")
 	ninja.endurance = int(Regles.c.endurance_max)
 	ninja.endurance_maj = horloge.call()
+	ninja.pv = pv_max()
+	ninja.pv_maj = horloge.call()
 	_sauver()
-	return ok({"ninja": vue_ninja(), "message": "Vous vous reposez : votre endurance est au maximum."})
+	return ok({"ninja": vue_ninja(), "message": "Vous vous reposez : vos blessures sont pansées et votre endurance est au maximum."})
 
 
 ## Lance la rencontre du lieu où se trouve le ninja.

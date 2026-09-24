@@ -4,7 +4,7 @@ extends Control
 
 signal change
 
-const MAX := 8
+const MAX := 7  # longueur maximale d'un jutsu
 
 var sequence: Array = []
 var _t := 0.0

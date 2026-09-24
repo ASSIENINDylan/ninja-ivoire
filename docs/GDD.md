@@ -50,13 +50,37 @@
 3. **Interactions élémentaires :** voir la table des forces et faiblesses (§4). Certaines combinaisons entre coéquipiers créent des **jutsus combinés**.
 4. **Positions :** avant, milieu et arrière. La portée des jutsus et les rôles d'équipe en dépendent.
 5. **Loadout :** on emporte un nombre limité de jutsus, d'outils et de parchemins.
-   - **Jutsus favoris (Décidé) :** chaque ninja choisit **au maximum 5 jutsus favoris** dans son grimoire. Ce sont eux qu'il a sous la main en combat, sans fouiller dans tout ce qu'il maîtrise. Les 5 premiers jutsus découverts deviennent favoris d'office ; on les change à tout moment depuis le grimoire (★) ou le dojo. Le composeur de mudras reste disponible en combat pour tenter une suite nouvelle.
+   - **Jutsus favoris (Décidé) :** chaque ninja choisit **au maximum 5 jutsus favoris** dans son grimoire. Les 5 premiers jutsus découverts deviennent favoris d'office ; on les change à tout moment depuis le grimoire (★) ou le dojo.
+   - **En combat, seuls les 5 favoris et les suites encore inconnues se lancent (Décidé).** Un jutsu connu mais hors des favoris est refusé. Le composeur reste disponible pour tenter une suite nouvelle (découverte) ou ratée (résonance).
 6. **Le Souffle et la fatigue :** une ressource à gérer pendant le combat et d'une mission à l'autre.
+7. **Blessures durables (Proposé et en place) :** les PV perdus restent après le combat. Ils reviennent avec le temps (tout en une demi-heure réelle), d'un coup au repos dans un village ami, ou par un **baume** (jutsu de soin qui agit à la fin du combat). La défaite fait renaître au village, soigné.
+8. **Fuir (Proposé et en place) :** on fuit sans rien gagner, en gardant ses blessures et sa place sur la carte (pas de renaissance). Une entrave peut **retenir** un ninja et l'empêcher de fuir.
+
+### Les cinq types de jutsus (Décidé ; table d'effets Proposée et en place)
+
+Le **mudra d'effet** donne le type ; la **forme** choisit l'effet précis ; les **modificateurs** le transforment. Chaque couple forme × effet a un effet différent (100 effets distincts), et un test vérifie qu'**aucun des 4 120 000 jutsus n'a exactement le même effet en combat qu'un autre**.
+
+| Type | Mudras | Ce qu'ils font |
+|---|---|---|
+| **Dégâts** | Braise (**magiques**), Hache (**physiques**), Kaolin (**purs**) | Physiques : réduits par l'armure et le Fangan. Magiques : réduits par la garde du Souffle et le Gnanga. Purs : ignorent défenses, garde et forces élémentaires. |
+| **Défense** | Racine | Défense physique ou magique, boucliers (PV temporaires), renvoi des dégâts, parade. |
+| **Entrave** | Bélier (mouvement, fuite), Liane (frapper, garde, mudras) | Immobilisé (ne change plus de rang), retenu (ne fuit plus), désarmé (ne frappe plus), sans garde, mains scellées (plus de mudras), repoussé ou attiré. Chaque entrave peut être **résistée** : la chance dépend de la puissance du jutsu contre le Gnanga et le Manhis de la cible, et de la maîtrise. |
+| **Illusion** | Voile (tromper), Feuille (se rendre insaisissable) | **Clones indiscernables** pour l'adversaire, confusion, sommeil, aveuglement, égarement, reflet d'un jutsu ; insensible aux dégâts physiques ou magiques pendant des tours, invisible, disparu, leurres. Les illusions puissantes résistent mieux à la dissipation. |
+| **Soin** | Kola (soins), Moustique (drain, soins **après** le combat) | Soignent **uniquement le lanceur** : soin direct, régénération, drain, sangsue, second souffle, **baume** qui agit à la fin du combat. |
+
+**Puissance d'un jutsu** : `(8 + F × Fangan + G × Gnanga + M × Manhis) × N`, modulée par la maîtrise, le Soleil et la Lune.
+- Les **coefficients F, G, M sont propres à chaque jutsu** : ils dépendent du type (les dégâts physiques suivent le Fangan, les magiques le Gnanga, les illusions le Manhis…), de l'élément, de la forme et de la suite exacte. Deux jutsus de dégâts n'ont donc jamais la même valeur.
+- **N** grandit avec la longueur de la suite (jusqu'à **7 mudras**), avec les éléments rares et mythiques, et avec les modificateurs de forme.
+- Le grimoire affiche la formule exacte de chaque jutsu découvert.
+
+**Modificateurs : l'ordre compte.** Le premier signe de maîtrise pèse plus que le second. Placé après la forme : amplifier (puissance), étendre (une cible voisine ou tout le camp), multiplier (deux frappes, un clone de plus…), retarder (part au tour suivant, plus fort), silence (incantation impossible à interrompre), persistance (écho au tour suivant). Placé après l'effet : amplifier (effets plus forts), étendre (effets élargis), multiplier (propagation à un second adversaire), retarder (effets différés et renforcés), persistance (effets deux fois plus longs), silence (effets impossibles à dissiper).
+
+**L'effet secondaire** ajoute l'effet de sa propre cellule, à moitié.
 
 ## 3. Mudras et jutsus
 
 ### Règles décidées
-- **Environ 50 mudras**, combinables entre eux.
+- **Environ 50 mudras**, combinables entre eux ; **un jutsu compte au plus 7 mudras**.
 - **L'ordre des signes compte** : les mêmes mudras dans un autre ordre donnent un autre jutsu, ou rien.
 - **Monter de niveau débloque de nouveaux mudras.**
 - **Des milliers de jutsus possibles.** La grande majorité est **inconnue du public** au départ.
@@ -77,7 +101,7 @@ Chaque mudra a un **sens**, et une suite de mudras forme une **phrase**. Une phr
 |---|---|---|
 | **Élément** | 16 | Un mudra par élément de base. Deux mudras d'éléments enchaînés, à très haut niveau, donnent un élément rare. |
 | **Forme** | 10 | projectile, lame, mur, zone, clone, lien, armure, piège, invocation, déplacement |
-| **Effet** | 10 | consumer (dégâts sur la durée), lier, soigner, aveugler, repousser, drainer, briser, dissimuler, renforcer, marquer |
+| **Effet** | 10 | Braise, Hache, Kaolin (dégâts) ; Racine (défense) ; Bélier, Liane (entrave) ; Voile, Feuille (illusion) ; Kola, Moustique (soin) — voir §2 |
 | **Modificateur** | 6 | amplifier, étendre, multiplier, retarder, silence, persistance |
 | **Mythique** | 8 | Un par élément mythique, obtenu uniquement par des quêtes |
 

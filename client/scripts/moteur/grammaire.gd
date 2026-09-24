@@ -82,40 +82,323 @@ static func analyser(seq: Array) -> Dictionary:
 
 
 static func _jutsu_legendaire(l: Dictionary, seq: Array) -> Dictionary:
-	return {
-		"cle": cle(seq), "nom": l.nom, "nature": "Jutsu légendaire", "sequence": seq.duplicate(), "element": l.element, "fusion": l.fusion,
-		"forme": l.forme, "effet": l.effet, "effet2": l.effet2, "mods_forme": l.mods_forme.duplicate(),
-		"mods_effet": l.mods_effet.duplicate(), "legendaire": l.id, "puissance": float(l.puissance),
-		"intensite": float(l.intensite), "cout": int(l.cout), "soutien": effet_soutien(l.effet), "texte": l.texte,
-		"conditions": l.conditions,
+	var j: Dictionary = l.jutsu.duplicate(true)
+	j.sequence = seq.duplicate()
+	j.cle = cle(seq)
+	j.effets = normaliser(j.get("effets", []))
+	for k in ["effet2", "legendaire", "degats_nature"]:
+		j[k] = str(j.get(k, ""))
+	for k in ["mods_forme", "mods_effet"]:
+		if j.get(k) == null:
+			j[k] = []
+	for k in ["delai", "incassable", "indissipable", "fusion"]:
+		j[k] = bool(j.get(k, false))
+	j.echo = float(j.get("echo", 0.0))
+	j.conditions = l.conditions
+	return j
+
+
+# --- Profil de combat (copie de grammar/profil.go) ------------------------------
+
+const _CLES_EFFET := {"op": "", "cible": "", "nature": "", "mult": 0.0, "frappes": 0, "statut": "", "duree": 0,
+	"valeur": 0.0, "vers": "", "nombre": 0, "part": 0.0, "propage": 0.0}
+
+
+## Complète les effets venus du JSON (champs omis = valeur nulle).
+static func normaliser(l) -> Array:
+	var out := []
+	if l == null:
+		return out
+	for e in l:
+		var n := {}
+		for k in _CLES_EFFET:
+			var v = e.get(k, _CLES_EFFET[k])
+			match typeof(_CLES_EFFET[k]):
+				TYPE_INT:
+					n[k] = int(v)
+				TYPE_FLOAT:
+					n[k] = float(v)
+				_:
+					n[k] = str(v)
+		n.effets = normaliser(e.get("effets"))
+		out.append(n)
+	return out
+
+
+static func _arrondi2(x: float) -> float:
+	return round(x * 100.0) / 100.0
+
+
+static func _arrondi3(x: float) -> float:
+	return round(x * 1000.0) / 1000.0
+
+
+static func _force(i: int) -> float:
+	return 1.0 if i == 0 else 0.6
+
+
+static func _cloner(l: Array) -> Array:
+	return l.duplicate(true)
+
+
+static func _fixer_nature(l: Array, nature: String) -> void:
+	if nature == "":
+		nature = "magique"
+	for e in l:
+		if e.op in ["degats", "dot", "drain"] and e.nature == "":
+			e.nature = nature
+		_fixer_nature(e.effets, nature)
+
+
+static func _affaiblir(l: Array) -> Array:
+	var out := []
+	for e in l:
+		if e.op == "bond":
+			continue
+		e.mult *= 0.5
+		if e.op == "declencheur" or (e.op == "statut" and Regles.g.statuts_drapeau.has(e.statut)):
+			pass
+		elif e.op == "statut" and e.statut == "leurre":
+			e.valeur = max(1.0, e.valeur - 1.0)
+		else:
+			e.valeur *= 0.7
+		if e.duree > 1:
+			e.duree -= 1
+		if e.nombre > 1:
+			e.nombre -= 1
+		for x in e.effets:
+			x.mult *= 0.5
+			if x.duree > 1:
+				x.duree -= 1
+		out.append(e)
+	return out
+
+
+static func _elargir(l: Array, s: float) -> bool:
+	var ok := false
+	for e in l:
+		var avant: String = e.cible
+		match e.cible:
+			"ennemi":
+				e.cible = "ennemi_etendu"
+			"contact":
+				e.cible = "contact_etendu"
+			"soi":
+				if e.op in ["statut", "bouclier", "riposte"]:
+					e.cible = "allies"
+		if e.cible != avant:
+			e.part = _arrondi2(0.7 * s)
+			ok = true
+	return ok
+
+
+static func _propager(l: Array, part: float) -> bool:
+	var ok := false
+	for e in l:
+		if e.op in ["bond", "clone", "differe"]:
+			continue
+		if e.cible in ["ennemi", "contact", "ennemi_etendu", "contact_etendu", "front", "aleatoire", "attaquant", "declencheur"]:
+			e.propage = part
+			ok = true
+		if _propager(e.effets, part):
+			ok = true
+	return ok
+
+
+static func _sans_bond(l: Array) -> Array:
+	return l.filter(func(e): return e.op != "bond")
+
+
+static func _multiplier(l: Array) -> void:
+	for e in l:
+		match e.op:
+			"degats", "drain":
+				e.frappes *= 2
+				e.mult *= 0.6
+			"clone":
+				e.nombre += 1
+			"invocation", "piege", "riposte", "declencheur":
+				e.duree += 1
+				for x in e.effets:
+					if x.op == "degats" or x.op == "drain":
+						x.frappes = 2
+						x.mult *= 0.6
+			"statut", "bouclier", "soin", "dot":
+				e.mult *= 1.2
+				e.valeur *= 1.2
+
+
+static func _amplifier(e: Dictionary, f: float) -> void:
+	e.mult *= f
+	var controle: bool = Regles.g.statuts_controle.has(e.statut)
+	if e.op == "statut" and e.statut == "leurre":
+		e.valeur += 1.0
+	elif e.op == "statut" and Regles.g.statuts_drapeau.has(e.statut):
+		pass
+	elif ((e.op == "statut" and controle) or e.op == "deplacer") and e.valeur == 0.0:
+		e.valeur = _arrondi2((f - 1.0) / 2.0)
+	else:
+		e.valeur *= f
+	for x in e.effets:
+		_amplifier(x, f)
+
+
+static func _retarder(l: Array, f: float) -> Array:
+	var now := []
+	var plus := []
+	for e in l:
+		if e.op in ["bond", "clone", "deplacer", "interrompre"]:
+			now.append(e)
+		else:
+			_amplifier(e, f)
+			plus.append(e)
+	if plus.size() > 0:
+		var d := _effet_vide()
+		d.op = "differe"
+		d.cible = "soi"
+		d.duree = 1
+		d.effets = plus
+		now.append(d)
+	return now
+
+
+static func _effet_vide() -> Dictionary:
+	var e := _CLES_EFFET.duplicate()
+	e.effets = []
+	return e
+
+
+static func _allonger(l: Array, persistance: bool, s: float) -> bool:
+	var ok := false
+	for e in l:
+		if e.duree > 0 and e.op != "differe":
+			e.duree = 2 * e.duree + int(s)
+			ok = true
+	return ok
+
+
+static func _arrondir(l: Array) -> void:
+	for e in l:
+		e.mult = _arrondi2(e.mult)
+		e.valeur = _arrondi2(e.valeur)
+		_arrondir(e.effets)
+
+
+static func _profiler(j: Dictionary) -> void:
+	var g: Dictionary = Regles.g
+	j.type = str(g.type_effet[j.effet])
+	j.degats_nature = str(g.nature_effet.get(j.effet, ""))
+	var eff := _cloner(normaliser(g.cellules[j.effet][j.forme]))
+	_fixer_nature(eff, j.degats_nature)
+	if j.effet2 != "":
+		var e2 := _cloner(normaliser(g.cellules[j.effet2][j.forme]))
+		_fixer_nature(e2, str(g.nature_effet.get(j.effet2, "")))
+		eff.append_array(_affaiblir(e2))
+	var cle_base: String = j.type if j.type != "degats" else "degats_" + j.degats_nature
+	var b: Dictionary = g.bases_type[cle_base]
+	var n: float = float(b.n) * (1.0 + 0.12 * float(j.sequence.size() - 3))
+	match str(Regles.elements[j.element].tier):
+		"rare":
+			n *= 1.3
+		"mythique":
+			n *= 1.6
+	j.delai = false
+	j.echo = 0.0
+	j.incassable = false
+	j.indissipable = false
+	var k := 0
+	for m in j.mods_forme:
+		var s := _force(k)
+		k += 1
+		match m:
+			"amplifier":
+				n *= 1.0 + 0.35 * s
+			"etendre":
+				n *= 1.0 - 0.15 * s
+				_elargir(eff, s)
+			"multiplier":
+				n *= 1.0 - 0.1 * s
+				_multiplier(eff)
+			"retarder":
+				n *= 1.0 + 0.5 * s
+				j.delai = true
+			"silence":
+				n *= 1.0 - 0.05 * s
+				j.incassable = true
+			"persistance":
+				j.echo = _arrondi2(0.5 * s)
+	for m in j.mods_effet:
+		var s := _force(k)
+		k += 1
+		match m:
+			"amplifier":
+				for e in eff:
+					if e.op == "degats" or e.op == "drain":
+						e.mult *= 1.0 + 0.2 * s
+					else:
+						_amplifier(e, 1.0 + 0.4 * s)
+			"etendre":
+				if not _elargir(eff, s):
+					for e in eff:
+						_amplifier(e, 1.0 + 0.1 * s)
+			"multiplier":
+				if not _propager(eff, _arrondi2(0.5 * s)):
+					var rappel := _sans_bond(_cloner(eff))
+					for e in rappel:
+						_amplifier(e, 0.5 + 0.5 * s)
+					var d := _effet_vide()
+					d.op = "differe"
+					d.cible = "soi"
+					d.duree = 2
+					d.effets = rappel
+					eff.append(d)
+			"retarder":
+				eff = _retarder(eff, 1.0 + 0.6 * s)
+			"persistance":
+				if not _allonger(eff, true, s):
+					var rappel := _sans_bond(_cloner(eff))
+					for e in rappel:
+						e.mult *= 0.4 * s
+						e.valeur *= 0.4 * s
+					var d := _effet_vide()
+					d.op = "differe"
+					d.cible = "soi"
+					d.duree = 1
+					d.effets = rappel
+					eff.append(d)
+			"silence":
+				j.indissipable = true
+	_arrondir(eff)
+	j.effets = eff
+
+	var ie: Array = g.inclinaisons.elements[j.element]
+	var tf: Array = g.inclinaisons.formes[j.forme]
+	var sig: PackedByteArray = (str(g.sel_signature) + str(j.cle)).sha256_buffer()
+	var jit := func(i: int) -> float: return 0.9 + 0.2 * float(sig[i]) / 255.0
+	j.coefs = {
+		"f": _arrondi3(max(0.05, (float(b.f) + float(ie[0]) + float(tf[0])) * jit.call(0))),
+		"g": _arrondi3(max(0.05, (float(b.g) + float(ie[1]) + float(tf[1])) * jit.call(1))),
+		"m": _arrondi3(max(0.05, (float(b.m) + float(ie[2]) + float(tf[2])) * jit.call(2))),
+		"n": _arrondi3(n),
 	}
 
 
-static func effet_soutien(e: String) -> bool:
-	return e == "soigner" or e == "renforcer" or e == "dissimuler"
-
-
-static func _facteur_tier(element: String) -> float:
-	match str(Regles.elements[element].tier):
-		"rare":
-			return 1.35
-		"mythique":
-			return 1.7
-	return 1.0
+static func est_soutien(j: Dictionary) -> bool:
+	for e in j.effets:
+		if e.cible != "soi" and e.cible != "allies":
+			return false
+	return true
 
 
 static func _calculer(j: Dictionary) -> void:
+	_profiler(j)
 	var n: int = j.sequence.size()
-	j.puissance = float(Regles.g.puissance_forme[j.forme]) * (1.0 + 0.15 * float(n - 3)) * _facteur_tier(j.element)
-	j.intensite = 1.0
 	var cout := 5.0 + 4.0 * float(n)
 	for m in j.mods_forme:
 		if m == "amplifier":
-			j.puissance *= 1.4
 			cout *= 1.3
 	for m in j.mods_effet:
 		if m == "amplifier":
-			j.intensite *= 1.5
 			cout *= 1.2
 	match str(Regles.elements[j.element].tier):
 		"rare":
@@ -123,7 +406,7 @@ static func _calculer(j: Dictionary) -> void:
 		"mythique":
 			cout *= 2.0
 	j.cout = int(cout + 0.5)
-	j.soutien = effet_soutien(j.effet)
+	j.soutien = est_soutien(j)
 	j.nom = _nommer(j)
 	j.nature = _nature(j)
 	j.texte = _decrire(j)
@@ -167,19 +450,138 @@ static func _nature(j: Dictionary) -> String:
 	return " ".join(parts)
 
 
-static func _decrire(j: Dictionary) -> String:
-	var s: String = Regles.g.texte_forme[j.forme] + " Effet : " + Regles.g.texte_effet[j.effet]
-	if j.effet2 != "":
-		s += ", puis " + Regles.g.texte_effet[j.effet2] + " (atténué)"
-	s += "."
-	var mods := PackedStringArray()
-	for m in j.mods_forme:
-		mods.append(Regles.g.texte_modificateur[m][0])
-	for m in j.mods_effet:
-		mods.append(Regles.g.texte_modificateur[m][1])
-	if mods.size() > 0:
-		s += " Modificateurs : " + ", ".join(mods) + "."
+# --- Description (copie de grammar/description.go) ------------------------------
+
+static func _pct(x: float) -> int:
+	return int(round(x * 100.0))
+
+
+static func _tours(d: int) -> String:
+	return "%d tours" % d if d > 1 else "1 tour"
+
+
+static func _maj(s: String) -> String:
+	return s if s == "" else s.substr(0, 1).to_upper() + s.substr(1)
+
+
+## Jusqu'à trois décimales, au moins deux, à la française : 1,153 ; 0,45.
+static func decimale3(x: float) -> String:
+	var m := int(round(x * 1000.0))
+	var t := "%d.%03d" % [m / 1000, m % 1000]
+	if t.ends_with("0"):
+		t = t.substr(0, t.length() - 1)
+	return t.replace(".", ",")
+
+
+static func _texte_statut(e: Dictionary) -> String:
+	var t: String = Regles.g.textes_statut[e.statut]
+	if Regles.g.statuts_controle.has(e.statut) and e.valeur > 0 and not t.contains("{v}"):
+		t += " (réussite +{v} %)"
+	return t.replace("{v}", str(_pct(e.valeur))).replace("{n}", str(int(round(e.valeur))))
+
+
+## Une phrase par effet.
+static func decrire_effet(e: Dictionary) -> String:
+	var c: String = Regles.g.textes_cible.get(e.cible, "")
+	var s := ""
+	match e.op:
+		"degats":
+			s = "Dégâts %ss à %s : %d %% de la puissance" % [e.nature, c, _pct(e.mult)]
+			if e.frappes > 1:
+				s += ", en %d frappes" % e.frappes
+			s += "."
+		"dot":
+			s = "%s se consume : %d %% de la puissance par tour, %s." % [_maj(c), _pct(e.mult), _tours(e.duree)]
+		"statut":
+			if e.duree > 0:
+				s = "%s : %s, %s." % [_maj(c), _texte_statut(e), _tours(e.duree)]
+			else:
+				s = "%s : %s." % [_maj(c), _texte_statut(e)]
+		"bouclier":
+			s = "Bouclier de Souffle sur %s : %d %% de la puissance en PV temporaires." % [c, _pct(e.mult)]
+		"soin":
+			s = "Soigne le lanceur : %d %% de la puissance." % _pct(e.mult)
+		"drain":
+			s = "Draine %s (dégâts %ss, %d %% de la puissance" % [c, e.nature, _pct(e.mult)]
+			if e.frappes > 1:
+				s += ", en %d frappes" % e.frappes
+			s += ") : le lanceur récupère %d %% des dégâts." % _pct(e.valeur)
+		"deplacer":
+			if e.vers == "avant":
+				s = "Attire %s au premier rang" % c
+			else:
+				s = "Repousse %s au dernier rang" % c
+			if e.valeur > 0:
+				s += " (réussite +%d %%)" % _pct(e.valeur)
+			s += "."
+		"bond":
+			s = "Le lanceur bondit au premier rang." if e.vers == "avant" else "Le lanceur bondit au dernier rang."
+		"clone":
+			if e.nombre > 1:
+				s = "Crée %d clones du lanceur, indiscernables pour l'adversaire, %s ; ils frappent à %d %% de sa force." % [e.nombre, _tours(e.duree), _pct(e.valeur)]
+			else:
+				s = "Crée un clone du lanceur, indiscernable pour l'adversaire, %s ; il frappe à %d %% de sa force." % [_tours(e.duree), _pct(e.valeur)]
+		"dissiper":
+			s = "Dissipe les protections et illusions de %s." % c
+		"purifier":
+			s = "Purifie le lanceur de ses entraves et de ses maux."
+		"interrompre":
+			s = "Brise l'incantation de %s." % c
+		"annuler":
+			s = "Son action est annulée."
+		"riposte":
+			s = "Pendant %s, qui attaque %s subit : %s" % [_tours(e.duree), c, _charge(e.effets)]
+		"piege":
+			s = "Piège sous %s, %s ; dès qu'elle agit : %s" % [c, _tours(e.duree), _charge(e.effets)]
+		"invocation":
+			s = "Une créature de Souffle agit pendant %s ; à chaque tour : %s" % [_tours(e.duree), _charge(e.effets)]
+		"declencheur":
+			s = "Si le lanceur passe sous %d %% de ses PV dans les %s : %s" % [_pct(e.valeur), _tours(e.duree), _charge(e.effets)]
+		"differe":
+			if e.duree > 1:
+				s = "Au bout de %s : %s" % [_tours(e.duree), _charge(e.effets)]
+			else:
+				s = "Au tour suivant : " + _charge(e.effets)
+	if e.part > 0:
+		s += " (Cibles secondaires : %d %%.)" % _pct(e.part)
+	if e.propage > 0:
+		s += " L'effet se propage à un second adversaire (%d %%)." % _pct(e.propage)
 	return s
+
+
+static func _charge(l: Array) -> String:
+	var parts := PackedStringArray()
+	for e in l:
+		var d := decrire_effet(e)
+		parts.append(d.substr(0, 1).to_lower() + d.substr(1))
+	return " ".join(parts)
+
+
+## « Dégâts magiques », « Entrave »…
+static func libelle_type(j: Dictionary) -> String:
+	if j.type == "degats":
+		return str(Regles.g.noms_types.degats) + " " + j.degats_nature + "s"
+	return str(Regles.g.noms_types[j.type])
+
+
+static func formule(k: Dictionary) -> String:
+	return "Puissance = (8 + %s × Fangan + %s × Gnanga + %s × Manhis) × %s" % [
+		decimale3(float(k.f)), decimale3(float(k.g)), decimale3(float(k.m)), decimale3(float(k.n))]
+
+
+static func _decrire(j: Dictionary) -> String:
+	var lignes := PackedStringArray([libelle_type(j) + ". " + formule(j.coefs) + "."])
+	for e in j.effets:
+		lignes.append(decrire_effet(e))
+	if j.delai:
+		lignes.append("Le Souffle s'accumule : le jutsu part au tour suivant.")
+	if j.echo > 0:
+		lignes.append("Un écho rejoue le jutsu au tour suivant, à %d %%." % _pct(j.echo))
+	if j.incassable:
+		lignes.append("Incantation impossible à interrompre.")
+	if j.indissipable:
+		lignes.append("Ses effets ne peuvent être ni dissipés ni purifiés.")
+	return "\n".join(lignes)
 
 
 # --- Légendaires : conditions cachées ------------------------------------------

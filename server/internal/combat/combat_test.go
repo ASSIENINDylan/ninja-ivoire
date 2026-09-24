@@ -1,8 +1,12 @@
 package combat
 
 import (
+	"fmt"
+	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/ASSIENINDylan/ninja-ivoire/server/internal/data"
 
 	"github.com/ASSIENINDylan/ninja-ivoire/server/internal/grammar"
 )
@@ -245,5 +249,46 @@ func TestEntraveDependDeLaPuissance(t *testing.T) {
 	faible, fort := reussites(2), reussites(40)
 	if fort <= faible {
 		t.Errorf("un Souffle plus fort devrait mieux sceller : %d contre %d", fort, faible)
+	}
+}
+
+// TestCombatsAleatoires : des IA armées de jutsus tirés au hasard ; aucun
+// effet, même rare, ne doit faire planter le moteur.
+func TestCombatsAleatoires(t *testing.T) {
+	var ids []string
+	for _, m := range data.AllMudras() {
+		ids = append(ids, m.ID)
+	}
+	rng := rand.New(rand.NewSource(3))
+	var jutsus []*grammar.Jutsu
+	for len(jutsus) < 400 {
+		seq := make([]string, 3+rng.Intn(5))
+		for i := range seq {
+			seq[i] = ids[rng.Intn(len(ids))]
+		}
+		if j, _ := grammar.Analyser(seq); j != nil {
+			jutsus = append(jutsus, j)
+		}
+	}
+	for n := 0; n < 300; n++ {
+		var liste []*Combattant
+		for camp := 0; camp < 2; camp++ {
+			for i := 0; i < 1+rng.Intn(3); i++ {
+				f := ninja(fmt.Sprintf("c%d_%d", camp, i+1), camp, "feu")
+				f.Rang = i + 1
+				f.Fangan, f.Gnanga, f.Manhis = 8+rng.Intn(22), 8+rng.Intn(22), 8+rng.Intn(22)
+				f.Souffle, f.SouffleMax = 200, 200
+				for k := 0; k < 4; k++ {
+					f.Jutsus = append(f.Jutsus, jutsus[rng.Intn(len(jutsus))])
+				}
+				liste = append(liste, f)
+			}
+		}
+		c := Nouveau("fuzz", liste, int64(n), midi)
+		for i := 0; i < 80 && !c.Fini; i++ {
+			if _, err := c.JouerTour(nil); err != nil {
+				t.Fatal(err)
+			}
+		}
 	}
 }

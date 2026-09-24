@@ -12,6 +12,8 @@ var _sous_titre: Label
 var _desc: Label
 var _endurance: Label
 var _barre_endurance: ProgressBar
+var _pv: Label
+var _barre_pv: ProgressBar
 var _pad: GridContainer
 var _actions: VBoxContainer
 var _journal: VBoxContainer
@@ -69,6 +71,10 @@ func construire() -> void:
 	_desc = UI.texte("", 14, Pal.IVOIRE_DOUX, 370)
 	dv.add_child(_desc)
 	dv.add_child(UI.frise())
+	_pv = UI.label("", 15, Pal.IVOIRE)
+	dv.add_child(_pv)
+	_barre_pv = UI.barre(0, 100, Pal.VIE, 8)
+	dv.add_child(_barre_pv)
 	_endurance = UI.label("", 15, Pal.IVOIRE)
 	dv.add_child(_endurance)
 	_barre_endurance = UI.barre(0, 60, Color("d9b25f"), 10)
@@ -185,8 +191,8 @@ func _maj() -> void:
 	if s.village:
 		_actions.add_child(UI.bouton_principal("Entrer dans %s" % s.lieu.nom, func(): Jeu.aller("village"), 17))
 	if s.repos:
-		var b := UI.bouton("Se reposer (endurance au maximum)", _reposer, 16)
-		b.disabled = int(n.endurance) >= int(s.endurance_max)
+		var b := UI.bouton("Se reposer (PV et endurance au maximum)", _reposer, 16)
+		b.disabled = int(n.endurance) >= int(s.endurance_max) and int(n.get("pv", n.pv_max)) >= int(n.pv_max)
 		_actions.add_child(b)
 	if s.get("lieu") != null and s.lieu.get("rencontre", "") != "":
 		var niv := int(s.lieu.niveau)
@@ -207,6 +213,10 @@ func _maj_endurance() -> void:
 	_endurance.text = t
 	_barre_endurance.max_value = emax
 	_barre_endurance.value = int(n.endurance)
+	var pv := int(n.get("pv", n.pv_max))
+	_pv.text = "Points de vie %d / %d" % [pv, int(n.pv_max)] + ("" if pv >= int(n.pv_max) else "   ·   blessé")
+	_barre_pv.max_value = int(n.pv_max)
+	_barre_pv.value = pv
 
 
 func _noter(t: String) -> void:

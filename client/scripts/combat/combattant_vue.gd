@@ -4,10 +4,31 @@ extends Node2D
 ## son incantation en cours. Les pieds sont à l'origine.
 
 const LETTRES := {
-	"consume": ["C", Color("e2572b")], "entrave": ["E", Color("4f9d45")], "aveugle": ["A", Color("b7c3cf")],
-	"affaibli": ["B", Color("c0392b")], "voile": ["V", Color("8ea4ff")], "renfort": ["R", Color("e8c47a")],
-	"marque": ["M", Color("d98bd4")], "regen": ["+", Color("6fbf73")], "piege": ["P", Color("a0703c")],
-	"invocation": ["I", Color("5ec8d8")], "riposte": ["Ri", Color("f2e8d5")], "leurre": ["D", Color("9fd8c4")],
+	# Maux et entraves.
+	"consume": ["Br", Color("e2572b")], "sangsue": ["Sg", Color("7fc23a")], "immobilise": ["Im", Color("4f9d45")],
+	"retenu": ["Rt", Color("8e6fd1")], "desarme": ["Dé", Color("e0604f")], "scelle": ["Sc", Color("d98bd4")],
+	"sans_garde": ["SG", Color("a9b4bd")], "confus": ["Cf", Color("8ea4ff")], "endormi": ["Zz", Color("b9a7ff")],
+	"aveugle": ["Av", Color("b7c3cf")], "egare": ["Ég", Color("9fd8c4")], "marque": ["M", Color("d98bd4")],
+	"piege": ["P", Color("a0703c")],
+	# Défenses, illusions et soins.
+	"def_phys": ["DP", Color("c9955a")], "def_mag": ["DM", Color("5fa8e0")], "renvoi": ["Rv", Color("f2e8d5")],
+	"parade": ["Pa", Color("e8c47a")], "esquive": ["Es", Color("9fd8c4")], "reflet": ["Rf", Color("e0f7ff")],
+	"deviation": ["Dv", Color("7c8cff")], "intangible_phys": ["IP", Color("c6f1ff")], "intangible_mag": ["IM", Color("c6f1ff")],
+	"invisible": ["In", Color("b7c3cf")], "disparu": ["Di", Color("a79ad0")], "leurre": ["L", Color("9fd8c4")],
+	"regen": ["+", Color("6fbf73")], "baume": ["Ba", Color("8fd18f")], "second_souffle": ["2S", Color("fff8e7")],
+	"riposte": ["Ri", Color("f2e8d5")], "invocation": ["I", Color("5ec8d8")], "declencheur": ["Dc", Color("e6c07b")],
+}
+
+## Nom lisible de chaque statut (infobulles et panneau de combat).
+const NOMS := {
+	"consume": "brûlure", "sangsue": "sangsue", "immobilise": "immobilisé", "retenu": "retenu (ne peut fuir)",
+	"desarme": "désarmé", "scelle": "mains scellées", "sans_garde": "sans garde", "confus": "confus", "endormi": "endormi",
+	"aveugle": "aveuglé", "egare": "égaré", "marque": "marqué", "piege": "piégé",
+	"def_phys": "défense physique", "def_mag": "défense magique", "renvoi": "renvoi", "parade": "parade",
+	"esquive": "esquive", "reflet": "reflet", "deviation": "déviation", "intangible_phys": "intangible (physique)",
+	"intangible_mag": "intangible (magique)", "invisible": "invisible", "disparu": "disparu", "leurre": "leurres",
+	"regen": "régénération", "baume": "baume", "second_souffle": "second souffle", "riposte": "riposte",
+	"invocation": "créature", "declencheur": "réflexe de survie",
 }
 
 var d: Dictionary = {}
@@ -200,7 +221,7 @@ func _interface() -> void:
 	var w := 128.0
 	var y := 18.0
 	# Nom.
-	var nom: String = d.nom
+	var nom: String = d.nom + (" (clone)" if d.get("clone", false) else "")
 	var nw := f.get_string_size(nom, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
 	draw_string(Pal.police_titre, Vector2(-nw * 0.5, y + 12), nom, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Pal.IVOIRE)
 	y += 20

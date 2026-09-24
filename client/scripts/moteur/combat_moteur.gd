@@ -3,6 +3,7 @@ extends RefCounted
 ## Combat au tour par tour simultané (copie fidèle de server/internal/combat).
 ## Les combattants sont des dictionnaires au format de l'API ; les clés qui
 ## commencent par « _ » sont privées et ne sont jamais montrées à l'écran.
+## Les jutsus sont des listes d'effets élémentaires (voir grammaire.gd).
 
 const ERR_FINI := "le combat est terminé"
 const ERR_ACTEUR := "combattant inconnu ou hors de combat"
@@ -10,11 +11,16 @@ const ERR_MUDRA := "vous ne savez pas encore former ce mudra"
 const ERR_SEQUENCE := "suite de mudras trop longue"
 const ERR_ACTION := "action inconnue"
 const NB_RANGS := 3
+const RANGS_MAX := 4
+const ENTRAVES_AU_HASARD := ["immobilise", "desarme", "scelle", "sans_garde"]
+const TEXTES_POSES := {
+	"regen": "ses blessures se referment peu à peu", "sangsue": "une sangsue de Souffle le vide",
+	"baume": "un baume agira après le combat", "second_souffle": "un second souffle veille",
+}
 
 var id := ""
 var tour := 0
 var combattants: Array = []
-var murs: Array = [null, null]
 var fini := false
 var vainqueur := -1
 var decouvertes: Array = []
@@ -34,6 +40,10 @@ func _init(ident: String, liste: Array, graine: int) -> void:
 	for f in combattants:
 		if not f.has("_maitrise"):
 			f._maitrise = {}
+		if not f.has("defense_mag"):
+			f.defense_mag = 0
+		if not f.has("clone"):
+			f.clone = false
 	_compacter(0)
 	_compacter(1)
 
@@ -60,6 +70,11 @@ func vivants(camp: int) -> Array:
 	return out
 
 
+## Les combattants debout d'un camp, sans les clones.
+func reels(camp: int) -> Array:
+	return vivants(camp).filter(func(f): return not f.clone)
+
+
 func _compacter(camp: int) -> void:
 	var i := 1
 	for f in vivants(camp):
@@ -71,6 +86,10 @@ func _emit(type: String, texte: String, acteur: String = "", cible: String = "",
 	_evts.append({"type": type, "acteur": acteur, "cible": cible, "valeur": valeur, "element": element, "jutsu": jutsu, "texte": texte})
 
 
+func _info(f: Dictionary, texte: String) -> void:
+	_emit("info", texte, f.id)
+
+
 static func statut(f: Dictionary, type: String):
 	for s in f.statuts:
 		if s.type == type and s.tours > 0:
@@ -78,8 +97,16 @@ static func statut(f: Dictionary, type: String):
 	return null
 
 
-func _chance(pct: float) -> bool:
-	return rng.randf() * 100.0 < pct
+static func a_statut(f: Dictionary, type: String) -> bool:
+	return statut(f, type) != null
+
+
+func _chance(p: float) -> bool:
+	return rng.randf() < p
+
+
+func _hasard(l: Array):
+	return l[rng.randi_range(0, l.size() - 1)]
 
 
 static func mudras_par_tour(f: Dictionary) -> int:
@@ -96,31 +123,56 @@ static func maitrise_de(f: Dictionary, j: Dictionary) -> int:
 	return int(Regles.c.maitrise_decouverte) if f.joueur else int(Regles.c.maitrise_pnj)
 
 
-## Vue d'un camp : sans données privées, sans les mudras des adversaires.
+## Puissance d'un jutsu : (8 + F·Fangan + G·Gnanga + M·Manhis) × N, modulée
+## par la maîtrise, le Soleil et la Lune.
+static func puissance_de(f: Dictionary, j: Dictionary, maitrise: int, cosmique: float) -> float:
+	var k: Dictionary = j.coefs
+	var base: float = (8.0 + float(k.f) * float(f.fangan) + float(k.g) * float(f.gnanga) + float(k.m) * float(f.manhis)) * float(k.n)
+	return base * (0.8 + 0.4 * float(maitrise) / 100.0) * cosmique
+
+
+## Soins qui s'appliqueront à la fin du combat.
+static func baume(f: Dictionary) -> int:
+	var total := 0.0
+	for s in f.statuts:
+		if s.type == "baume" and s.tours > 0:
+			total += float(s.valeur)
+	return int(total + 0.5)
+
+
+## Vue d'un camp : sans données privées, sans les mudras des adversaires ;
+## les clones adverses sont indiscernables de leur original.
 func vue(camp: int) -> Dictionary:
 	var liste := []
 	for f in combattants:
+		if f.clone and not vivant(f):
+			continue
+		var src: Dictionary = f
+		if f.camp != camp and f.clone:
+			var o = get_c(f._original)
+			if vivant(o):
+				src = o
 		var cp := {}
-		for k in f:
+		for k in src:
 			if not str(k).begins_with("_"):
-				cp[k] = f[k]
-		cp.arme = f.arme.duplicate()
-		cp.elements = f.elements.duplicate()
+				cp[k] = src[k]
+		cp.id = f.id
+		cp.rang = f.rang
+		cp.clone = f.clone and f.camp == camp
+		cp.arme = src.arme.duplicate()
+		cp.elements = src.elements.duplicate()
 		var st := []
-		for s in f.statuts:
+		for s in src.statuts:
 			st.append({"type": s.type, "tours": s.tours, "valeur": s.valeur, "element": s.get("element", "")})
 		cp.statuts = st
-		if f.incantation != null:
-			var inc: Dictionary = f.incantation
+		if src.incantation != null:
+			var inc: Dictionary = src.incantation
 			cp.incantation = {"progres": inc.progres, "total": inc.total, "silence": inc.silence}
 			if f.camp == camp:
 				cp.incantation.sequence = inc.sequence.duplicate()
 				cp.incantation.cible = inc.cible
 		liste.append(cp)
-	var m := []
-	for x in murs:
-		m.append(null if x == null else {"absorption": x.absorption, "tours": x.tours, "element": x.element})
-	return {"id": id, "tour": tour, "combattants": liste, "murs": m, "fini": fini, "vainqueur": vainqueur}
+	return {"id": id, "tour": tour, "combattants": liste, "fini": fini, "vainqueur": vainqueur}
 
 
 # --- Tour de jeu ---------------------------------------------------------------
@@ -187,8 +239,8 @@ func _initiative(choix: Dictionary) -> Array:
 				s += 4
 			"foudre":
 				s += 3
-		if statut(f, "entrave") != null:
-			s *= 0.5
+		if a_statut(f, "immobilise"):
+			s *= 0.7
 		if choix[f.id].type == "garde":
 			s += 1000
 		l.append([f, s])
@@ -204,13 +256,22 @@ func _executer(f: Dictionary, a: Dictionary) -> void:
 	if type != "incanter" and f.incantation != null:
 		f.incantation = null
 		_emit("abandon", f.nom + " abandonne son incantation.", f.id)
+	if a_statut(f, "endormi"):
+		_info(f, f.nom + " dort profondément.")
+		return
 	var p = statut(f, "piege")
-	if p != null and type in ["frapper", "incanter", "deplacer"]:
-		_declencher_piege(f, p)
-		if not vivant(f):
+	if p != null:
+		if _declencher_piege(f, p) or not vivant(f):
 			return
+	var cf = statut(f, "confus")
+	if cf != null and type != "garde" and _chance(float(cf.valeur)):
+		_frappe_confuse(f)
+		return
 	match type:
 		"garde":
+			if a_statut(f, "sans_garde"):
+				_info(f, f.nom + " ne parvient pas à se mettre en garde.")
+				return
 			f.garde = true
 			_emit("garde", f.nom + " se met en garde.", f.id)
 		"concentrer":
@@ -218,15 +279,32 @@ func _executer(f: Dictionary, a: Dictionary) -> void:
 			f.souffle = mini(f.souffle_max, f.souffle + gain)
 			_emit("concentration", "%s se concentre et rassemble son Souffle (+%d)." % [f.nom, gain], f.id, "", gain)
 		"deplacer":
-			if statut(f, "entrave") != null:
-				_emit("info", f.nom + " est entravé et ne peut pas bouger.", f.id)
+			if a_statut(f, "immobilise"):
+				_info(f, f.nom + " est immobilisé et ne peut pas changer de rang.")
 				return
 			_placer(f, int(a.get("rang", 0)))
 			_emit("deplacement", "%s passe au rang %d." % [f.nom, f.rang], f.id, "", f.rang)
 		"frapper":
+			if a_statut(f, "desarme"):
+				_info(f, f.nom + " est désarmé et ne peut pas frapper.")
+				return
 			_frapper(f, a.get("cible", ""))
 		"incanter":
+			if a_statut(f, "scelle"):
+				f.incantation = null
+				_info(f, "Les mains de " + f.nom + " sont scellées : impossible de former des mudras.")
+				return
 			_incanter(f, a)
+
+
+func _frappe_confuse(f: Dictionary) -> void:
+	var camp := reels(f.camp)
+	if f.clone:
+		camp.append(f)
+	var t: Dictionary = _hasard(camp)
+	var quoi: String = t.nom if t != f else "dans le vide et se blesse"
+	_emit("frappe", f.nom + ", confus, frappe " + quoi + " !", f.id, t.id)
+	_infliger(f, t, float(f.arme.puissance + f.fangan) * 0.8, "physique", "", false)
 
 
 func _placer(f: Dictionary, rang: int) -> void:
@@ -242,138 +320,191 @@ func ennemis(f: Dictionary) -> Array:
 	return vivants(1 - int(f.camp))
 
 
+static func ciblable(t: Dictionary) -> bool:
+	return vivant(t) and not a_statut(t, "invisible") and not a_statut(t, "disparu")
+
+
 func _cible_ennemie(f: Dictionary, ident: String, contact: bool):
-	var t = get_c(ident)
-	if t != null and vivant(t) and t.camp != f.camp and (not contact or t.rang <= 2):
-		return t
-	for e in ennemis(f):
-		if not contact or e.rang <= 2:
-			return e
-	return null
+	var possibles := []
+	for t in ennemis(f):
+		if ciblable(t) and (not contact or t.rang <= 2):
+			possibles.append(t)
+	if possibles.is_empty():
+		return null
+	if a_statut(f, "egare"):
+		return _hasard(possibles)
+	for t in possibles:
+		if t.id == ident:
+			return t
+	return possibles[0]
 
 
 static func esquive(t: Dictionary) -> float:
-	var e := minf(35.0, float(t.manhis) * 0.8)
-	if statut(t, "voile") != null:
-		e += 50
-	if statut(t, "entrave") != null:
-		e /= 2
-	return e
+	var e := minf(0.35, float(t.manhis) * 0.008)
+	var s = statut(t, "esquive")
+	if s != null:
+		e += float(s.valeur)
+	if a_statut(t, "immobilise"):
+		e /= 2.0
+	return minf(0.9, e)
+
+
+## Protections d'une cible visée seule. Renvoie la cible finale, ou null.
+func _atteindre(a: Dictionary, t: Dictionary, jutsu: bool):
+	if t.clone:
+		_dissiper_clone(t, "L'attaque traverse " + t.nom + " : ce n'était qu'un clone !")
+		return null
+	var s = statut(t, "leurre")
+	if s != null and s.valeur >= 1:
+		s.valeur -= 1
+		if s.valeur < 1:
+			s.tours = 0
+		_emit("esquive", "Un leurre de " + t.nom + " encaisse l'attaque et se dissipe !", a.id, t.id)
+		return null
+	s = statut(t, "deviation")
+	if s != null:
+		s.tours = 0
+		var autres := reels(a.camp).filter(func(o): return o != a)
+		if autres.is_empty():
+			_emit("esquive", t.nom + " détourne l'attaque, qui se perd.", a.id, t.id)
+			return null
+		var o: Dictionary = _hasard(autres)
+		_emit("esquive", t.nom + " détourne l'attaque sur " + o.nom + " !", a.id, o.id)
+		return o
+	s = statut(t, "reflet")
+	if s != null and jutsu:
+		s.tours = 0
+		_emit("reflet", t.nom + " renvoie le jutsu à " + a.nom + " !", t.id, a.id)
+		return a
+	s = statut(t, "parade")
+	if s != null:
+		s.tours = 0
+		_emit("esquive", t.nom + " pare entièrement le coup.", a.id, t.id)
+		return null
+	s = statut(a, "aveugle")
+	if s != null and _chance(float(s.valeur)):
+		_emit("rate", a.nom + ", aveuglé, frappe dans le vide.", a.id, t.id)
+		return null
+	var e := esquive(t)
+	if jutsu:
+		e /= 2.0
+	if _chance(e):
+		_emit("esquive", t.nom + " esquive.", a.id, t.id)
+		return null
+	return t
 
 
 func _frapper(f: Dictionary, cible_id: String) -> void:
 	var contact: bool = not f.arme.distance
-	if contact and statut(f, "entrave") != null:
-		_emit("info", f.nom + " est entravé et ne peut pas frapper au contact.", f.id)
-		return
 	if contact and f.rang > 2:
-		_emit("info", f.nom + " est trop loin pour frapper au contact.", f.id)
+		_info(f, f.nom + " est trop loin pour frapper au contact.")
 		return
 	var t = _cible_ennemie(f, cible_id, contact)
 	if t == null:
-		_emit("info", f.nom + " ne trouve aucune cible à portée.", f.id)
+		_info(f, f.nom + " ne trouve aucune cible à portée.")
 		return
-	var av = statut(f, "aveugle")
-	if av != null and _chance(av.valeur * 100.0):
-		_emit("rate", f.nom + ", aveuglé, frappe dans le vide.", f.id, t.id)
-		return
-	if _intercepter(f, t):
-		return
-	if _chance(esquive(t)):
-		_emit("esquive", t.nom + " esquive le coup de " + f.nom + ".", f.id, t.id)
+	t = _atteindre(f, t, false)
+	if t == null:
 		return
 	var brut := float(f.arme.puissance + f.fangan) * (0.85 + rng.randf() * 0.3)
-	var crit := _chance(float(f.manhis) * 0.7)
+	var crit := _chance(float(f.manhis) * 0.007)
 	if crit:
 		brut *= 1.5
-	var rf = statut(f, "renfort")
-	if rf != null:
-		brut *= 1.0 + rf.valeur
 	var texte: String = f.nom + " frappe " + t.nom
 	if crit:
 		texte += " (coup critique)"
 	_emit("frappe", texte + " avec " + f.arme.nom + ".", f.id, t.id)
-	_infliger(f, t, brut, "", false)
-	if contact:
-		_riposter(t, f)
-
-
-func _intercepter(f: Dictionary, t: Dictionary) -> bool:
-	var s = statut(t, "leurre")
-	if s == null:
-		return false
-	s.tours = 0
-	_emit("leurre", "Le double de " + t.nom + " encaisse l'attaque et se dissipe !", f.id, t.id)
-	if s.get("_effet", "") != "" and vivant(f):
-		_appliquer_effet(t, f, s._effet, s.valeur, s._base, 0, _opts({"element": s.element}))
-	return true
+	_infliger(f, t, brut, "physique", "", false)
+	_riposter(t, f)
 
 
 func _riposter(t: Dictionary, attaquant: Dictionary) -> void:
-	if not vivant(attaquant):
+	if t.camp == attaquant.camp or not vivant(t):
 		return
-	var s = statut(t, "riposte")
-	if s != null:
-		_emit("riposte", "L'armure de " + t.nom + " riposte !", t.id, attaquant.id, 0, s.element)
-		_infliger(t, attaquant, s._base * 0.4, s.element, true)
-		if vivant(attaquant):
-			_appliquer_effet(t, attaquant, s._effet, s.valeur, s._base, 0, _opts({"element": s.element}))
-	var m = murs[t.camp]
-	if m != null and m._riposte != "" and vivant(attaquant):
-		var lanceur = get_c(m._lanceur)
-		if lanceur == null:
-			lanceur = t
-		_emit("riposte", "Le mur riposte contre " + attaquant.nom + " !", lanceur.id, attaquant.id, 0, m.element)
-		_appliquer_effet(lanceur, attaquant, m._riposte, m._intensite, m._base, 0, _opts({"element": m.element}))
+	for s in t.statuts.duplicate():
+		if s.type != "riposte" or s.tours <= 0 or not vivant(attaquant):
+			continue
+		var src = get_c(s._source)
+		if not vivant(src):
+			src = t
+		_emit("riposte", "Le Souffle de " + t.nom + " riposte contre " + attaquant.nom + " !", t.id, attaquant.id, 0, s.get("element", ""))
+		_appliquer(_contexte_charge(src, s, attaquant), s._effets)
 
 
-## Dégâts après défense, garde et absorptions. `direct` : ignore tout cela.
-func _infliger(src, t: Dictionary, brut: float, element: String, direct: bool) -> int:
+static func facteur_defense(t: Dictionary, nature: String) -> float:
+	match nature:
+		"physique":
+			var f := 40.0 / (40.0 + float(t.defense) + float(t.fangan) * 0.6)
+			var s = statut(t, "def_phys")
+			if s != null:
+				f *= 1.0 - minf(0.8, float(s.valeur))
+			return f
+		"magique":
+			var f := 40.0 / (40.0 + float(t.get("defense_mag", 0)) + float(t.gnanga) * 0.6)
+			var s = statut(t, "def_mag")
+			if s != null:
+				f *= 1.0 - minf(0.8, float(s.valeur))
+			return f
+	return 1.0
+
+
+func _infliger(src, t: Dictionary, brut: float, nature: String, element: String, direct: bool) -> int:
 	if not vivant(t):
 		return 0
+	if t.clone:
+		_dissiper_clone(t, t.nom + " se dissipe : ce n'était qu'un clone !")
+		return 0
+	if a_statut(t, "disparu"):
+		_emit("esquive", t.nom + " a disparu : rien ne l'atteint.", "", t.id)
+		return 0
+	if (nature == "physique" and a_statut(t, "intangible_phys")) or (nature == "magique" and a_statut(t, "intangible_mag")):
+		_emit("esquive", "Les dégâts " + nature + "s traversent " + t.nom + " sans l'atteindre.", "", t.id)
+		return 0
 	var dmg := brut
+	if nature != "pur" and element != "":
+		dmg *= Regles.multiplicateur(element, t.element)
+	var m = statut(t, "marque")
+	if m != null:
+		dmg *= 1.0 + float(m.valeur)
 	if not direct:
-		if element != "":
-			dmg *= Regles.multiplicateur(element, t.element)
-		var mq = statut(t, "marque")
-		if mq != null:
-			dmg *= 1.0 + mq.valeur
-		var def := float(t.defense) + float(t.fangan) * 0.5
-		if statut(t, "affaibli") != null:
-			def *= 0.5
-		if element != "":
-			def *= 0.5
-			if element == "metal" or element == "foudre":
-				def *= 0.5
-		dmg *= 40.0 / (40.0 + def)
-		if t.garde:
+		dmg *= facteur_defense(t, nature)
+		if t.garde and nature != "pur":
 			dmg *= 0.5
-	var d := int(round(dmg))
-	if d < 1:
-		d = 1
+	var d := maxi(1, int(round(dmg)))
 	if not direct and t.absorption > 0:
-		var a := mini(t.absorption, d)
+		var a := mini(int(t.absorption), d)
 		t.absorption -= a
 		d -= a
-		_emit("absorption", "L'armure de Souffle de %s absorbe %d." % [t.nom, a], "", t.id, a)
-	var m = murs[t.camp]
-	if not direct and m != null and d > 0:
-		var a := mini(m.absorption, d)
-		m.absorption -= a
-		d -= a
-		_emit("absorption", "Le mur absorbe %d." % a, "", t.id, a)
-		if m.absorption <= 0:
-			murs[t.camp] = null
-			_emit("mur_brise", "Le mur s'effondre !", "", t.id)
-	if d <= 0:
-		return 0
+		_emit("absorption", "Le bouclier de %s absorbe %d." % [t.nom, a], "", t.id, a)
+		if d == 0:
+			return 0
 	t.pv -= d
-	_emit("degats", "%s perd %d PV." % [t.nom, d], src.id if src != null else "", t.id, d, element)
+	var src_id: String = src.id if src != null else ""
+	_emit("degats", "%s perd %d PV (%s)." % [t.nom, d, nature], src_id, t.id, d, element)
+	var s = statut(t, "endormi")
+	if s != null:
+		s.tours = 0
+		_emit("statut", t.nom + " se réveille !", "", t.id)
+	s = statut(t, "renvoi")
+	if s != null and not direct and src != null and src != t and vivant(src):
+		_emit("riposte", t.nom + " renvoie une part des dégâts.", t.id, src.id)
+		_infliger(t, src, float(d) * float(s.valeur), "pur", "", true)
 	if t.pv <= 0:
-		_mourir(t)
-		return d
+		s = statut(t, "second_souffle")
+		if s == null:
+			_mourir(t)
+			return d
+		s.tours = 0
+		t.pv = 1
+		_emit("statut", t.nom + " refuse de tomber : second souffle !", "", t.id)
+		_soigner(t, t, float(s.valeur))
 	if t.incantation != null and not t.incantation.silence and d * 100 >= int(t.pv_max) * 12:
 		_interrompre(t, "sous la violence du coup")
+	s = statut(t, "declencheur")
+	if s != null and float(t.pv) < float(s.valeur) * float(t.pv_max):
+		s.tours = 0
+		_emit("statut", "Le Souffle de " + t.nom + " réagit à ses blessures !", "", t.id)
+		_appliquer(_contexte_charge(t, s, src), s._effets)
 	return d
 
 
@@ -390,16 +521,18 @@ func _mourir(t: Dictionary) -> void:
 	t.statuts = []
 	t.rang = 0
 	_emit("mort", t.nom + " tombe.", "", t.id)
+	for o in combattants:
+		if o.clone and o.get("_original", "") == t.id and vivant(o):
+			_dissiper_clone(o, "")
 	_compacter(t.camp)
 
 
 func _soigner(f: Dictionary, t: Dictionary, montant: float) -> void:
 	if not vivant(t):
 		return
-	var v := int(round(montant))
-	if v < 1:
-		v = 1
-	v = mini(v, int(t.pv_max) - int(t.pv))
+	var v := mini(maxi(1, int(round(montant))), int(t.pv_max) - int(t.pv))
+	if v <= 0:
+		return
 	t.pv += v
 	_emit("soin", "%s récupère %d PV." % [t.nom, v], f.id, t.id, v)
 
@@ -407,28 +540,65 @@ func _soigner(f: Dictionary, t: Dictionary, montant: float) -> void:
 func _ajouter_statut(t: Dictionary, s: Dictionary) -> void:
 	if not vivant(t):
 		return
-	for k in ["valeur", "element", "_effet", "_source", "_base"]:
+	for k in ["valeur", "element", "_nature", "_source", "_puissance", "_indissipable", "_effets", "_nouveau"]:
 		if not s.has(k):
-			s[k] = 0.0 if k in ["valeur", "_base"] else ""
-	if not s.has("_silence"):
-		s._silence = false
+			s[k] = {"valeur": 0.0, "element": "", "_nature": "", "_source": "", "_puissance": 0.0, "_indissipable": false, "_effets": [], "_nouveau": false}[k]
+	var cumulable: bool = s.type in ["piege", "invocation", "riposte", "declencheur", "sangsue"]
 	var ex = statut(t, s.type)
-	if ex != null and s.type != "piege" and s.type != "invocation":
-		if s.type == "consume" and s.element == "venin":
+	if ex != null and not cumulable:
+		if s.type == "baume" or s.type == "leurre" or (s.type == "consume" and s.element == "venin"):
 			ex.valeur += s.valeur
 		else:
 			ex.valeur = maxf(ex.valeur, s.valeur)
 		ex.tours = maxi(ex.tours, s.tours)
-		ex._silence = ex._silence or s._silence
+		ex._puissance = maxf(ex._puissance, s._puissance)
+		ex._indissipable = ex._indissipable or s._indissipable
+		ex._nouveau = ex._nouveau or s._nouveau
 		return
 	t.statuts.append(s)
+
+
+# --- Clones --------------------------------------------------------------------
+
+func _creer_clone(f: Dictionary, tours: int, force: float) -> bool:
+	if vivants(f.camp).size() >= RANGS_MAX:
+		return false
+	var base: String = f.id
+	while base.length() > 0 and base[base.length() - 1] in "0123456789":
+		base = base.substr(0, base.length() - 1)
+	var n := 2
+	for o in combattants:
+		var reste: String = str(o.id).trim_prefix(base)
+		if str(o.id).begins_with(base) and reste.is_valid_int() and int(reste) >= n:
+			n = int(reste) + 1
+	var cl := {
+		"id": "%s%d" % [base, n], "nom": f.nom, "camp": f.camp, "rang": vivants(f.camp).size() + 1, "joueur": false,
+		"apparence": f.apparence, "niveau": f.niveau, "fangan": int(float(f.fangan) * force), "gnanga": f.gnanga,
+		"manhis": f.manhis, "pv": f.pv, "pv_max": f.pv_max, "souffle": f.souffle, "souffle_max": f.souffle_max,
+		"element": f.element, "elements": f.elements.duplicate(), "defense": f.defense, "defense_mag": f.get("defense_mag", 0),
+		"arme": {"nom": f.arme.nom, "puissance": int(float(f.arme.puissance) * force), "distance": f.arme.distance},
+		"absorption": 0, "garde": false, "statuts": [], "incantation": null, "clone": true,
+		"_original": f.id, "_tours_clone": tours, "_ia": "clone", "_maitrise": {}, "_jutsus": [],
+	}
+	combattants.append(cl)
+	_placer(cl, 1 + rng.randi_range(0, vivants(f.camp).size() - 1))
+	return true
+
+
+func _dissiper_clone(t: Dictionary, texte: String) -> void:
+	t.pv = 0
+	t.statuts = []
+	t.incantation = null
+	if texte != "":
+		_emit("clone_dissipe", texte, "", t.id)
+	_compacter(t.camp)
 
 
 func _verifier_fin() -> void:
 	if fini:
 		return
-	var a := vivants(0).size()
-	var b := vivants(1).size()
+	var a := reels(0).size()
+	var b := reels(1).size()
 	if b == 0:
 		fini = true
 		vainqueur = 0
@@ -439,72 +609,85 @@ func _verifier_fin() -> void:
 		fini = true
 		vainqueur = 2
 	if fini:
+		for f in combattants:
+			if f.clone and vivant(f):
+				_dissiper_clone(f, "")
 		var textes := {0: "Victoire !", 1: "Défaite…", 2: "Match nul : les deux camps sont épuisés."}
 		_emit("fin", textes[vainqueur], "", "", vainqueur)
 
 
 func _fin_de_tour() -> void:
 	var reste := []
+	var dus := []
 	for d in _differes:
 		d.tours -= 1
 		if d.tours > 0:
 			reste.append(d)
-			continue
-		if vivant(d.lanceur):
-			_emit("differe", "Le " + d.jutsu.nom + " de " + d.lanceur.nom + " frappe à nouveau !", d.lanceur.id, "", 0, d.jutsu.element, d.jutsu.nom)
-			_lancer(d.lanceur, d.jutsu, d.cible, d.facteur, true)
+		else:
+			dus.append(d)
 	_differes = reste
-
-	for f in combattants:
-		if not vivant(f):
+	for d in dus:
+		var l: Dictionary = d.cx.lanceur
+		if not vivant(l) or fini:
 			continue
-		for s in f.statuts:
+		if d.jutsu != null:
+			_emit("differe", "Le " + d.jutsu.nom + " de " + l.nom + " se libère !", l.id, "", 0, d.jutsu.element, d.jutsu.nom)
+			_lancer(l, d.jutsu, d.cx.cible_id, d.facteur, true)
+		else:
+			_emit("differe", "Le Souffle différé de " + l.nom + " se libère.", l.id, "", 0, d.cx.element)
+			_appliquer(d.cx, d.effets)
+		_verifier_fin()
+
+	for f in combattants.duplicate():
+		if not vivant(f) or fini:
+			continue
+		for s in f.statuts.duplicate():
 			if s.tours <= 0 or not vivant(f):
 				continue
 			match s.type:
 				"consume":
 					_emit("consume", f.nom + " se consume.", "", f.id, 0, s.element)
-					_infliger(null, f, s.valeur, s.element, true)
+					_infliger(null, f, float(s.valeur), s._nature, s.element, true)
+				"sangsue":
+					var src = get_c(s._source)
+					var d := _infliger(src, f, float(s.valeur), "magique", s.element, true)
+					if src != null and d > 0:
+						_soigner(src, src, float(d))
 				"regen":
-					_soigner(f, f, s.valeur)
+					_soigner(f, f, float(s.valeur))
 				"invocation":
-					_invocation_frappe(f, s)
+					_emit("invocation", "La créature de Souffle de " + f.nom + " agit.", f.id, "", 0, s.element)
+					_appliquer(_contexte_charge(f, s, null), s._effets)
+			if s._nouveau:
+				s._nouveau = false
+				continue
 			s.tours -= 1
 		f.statuts = f.statuts.filter(func(s): return s.tours > 0)
+		if f.clone and vivant(f):
+			f._tours_clone -= 1
+			if f._tours_clone <= 0:
+				_dissiper_clone(f, "Un clone de " + f.nom + " se dissipe.")
+				continue
 		if vivant(f):
 			f.souffle = mini(f.souffle_max, f.souffle + 3 + int(f.gnanga) / 4)
-	for camp in 2:
-		var m = murs[camp]
-		if m != null:
-			m.tours -= 1
-			if m.tours <= 0:
-				murs[camp] = null
-				_emit("mur_fin", "Le mur se dissipe.")
+		_verifier_fin()
 
 
-func _invocation_frappe(f: Dictionary, s: Dictionary) -> void:
-	var e := ennemis(f)
-	if e.is_empty():
-		return
-	var t: Dictionary = e[rng.randi_range(0, e.size() - 1)]
-	_emit("invocation", "La créature de Souffle de " + f.nom + " attaque " + t.nom + ".", f.id, t.id, 0, s.element)
-	var d := _infliger(f, t, s._base, s.element, false)
-	if vivant(t) and s._effet != "":
-		_appliquer_effet(f, t, s._effet, s.valeur * 0.5, s._base, d, _opts({"element": s.element}))
-
-
-func _declencher_piege(f: Dictionary, s: Dictionary) -> void:
+func _declencher_piege(f: Dictionary, s: Dictionary) -> bool:
 	s.tours = 0
-	var lanceur = get_c(s._source)
-	if lanceur == null:
-		lanceur = f
-	_emit("piege", f.nom + " déclenche un piège !", lanceur.id, f.id, 0, s.element)
-	var d := _infliger(lanceur, f, s._base, s.element, false)
-	if vivant(f) and s._effet != "":
-		_appliquer_effet(lanceur, f, s._effet, s.valeur, s._base, d, _opts({"element": s.element}))
+	var src = get_c(s._source)
+	if not vivant(src):
+		return false
+	_emit("piege", f.nom + " déclenche un piège !", src.id, f.id, 0, s.element)
+	var cx := _contexte_charge(src, s, f)
+	cx.annule = [false]
+	_appliquer(cx, s._effets)
+	if cx.annule[0]:
+		_info(f, "L'action de " + f.nom + " est annulée.")
+	return cx.annule[0]
 
 
-# --- Jutsus ----------------------------------------------------------------------
+# --- Jutsus --------------------------------------------------------------------
 
 func _incanter(f: Dictionary, a: Dictionary) -> void:
 	var seq: Array = a.get("sequence", [])
@@ -521,23 +704,19 @@ func _incanter(f: Dictionary, a: Dictionary) -> void:
 		var j = res.jutsu
 		var refus := ""
 		if j != null and j.legendaire != "" and f.has("_contexte"):
-			refus = Grammaire.verifier(j.conditions, f._contexte.niveau, f._contexte.elements, moment.call())
-		if j != null and j.fusion and j.legendaire == "" and f.niveau < int(Regles.c.niveau_fusion):
+			refus = Grammaire.verifier(j.conditions, int(f._contexte.niveau), f._contexte.elements, moment.call())
+		if j != null and j.fusion and j.legendaire == "" and int(f.niveau) < int(Regles.c.niveau_fusion):
 			refus = "Deux éléments veulent se fondre… mais il faut le niveau %d pour les fusionner." % int(Regles.c.niveau_fusion)
 		var cout := 3 * seq.size()
 		if j != null and refus == "":
 			cout = cout_reel(j, maitrise_de(f, j))
 		if f.souffle < cout:
-			_emit("info", "%s manque de Souffle (%d requis)." % [f.nom, cout], f.id)
-			f.garde = true
+			_info(f, "%s manque de Souffle (%d requis)." % [f.nom, cout])
+			f.garde = not a_statut(f, "sans_garde")
 			return
 		f.souffle -= cout
-		var inc := {"sequence": seq, "_jutsu": null, "_echec": res.echec, "_refus": refus, "cible": a.get("cible", ""), "progres": 0, "total": seq.size(), "silence": false}
-		if refus == "":
-			inc._jutsu = j
-		if j != null and j.mods_forme.has("silence"):
-			inc.silence = true
-		f.incantation = inc
+		f.incantation = {"sequence": seq, "jutsu": j if refus == "" else null, "echec": res.echec, "refus": refus,
+			"cible": a.get("cible", ""), "progres": 0, "total": seq.size(), "silence": j != null and j.incassable}
 	var inc: Dictionary = f.incantation
 	inc.progres = mini(inc.total, inc.progres + mudras_par_tour(f))
 	if inc.progres < inc.total:
@@ -548,181 +727,320 @@ func _incanter(f: Dictionary, a: Dictionary) -> void:
 
 
 func _liberer(f: Dictionary, inc: Dictionary) -> void:
-	if inc._refus != "":
-		_emit("echec", inc._refus, f.id)
+	if inc.refus != "":
+		_emit("echec", inc.refus, f.id)
 		return
-	if inc._jutsu == null:
-		var r := Grammaire.resonner(inc.sequence, inc._echec, f.get("_precis", false))
+	if inc.jutsu == null:
+		var r := Grammaire.resonner(inc.sequence, inc.echec, f.get("_precis", false))
 		if f.joueur:
 			resonances.append(r)
 		_emit("echec", f.nom + " : " + r.message, f.id, "", r.score)
 		if r.retour_de_souffle:
 			_emit("retour", "Retour de Souffle !", f.id, f.id)
-			_infliger(null, f, float(4 + 2 * inc.sequence.size()), "", true)
+			_infliger(null, f, float(4 + 2 * inc.sequence.size()), "pur", "", true)
 		return
-	var j: Dictionary = inc._jutsu
+	var j: Dictionary = inc.jutsu
 	if f.joueur:
 		if not f._maitrise.has(j.cle):
 			f._maitrise[j.cle] = int(Regles.c.maitrise_decouverte)
 			decouvertes.append({"joueur": f.id, "jutsu": j})
-			var texte: String = ("JUTSU LÉGENDAIRE DÉCOUVERT : " if j.legendaire != "" else "Nouveau jutsu découvert : ") + j.nom + " !"
+			var texte: String = "Nouveau jutsu découvert : " + j.nom + " !"
+			if j.legendaire != "":
+				texte = "JUTSU LÉGENDAIRE DÉCOUVERT : " + j.nom + " !"
 			_emit("decouverte", texte, f.id, "", 0, j.element, j.nom)
 		usages[j.cle] = usages.get(j.cle, 0) + 1
-	if j.mods_forme.has("retarder"):
-		_emit("jutsu", f.nom + " prépare " + j.nom + " : il frappera au prochain tour.", f.id, "", 0, j.element, j.nom)
-		_differes.append({"lanceur": f, "jutsu": j, "cible": inc.cible, "facteur": 1.6, "tours": 1})
+	if j.delai:
+		_emit("jutsu", f.nom + " accumule le Souffle de " + j.nom + " : il partira au prochain tour.", f.id, "", 0, j.element, j.nom)
+		_differes.append({"jutsu": j, "effets": [], "cx": {"lanceur": f, "cible_id": inc.cible, "element": j.element}, "facteur": 1.0, "tours": 1})
 		return
 	_lancer(f, j, inc.cible, 1.0, false)
 
 
 func puissance(f: Dictionary, j: Dictionary, facteur: float) -> float:
-	var m := float(maitrise_de(f, j))
-	var base := (12.0 + float(f.gnanga) * 1.6 + float(f.niveau) * 1.2) * float(j.puissance) * (0.8 + 0.4 * m / 100.0)
-	base *= Regles.facteur_cosmique(j.element, moment.call()) * facteur
+	var p := puissance_de(f, j, maitrise_de(f, j), Regles.facteur_cosmique(j.element, moment.call())) * facteur
 	if j.element == "vegetal" or j.element == "bois_sacre":
-		base *= 1.0 + 0.05 * minf(float(tour), 10.0)
-	var rf = statut(f, "renfort")
-	if rf != null:
-		base *= 1.0 + rf.valeur
-	return base
+		p *= 1.0 + 0.05 * minf(float(tour), 10.0)
+	return p
 
 
 func _lancer(f: Dictionary, j: Dictionary, cible_id: String, facteur: float, echo: bool) -> void:
-	var base := puissance(f, j, facteur)
+	var p := puissance(f, j, facteur)
 	if not echo:
-		_emit("jutsu", f.nom + " lance " + j.nom + " !", f.id, "", 0, j.element, j.nom)
-	if not echo and j.mods_forme.has("persistance"):
-		_differes.append({"lanceur": f, "jutsu": j, "cible": cible_id, "facteur": 0.5, "tours": 1})
+		_emit("jutsu", "%s lance %s (puissance %d) !" % [f.nom, j.nom, int(round(p))], f.id, "", int(round(p)), j.element, j.nom)
+		if float(j.echo) > 0:
+			_differes.append({"jutsu": j, "effets": [], "cx": {"lanceur": f, "cible_id": cible_id, "element": j.element}, "facteur": float(j.echo), "tours": 1})
 	if j.element in ["brume", "vapeur", "songe"]:
-		_ajouter_statut(f, {"type": "voile", "tours": 1, "valeur": 0.5, "element": j.element})
-	if j.soutien:
-		_lancer_soutien(f, j, cible_id, base)
-		return
-	var o := _opts_de(j)
-	match j.forme:
-		"cercle":
-			for t in ennemis(f):
-				_toucher(f, t, j, base, o, false)
-		"mur":
-			var ab := base * 1.5
-			if j.element in ["terre", "seisme", "lave"]:
-				ab *= 1.3
-			murs[f.camp] = {"absorption": int(ab), "tours": 2 + o.bonus, "element": j.element, "_riposte": j.effet, "_intensite": j.intensite, "_base": base, "_lanceur": f.id}
-			_emit("mur", "Un mur se dresse devant le camp de %s (%d)." % [f.nom, int(ab)], f.id, "", int(ab), j.element)
-		"armure":
-			var ab := int(base * 1.2)
-			f.absorption += ab
-			_ajouter_statut(f, {"type": "riposte", "tours": 3 + o.bonus, "valeur": j.intensite, "_base": base, "_effet": j.effet, "element": j.element})
-			_emit("armure", "%s se couvre d'une armure de Souffle (%d)." % [f.nom, ab], f.id, "", ab, j.element)
-		"double":
-			_ajouter_statut(f, {"type": "leurre", "tours": 2 + o.bonus, "valeur": j.intensite, "_base": base, "_effet": j.effet, "element": j.element})
-			_emit("double", f.nom + " crée un double.", f.id, "", 0, j.element)
-		"pas":
-			_placer(f, 1 if f.rang > 1 else NB_RANGS)
-			_ajouter_statut(f, {"type": "voile", "tours": 1, "valeur": 0.5, "element": j.element})
-			_emit("deplacement", "%s bondit au rang %d." % [f.nom, f.rang], f.id, "", f.rang)
-			var t = _cible_ennemie(f, "", true)
-			if t != null:
-				_toucher(f, t, j, base, o, true)
-		"invocation":
-			_ajouter_statut(f, {"type": "invocation", "tours": 3 + o.bonus, "valeur": j.intensite, "_base": base, "_effet": j.effet, "element": j.element})
-			_emit("invoque", f.nom + " invoque une créature de Souffle.", f.id, "", 0, j.element)
-		"piege":
-			var t = _cible_ennemie(f, cible_id, false)
+		_ajouter_statut(f, {"type": "esquive", "tours": 1, "valeur": 0.3, "element": j.element, "_puissance": p})
+	var cx := {"lanceur": f, "p": p, "element": j.element, "maitrise": maitrise_de(f, j), "indissipable": j.indissipable,
+		"cible_id": cible_id, "autre": null, "passif": true, "annule": null}
+	_appliquer(cx, j.effets)
+
+
+func _contexte_charge(src: Dictionary, s: Dictionary, autre) -> Dictionary:
+	return {"lanceur": src, "p": float(s._puissance), "element": s.get("element", ""), "maitrise": 50,
+		"indissipable": s._indissipable, "cible_id": "", "autre": autre, "passif": false, "annule": null}
+
+
+static func _part(e: Dictionary, defaut: float) -> float:
+	return float(e.part) if float(e.part) > 0 else defaut
+
+
+## Cibles d'un effet : [{t, part, unique}].
+func _resoudre(cx: Dictionary, e: Dictionary) -> Array:
+	var l: Dictionary = cx.lanceur
+	match e.cible:
+		"soi":
+			return [{"t": l, "part": 1.0, "unique": false}]
+		"allies":
+			var out := []
+			for a in reels(l.camp):
+				out.append({"t": a, "part": 1.0 if a == l else _part(e, 1.0), "unique": false})
+			return out
+		"ennemi", "ennemi_etendu", "contact", "contact_etendu":
+			var contact: bool = e.cible == "contact" or e.cible == "contact_etendu"
+			if contact and l.rang > 2:
+				_info(l, "Trop loin : " + l.nom + " doit être au rang 1 ou 2 pour toucher au contact.")
+				return []
+			var t = _cible_ennemie(l, cx.cible_id, contact)
 			if t == null:
-				return
-			_ajouter_statut(t, {"type": "piege", "tours": 3, "valeur": j.intensite, "_base": base * 1.2, "_effet": j.effet, "element": j.element, "_source": f.id})
-			_emit("piege_pose", f.nom + " tend un piège sous les pieds de " + t.nom + ".", f.id, t.id, 0, j.element)
-		_:
-			var contact: bool = j.forme == "lame"
-			if contact and f.rang > 2:
-				_emit("info", "Trop loin : la lame de Souffle se dissipe.", f.id)
-				return
-			var t = _cible_ennemie(f, cible_id, contact)
-			if t == null:
-				_emit("info", "Aucune cible à portée.", f.id)
-				return
-			var cibles := [t]
-			if j.mods_forme.has("etendre"):
-				for e in ennemis(f):
-					if e != t and (e.rang == t.rang + 1 or e.rang == t.rang - 1):
-						cibles.append(e)
+				_info(l, "Aucune cible à portée.")
+				return []
+			var out := [{"t": t, "part": 1.0, "unique": true}]
+			if e.cible == "ennemi_etendu" or e.cible == "contact_etendu":
+				for o in ennemis(l):
+					if o != t and ciblable(o) and (o.rang == t.rang + 1 or o.rang == t.rang - 1):
+						out.append({"t": o, "part": _part(e, 0.7), "unique": true})
 						break
-			for i in cibles.size():
-				_toucher(f, cibles[i], j, base * (0.7 if i > 0 else 1.0), o, contact)
+			return out
+		"ennemis":
+			var out := []
+			for t in ennemis(l):
+				if not a_statut(t, "disparu"):
+					out.append({"t": t, "part": 1.0, "unique": false})
+			return out
+		"front":
+			for t in ennemis(l):
+				if ciblable(t):
+					return [{"t": t, "part": 1.0, "unique": true}]
+		"aleatoire":
+			var l2 := ennemis(l).filter(func(t): return ciblable(t))
+			if l2.size() > 0:
+				return [{"t": _hasard(l2), "part": 1.0, "unique": true}]
+		"attaquant", "declencheur":
+			if cx.autre != null and vivant(cx.autre):
+				return [{"t": cx.autre, "part": 1.0, "unique": false}]
+	return []
 
 
-func _opts(extra: Dictionary = {}) -> Dictionary:
-	var o := {"bonus": 0, "mult": 1, "silence": false, "propage": false, "lien": false, "intens_mu": 1.0, "element": ""}
-	o.merge(extra, true)
-	return o
+func _appliquer(cx: Dictionary, effets: Array) -> void:
+	cx = cx.duplicate()
+	for e in effets:
+		if not vivant(cx.lanceur) or fini:
+			return
+		_effet(cx, e)
 
 
-func _opts_de(j: Dictionary) -> Dictionary:
-	var o := _opts({"element": j.element})
-	for m in j.mods_effet:
-		match m:
-			"etendre":
-				o.bonus += 2
-			"persistance", "retarder":
-				o.mult = 2
-			"silence":
-				o.silence = true
-			"multiplier":
-				o.propage = true
-	if j.forme == "lien":
-		o.lien = true
-		o.bonus += 1
-		o.intens_mu = 1.5
-	return o
+func _effet(cx: Dictionary, e: Dictionary) -> void:
+	var l: Dictionary = cx.lanceur
+	match e.op:
+		"bond":
+			if a_statut(l, "immobilise"):
+				_info(l, l.nom + " est immobilisé et ne peut pas bondir.")
+				return
+			_placer(l, 1 if e.vers == "avant" else vivants(l.camp).size())
+			_emit("deplacement", "%s bondit au rang %d." % [l.nom, l.rang], l.id, "", l.rang)
+			return
+		"clone":
+			for i in maxi(1, int(e.nombre)):
+				if not _creer_clone(l, int(e.duree), float(e.valeur)):
+					_info(l, "Plus de place dans les rangs : le clone ne peut pas naître.")
+					break
+				_emit("clone", l.nom + " se dédouble !", l.id, "", 0, cx.element)
+			return
+		"soin":
+			for i in maxi(1, int(e.frappes)):
+				_soigner(l, l, cx.p * float(e.mult))
+			return
+		"purifier":
+			_purifier(l)
+			return
+		"invocation":
+			_ajouter_statut(l, {"type": "invocation", "tours": int(e.duree), "element": cx.element, "_source": l.id,
+				"_puissance": cx.p, "_indissipable": cx.indissipable, "_effets": e.effets})
+			_emit("invoque", l.nom + " invoque une créature de Souffle.", l.id, "", 0, cx.element)
+			return
+		"declencheur":
+			_ajouter_statut(l, {"type": "declencheur", "tours": int(e.duree), "valeur": float(e.valeur), "element": cx.element,
+				"_source": l.id, "_puissance": cx.p, "_indissipable": cx.indissipable, "_effets": e.effets})
+			_emit("statut", "Le Souffle de " + l.nom + " veille sur ses blessures.", "", l.id)
+			return
+		"differe":
+			var cp := cx.duplicate()
+			cp.passif = false
+			_differes.append({"jutsu": null, "effets": e.effets, "cx": cp, "facteur": 1.0, "tours": int(e.duree)})
+			return
+		"annuler":
+			if cx.annule != null:
+				cx.annule[0] = true
+			return
+	var cibles := _resoudre(cx, e)
+	for ce in cibles:
+		_effet_sur(cx, e, ce)
+	if float(e.propage) > 0 and cibles.size() > 0 and cibles[0].t.camp != l.camp:
+		var autres := []
+		for o in ennemis(l):
+			var deja := false
+			for ce in cibles:
+				deja = deja or ce.t == o
+			if not deja and ciblable(o):
+				autres.append(o)
+		if autres.size() > 0:
+			var o: Dictionary = _hasard(autres)
+			_emit("info", "Le Souffle se propage à " + o.nom + ".", l.id, o.id)
+			_effet_sur(cx, e, {"t": o, "part": float(e.propage), "unique": true})
 
 
-static func _duree(o: Dictionary, n: int) -> int:
-	var m: int = o.mult if o.mult != 0 else 1
-	return (n + int(o.bonus)) * m
+func _reussite(cx: Dictionary, t: Dictionary, bonus: float, part: float) -> bool:
+	var r := (8.0 + 0.8 * float(t.gnanga) + 0.4 * float(t.manhis)) * 1.1
+	var p: float = 0.55 + 0.35 * (cx.p - r) / (cx.p + r) + bonus + 0.1 * float(cx.maitrise) / 100.0
+	if cx.indissipable:
+		p += 0.05
+	p *= 0.5 + 0.5 * part
+	return _chance(clampf(p, 0.15, 0.95))
 
 
-func _toucher(f: Dictionary, t: Dictionary, j: Dictionary, base: float, o: Dictionary, contact: bool) -> void:
-	if not vivant(t):
-		return
-	var frappes := 1
-	var mult := 1.0
-	if j.mods_forme.has("multiplier"):
-		frappes = 2
-		mult = 0.6
-	var n := 0
-	while n < frappes and vivant(t):
-		n += 1
-		if j.forme != "cercle":
-			if _intercepter(f, t):
+func _effet_sur(cx: Dictionary, e: Dictionary, ce: Dictionary) -> void:
+	var l: Dictionary = cx.lanceur
+	var t = ce.t
+	var k: float = ce.part
+	var hostile: bool = t.camp != l.camp
+	var frappe: bool = e.op == "degats" or e.op == "drain"
+	if hostile and ce.unique and not frappe:
+		t = _atteindre(l, t, true)
+		if t == null:
+			return
+		hostile = t.camp != l.camp
+	match e.op:
+		"degats", "drain":
+			for i in maxi(1, int(e.frappes)):
+				if not vivant(l):
+					break
+				var tt = t
+				if hostile and ce.unique:
+					tt = _atteindre(l, t, true)
+					if tt == null:
+						continue
+				if not vivant(tt):
+					break
+				var d := _infliger(l, tt, cx.p * float(e.mult) * k, e.nature, cx.element, false)
+				if e.op == "drain" and d > 0:
+					_soigner(l, l, float(d) * float(e.valeur))
+				if cx.passif and vivant(tt) and tt.camp != l.camp:
+					cx.passif = false
+					_passif_element(cx, tt, cx.p * float(e.mult), d)
+				if ce.unique and tt.camp != l.camp:
+					_riposter(tt, l)
+		"dot":
+			_ajouter_statut(t, {"type": "consume", "tours": int(e.duree), "valeur": cx.p * float(e.mult) * k, "element": cx.element,
+				"_nature": e.nature, "_source": l.id, "_puissance": cx.p, "_indissipable": cx.indissipable})
+			_emit("statut", t.nom + " se consume.", "", t.id, 0, cx.element)
+		"statut":
+			_poser_statut(cx, e, t, k, hostile)
+		"bouclier":
+			var v := int(round(cx.p * float(e.mult) * k))
+			t.absorption += v
+			_emit("bouclier", "Un bouclier de Souffle couvre %s (%d)." % [t.nom, v], l.id, t.id, v, cx.element)
+		"deplacer":
+			if hostile and not _reussite(cx, t, float(e.valeur), k):
+				_emit("resiste", t.nom + " tient bon et ne bouge pas.", "", t.id)
+				return
+			_placer(t, 1 if e.vers == "avant" else vivants(t.camp).size())
+			_emit("deplacement", "%s est projeté au rang %d." % [t.nom, t.rang], t.id, "", t.rang)
+		"dissiper":
+			_dissiper(cx, t)
+		"interrompre":
+			_interrompre(t, "par le Souffle de " + l.nom)
+		"piege":
+			_ajouter_statut(t, {"type": "piege", "tours": int(e.duree), "element": cx.element, "_source": l.id,
+				"_puissance": cx.p * k, "_indissipable": cx.indissipable, "_effets": e.effets})
+			_emit("piege_pose", l.nom + " tend un piège sous les pieds de " + t.nom + ".", l.id, t.id, 0, cx.element)
+		"riposte":
+			_ajouter_statut(t, {"type": "riposte", "tours": int(e.duree), "element": cx.element, "_source": l.id,
+				"_puissance": cx.p * k, "_indissipable": cx.indissipable, "_effets": e.effets, "_nouveau": true})
+			_emit("statut", "Le Souffle de " + l.nom + " veille sur " + t.nom + " : qui l'attaque le paiera.", l.id, t.id, 0, cx.element)
+
+
+func _poser_statut(cx: Dictionary, e: Dictionary, t: Dictionary, k: float, hostile: bool) -> void:
+	var l: Dictionary = cx.lanceur
+	var typ: String = e.statut
+	if typ == "hasard":
+		typ = _hasard(ENTRAVES_AU_HASARD)
+	if hostile and Regles.g.statuts_controle.has(e.statut):
+		var bonus: float = 0.0 if typ in ["confus", "aveugle"] else float(e.valeur)
+		if not _reussite(cx, t, bonus, k):
+			_emit("resiste", t.nom + " résiste au Souffle de " + l.nom + ".", "", t.id)
+			return
+	var val: float = float(e.valeur) * k
+	match typ:
+		"regen", "sangsue", "baume", "second_souffle":
+			val = cx.p * float(e.valeur) * k
+		"leurre":
+			val = float(e.valeur)
+	var tours: int = int(e.duree) if int(e.duree) > 0 else 99
+	_ajouter_statut(t, {"type": typ, "tours": tours, "valeur": val, "element": cx.element, "_source": l.id,
+		"_puissance": cx.p, "_indissipable": cx.indissipable, "_nouveau": true})
+	var texte: String = TEXTES_POSES.get(typ, "")
+	if texte == "":
+		texte = str(Regles.g.textes_statut[typ]).replace("{v}", str(int(round(val * 100.0)))).replace("{n}", str(int(round(val))))
+	_emit("statut", t.nom + " : " + texte + ".", l.id, t.id, 0, cx.element)
+	if typ == "scelle" or typ == "endormi":
+		_interrompre(t, "net")
+
+
+func _dissiper(cx: Dictionary, t: Dictionary) -> void:
+	var bienfaits: Dictionary = Regles.d.statuts.bienfaits
+	var reste := []
+	var retire := 0
+	var tenu := 0
+	for s in t.statuts:
+		if bienfaits.has(s.type) and s.tours > 0:
+			if s._indissipable or float(s._puissance) > cx.p * 1.25:
+				tenu += 1
+			else:
+				retire += 1
 				continue
-			if j.forme == "trait" and _chance(esquive(t) / 2.0):
-				_emit("esquive", t.nom + " esquive le jutsu.", f.id, t.id)
-				continue
-		var d := _infliger(f, t, base * mult, j.element, false)
-		if not vivant(t):
-			break
-		_passif_element(f, t, j, base * mult, d)
-		_appliquer_effet(f, t, j.effet, j.intensite * o.intens_mu, base, d, o)
-		if j.effet2 != "" and vivant(t):
-			_appliquer_effet(f, t, j.effet2, j.intensite * o.intens_mu * 0.6, base, d, o)
-		if contact:
-			_riposter(t, f)
-	if o.propage and vivant(f):
-		for e in ennemis(f):
-			if e != t:
-				_emit("info", "L'effet se propage à " + e.nom + ".", f.id, e.id)
-				_appliquer_effet(f, e, j.effet, j.intensite * 0.7, base, 0, _opts())
-				break
+		reste.append(s)
+	t.statuts = reste
+	if t.absorption > 0:
+		t.absorption = 0
+		retire += 1
+	for o in combattants:
+		if o.clone and o.get("_original", "") == t.id and vivant(o):
+			_dissiper_clone(o, "Le clone de " + t.nom + " se dissipe.")
+			retire += 1
+	if retire > 0:
+		_emit("purification", "Les protections de %s se dissipent (%d)." % [t.nom, retire], "", t.id)
+	if tenu > 0:
+		_emit("resiste", "Certaines protections de " + t.nom + " résistent.", "", t.id)
 
 
-func _passif_element(f: Dictionary, t: Dictionary, j: Dictionary, base: float, d: int) -> void:
-	match j.element:
+func _purifier(t: Dictionary) -> void:
+	var maux: Dictionary = Regles.d.statuts.maux
+	var avant: int = t.statuts.size()
+	t.statuts = t.statuts.filter(func(s): return not (maux.has(s.type) and not s._indissipable))
+	var retire: int = avant - t.statuts.size()
+	if retire > 0:
+		_emit("purification", "%s se purifie (%d maux effacés)." % [t.nom, retire], "", t.id)
+
+
+func _passif_element(cx: Dictionary, t: Dictionary, base: float, d: int) -> void:
+	var l: Dictionary = cx.lanceur
+	match cx.element:
 		"feu", "lave", "cendre":
-			if j.effet != "consumer":
-				_ajouter_statut(t, {"type": "consume", "tours": 2, "valeur": base * 0.12, "element": j.element})
+			_ajouter_statut(t, {"type": "consume", "tours": 2, "valeur": base * 0.12, "element": cx.element, "_nature": "magique", "_source": l.id, "_puissance": cx.p})
 		"eau", "maree":
-			_soigner(f, f, float(d) * 0.1)
+			if d > 0:
+				_soigner(l, l, float(d) * 0.1)
 		"son", "onde":
 			_interrompre(t, "par une onde sonore")
 		"gravite", "seisme":
@@ -730,133 +1048,24 @@ func _passif_element(f: Dictionary, t: Dictionary, j: Dictionary, base: float, d
 				_placer(t, 1)
 				_emit("deplacement", t.nom + " est attiré au premier rang !", t.id, "", 1)
 		"sel", "cristal":
-			_purifier(t)
+			_dissiper(cx, t)
 		"sable", "harmattan":
-			if _chance(25):
-				_ajouter_statut(t, {"type": "aveugle", "tours": 1, "valeur": 0.4, "element": j.element})
+			if _chance(0.25):
+				_ajouter_statut(t, {"type": "aveugle", "tours": 1, "valeur": 0.4, "element": cx.element, "_source": l.id, "_puissance": cx.p, "_nouveau": true})
+				_emit("statut", t.nom + " a du sable dans les yeux.", "", t.id, 0, cx.element)
 		"foudre", "tempete", "magnetisme":
-			if _chance(20):
-				_ajouter_statut(t, {"type": "entrave", "tours": 1, "element": j.element})
-				_emit("statut", t.nom + " est paralysé.", "", t.id, 0, j.element)
+			if _chance(0.2):
+				_ajouter_statut(t, {"type": "immobilise", "tours": 1, "element": cx.element, "_source": l.id, "_puissance": cx.p, "_nouveau": true})
+				_emit("statut", t.nom + " est paralysé.", "", t.id, 0, cx.element)
 		"essaim", "fleau":
 			if vivant(t):
-				_infliger(f, t, base * 0.15, j.element, true)
+				_infliger(l, t, base * 0.15, "pur", cx.element, true)
 
 
-func _purifier(t: Dictionary) -> void:
-	var reste := []
-	var retire := false
-	for s in t.statuts:
-		if s.type in ["voile", "renfort", "regen", "riposte"] and not s._silence:
-			retire = true
-			continue
-		reste.append(s)
-	t.statuts = reste
-	if t.absorption > 0:
-		t.absorption = 0
-		retire = true
-	if retire:
-		_emit("purification", "Le Sel purifie " + t.nom + " : ses protections s'effacent.", "", t.id)
-
-
-func _appliquer_effet(f: Dictionary, t: Dictionary, effet: String, intens: float, base: float, degats: int, o: Dictionary) -> void:
-	if effet == "":
-		return
-	match effet:
-		"consumer":
-			_ajouter_statut(t, {"type": "consume", "tours": _duree(o, 3), "valeur": base * 0.25 * intens, "element": o.element, "_silence": o.silence})
-			_emit("statut", t.nom + " est rongé par le Souffle.", "", t.id)
-		"lier":
-			_ajouter_statut(t, {"type": "entrave", "tours": _duree(o, 2), "_silence": o.silence})
-			_emit("statut", t.nom + " est entravé.", "", t.id)
-		"aveugler":
-			_ajouter_statut(t, {"type": "aveugle", "tours": _duree(o, 2), "valeur": minf(0.7, 0.4 * intens), "_silence": o.silence})
-			_emit("statut", t.nom + " est aveuglé.", "", t.id)
-		"repousser":
-			if t.rang < vivants(t.camp).size():
-				_placer(t, t.rang + 1)
-				_emit("deplacement", "%s est repoussé au rang %d." % [t.nom, t.rang], t.id, "", t.rang)
-			_interrompre(t, "par le choc")
-		"drainer":
-			_soigner(f, f, float(degats) * 0.5 * intens)
-			var gain := int(float(degats) * 0.2 * intens)
-			f.souffle = mini(f.souffle_max, f.souffle + gain)
-		"briser":
-			_ajouter_statut(t, {"type": "affaibli", "tours": _duree(o, 3), "valeur": 0.5, "_silence": o.silence})
-			t.absorption = 0
-			_emit("statut", "Les défenses de " + t.nom + " sont brisées.", "", t.id)
-			_interrompre(t, "net")
-		"marquer":
-			_ajouter_statut(t, {"type": "marque", "tours": _duree(o, 3), "valeur": 0.25 * intens, "_silence": o.silence})
-			_emit("statut", t.nom + " est marqué.", "", t.id)
-		"soigner":
-			_soigner(f, f, maxf(float(degats) * 0.4, base * 0.2) * intens)
-		"renforcer":
-			_ajouter_statut(f, {"type": "renfort", "tours": _duree(o, 2), "valeur": 0.2 * intens})
-		"dissimuler":
-			_ajouter_statut(f, {"type": "voile", "tours": _duree(o, 1), "valeur": 0.5})
-
-
-func _lancer_soutien(f: Dictionary, j: Dictionary, cible_id: String, base: float) -> void:
-	var o := _opts_de(j)
-	var allies := vivants(f.camp)
-	var cibles := []
-	match j.forme:
-		"cercle", "mur", "invocation":
-			cibles = allies
-		"armure", "pas", "double":
-			cibles = [f]
-		_:
-			var t = get_c(cible_id)
-			if t == null or not vivant(t) or t.camp != f.camp:
-				t = plus_blesse(allies)
-			cibles = [t]
-	match j.forme:
-		"mur":
-			var ab := int(base * 1.2)
-			murs[f.camp] = {"absorption": ab, "tours": 2 + o.bonus, "element": j.element, "_riposte": "", "_intensite": 0.0, "_base": 0.0, "_lanceur": f.id}
-			_emit("mur", "Un mur protecteur se dresse (%d)." % ab, f.id, "", ab, j.element)
-		"armure":
-			f.absorption += int(base)
-		"pas":
-			_placer(f, f.rang - 1 if f.rang > 1 else NB_RANGS)
-		"double":
-			_ajouter_statut(f, {"type": "leurre", "tours": 2})
-	for t in cibles:
-		_soutenir(f, t, j.effet, j.intensite * o.intens_mu, base, o, j.forme == "invocation")
-		if j.effet2 != "" and Grammaire.effet_soutien(j.effet2):
-			_soutenir(f, t, j.effet2, j.intensite * 0.6, base, o, false)
-
-
-func _soutenir(f: Dictionary, t: Dictionary, effet: String, intens: float, base: float, o: Dictionary, durable: bool) -> void:
-	match effet:
-		"soigner":
-			if durable or o.bonus > 0 or o.mult > 1:
-				_ajouter_statut(t, {"type": "regen", "tours": _duree(o, 3), "valeur": base * 0.3 * intens})
-			if not durable:
-				_soigner(f, t, base * 0.9 * intens)
-		"renforcer":
-			_ajouter_statut(t, {"type": "renfort", "tours": _duree(o, 3), "valeur": 0.25 * intens, "_silence": o.silence})
-			_emit("statut", t.nom + " est renforcé.", "", t.id)
-		"dissimuler":
-			_ajouter_statut(t, {"type": "voile", "tours": _duree(o, 2), "valeur": 0.5, "_silence": o.silence})
-			_emit("statut", t.nom + " se fond dans le Souffle.", "", t.id)
-
-
-static func plus_blesse(l: Array):
-	var best = null
-	for f in l:
-		if best == null or float(f.pv) / float(f.pv_max) < float(best.pv) / float(best.pv_max):
-			best = f
-	return best
-
-
-# --- IA des PNJ ----------------------------------------------------------------------
-## L'IA évalue chaque action possible : elle soigne les blessés, profite des
-## faiblesses élémentaires et cherche à briser les longues incantations.
+# --- IA ------------------------------------------------------------------------
 
 func _choisir_ia(f: Dictionary) -> Dictionary:
-	if f.incantation != null:
+	if f.incantation != null and not a_statut(f, "scelle"):
 		return {"acteur": f.id, "type": "incanter"}
 	var opts := []
 	var ajouter := func(a: Dictionary, s: float) -> void:
@@ -864,76 +1073,55 @@ func _choisir_ia(f: Dictionary) -> Dictionary:
 		opts.append([a, s * (0.9 + rng.randf() * 0.2)])
 	var ens := ennemis(f)
 	var menace := _menace(ens)
-	var distance: bool = f.arme.distance
-	if not (not distance and (f.rang > 2 or statut(f, "entrave") != null)):
+	var ia: String = f.get("_ia", "")
+
+	if not a_statut(f, "desarme") and (f.arme.distance or f.rang <= 2):
 		for t in ens:
-			if not distance and t.rang > 2:
+			if not ciblable(t) or (not f.arme.distance and t.rang > 2):
 				continue
-			var est := float(f.arme.puissance + f.fangan) * 40.0 / (40.0 + _defense_de(t))
+			var est := float(f.arme.puissance + f.fangan) * facteur_defense(t, "physique")
 			ajouter.call({"type": "frapper", "cible": t.id}, _valeur_degats(t, est, 1.0))
-	if f._ia != "bete":
+
+	if ia == "ninja" and not a_statut(f, "scelle"):
 		var mpt := mudras_par_tour(f)
-		for j in f._jutsus:
+		for j in f.get("_jutsus", []):
 			if cout_reel(j, maitrise_de(f, j)) > f.souffle:
 				continue
 			var tours := float((j.sequence.size() + mpt - 1) / mpt)
-			var base := puissance(f, j, 1.0)
-			var seq: Array = j.sequence
-			if j.soutien:
-				var s := _valeur_soutien(f, j, base)
-				if s > 0:
-					var c = plus_blesse(vivants(f.camp))
-					ajouter.call({"type": "incanter", "sequence": seq, "cible": c.id}, s / tours)
-				continue
-			if j.forme in ["mur", "armure", "double"]:
-				var v := base * 0.3
-				if menace > 0 or f.pv * 2 < f.pv_max:
-					v = base * 0.8 + menace
-				if (j.forme == "mur" and murs[f.camp] != null) or (j.forme == "armure" and f.absorption > 0):
-					v *= 0.2
-				ajouter.call({"type": "incanter", "sequence": seq}, v / tours)
-				continue
-			if j.forme in ["cercle", "invocation"]:
-				var total := 0.0
-				for t in ens:
-					total += _valeur_degats(t, base * Regles.multiplicateur(j.element, t.element), tours)
-				if j.forme == "invocation":
-					total *= 2.2
-				ajouter.call({"type": "incanter", "sequence": seq}, total / tours + _bonus_effet(j, base))
-				continue
-			for t in ens:
-				if j.forme == "lame" and (f.rang > 2 or t.rang > 2):
-					continue
-				var v := _valeur_degats(t, base * Regles.multiplicateur(j.element, t.element), tours)
-				if t.incantation != null and _interrompt(j) and tours <= float(t.incantation.total - t.incantation.progres + 1):
-					v += 12.0 * float(t.incantation.total)
-				ajouter.call({"type": "incanter", "sequence": seq, "cible": t.id}, v / tours + _bonus_effet(j, base))
+			var p := puissance(f, j, 1.0)
+			var cibles := [null]
+			if not j.soutien:
+				cibles = ens.filter(func(t): return ciblable(t))
+			for t in cibles:
+				var v := 0.0
+				for e in j.effets:
+					v += _valeur_effet(f, e, t, p, tours)
+				if j.delai:
+					v *= 0.8
+				ajouter.call({"type": "incanter", "sequence": j.sequence, "cible": t.id if t != null else ""}, v / tours)
+
 	var garde := 2.0
 	if f.pv * 10 < f.pv_max * 3 and menace > 0:
 		garde = 10.0 + menace
-	ajouter.call({"type": "garde"}, garde)
-	if f._ia != "bete" and f.souffle * 3 < f.souffle_max:
+	if not a_statut(f, "sans_garde"):
+		ajouter.call({"type": "garde"}, garde)
+	if ia == "ninja" and f.souffle * 3 < f.souffle_max:
 		ajouter.call({"type": "concentrer"}, 6.0)
-	if not distance and f.rang > 2:
+	if not f.arme.distance and f.rang > 2 and not a_statut(f, "immobilise"):
 		ajouter.call({"type": "deplacer", "rang": 1}, 8.0)
+	if opts.is_empty():
+		return {"acteur": f.id, "type": "garde"}
 	var best = opts[0]
-	for o in opts.slice(1):
+	for o in opts:
 		if o[1] > best[1]:
 			best = o
 	return best[0]
 
 
-static func _defense_de(t: Dictionary) -> float:
-	var d := float(t.defense) + float(t.fangan) * 0.5
-	if statut(t, "affaibli") != null:
-		d *= 0.5
-	return d
-
-
 func _valeur_degats(t: Dictionary, est: float, tours: float) -> float:
 	var v := est
 	if float(t.pv) <= est:
-		v *= 2
+		v *= 2.0
 	var inc = t.incantation
 	if inc != null and not inc.silence and est * 100.0 >= float(t.pv_max * 12) and tours <= 1:
 		v += 10.0 * float(inc.total)
@@ -948,35 +1136,136 @@ func _menace(ens: Array) -> float:
 	return m
 
 
-static func _interrompt(j: Dictionary) -> bool:
-	return j.element in ["son", "onde"] or j.effet in ["repousser", "briser"] or j.effet2 in ["repousser", "briser"]
+func _valeur_effet(f: Dictionary, e: Dictionary, t, p: float, tours: float) -> float:
+	var ens := ennemis(f)
+	var nb := 1.0
+	match e.cible:
+		"ennemis":
+			nb = float(ens.size())
+		"ennemi_etendu", "contact_etendu":
+			nb = 1.5
+		"allies":
+			nb = float(reels(f.camp).size())
+	if t == null and ens.size() > 0:
+		t = ens[0]
+	if (e.cible == "contact" or e.cible == "contact_etendu") and (f.rang > 2 or (t != null and t.rang > 2)):
+		return 0.0
+	var danger := 2.0 if f.pv * 2 < f.pv_max else 1.0
+	var manque := float(f.pv_max - f.pv)
+	match e.op:
+		"degats", "drain":
+			if t == null:
+				return 0.0
+			var est := p * float(e.mult) * float(maxi(1, int(e.frappes))) * facteur_defense(t, e.nature)
+			if e.nature != "pur":
+				est *= Regles.multiplicateur(f.element, t.element)
+			var v := _valeur_degats(t, est, tours) * nb
+			if e.op == "drain":
+				v += minf(est * float(e.valeur), manque) * danger * 0.6
+			return v
+		"dot":
+			return p * float(e.mult) * float(e.duree) * 0.7 * nb
+		"soin":
+			if f.pv * 10 > f.pv_max * 7:
+				return 0.0
+			return minf(p * float(e.mult), manque) * danger
+		"bouclier":
+			if f.absorption > 0:
+				return 0.0
+			return p * float(e.mult) * 0.5 * nb * danger
+		"statut":
+			return _valeur_statut(f, e, t, p) * nb
+		"deplacer":
+			return 4.0
+		"bond":
+			return 1.0
+		"clone":
+			return 10.0 * float(maxi(1, int(e.nombre))) * danger
+		"dissiper":
+			if t == null:
+				return 0.0
+			var n := 0
+			for s in t.statuts:
+				if Regles.d.statuts.bienfaits.has(s.type):
+					n += 1
+			return 8.0 * n
+		"purifier":
+			var n := 0
+			for s in f.statuts:
+				if Regles.d.statuts.maux.has(s.type):
+					n += 1
+			return 8.0 * n
+		"interrompre":
+			if t != null and t.incantation != null and not t.incantation.silence:
+				return 10.0 + 5.0 * float(t.incantation.total)
+			return 0.0
+		"riposte", "piege", "invocation", "declencheur", "differe":
+			var v := 0.0
+			for x in e.effets:
+				v += _valeur_effet(f, x, t, p, tours)
+			match e.op:
+				"invocation":
+					v *= float(e.duree) * 0.8
+				"riposte":
+					v *= 1.2
+				"piege":
+					v *= 0.8
+				"declencheur":
+					v *= 0.6
+				_:
+					v *= 0.9
+			return v
+	return 0.0
 
 
-static func _bonus_effet(j: Dictionary, base: float) -> float:
-	var b := 0.0
-	for e in [j.effet, j.effet2]:
-		match e:
-			"consumer":
-				b += base * 0.5
-			"lier", "aveugler", "marquer":
-				b += base * 0.3
-			"drainer", "briser":
-				b += base * 0.2
-	return b
-
-
-func _valeur_soutien(f: Dictionary, j: Dictionary, base: float) -> float:
-	match j.effet:
-		"soigner":
-			var manque := 0.0
-			for a in vivants(f.camp):
-				if a.pv * 10 < a.pv_max * 6:
-					manque += float(a.pv_max - a.pv)
-			return minf(manque, base * 1.5) * 1.2
-		"renforcer":
-			if statut(f, "renfort") == null:
-				return base * 0.4
-		"dissimuler":
-			if statut(f, "voile") == null:
-				return base * 0.3
+func _valeur_statut(f: Dictionary, e: Dictionary, t, p: float) -> float:
+	var d := float(maxi(1, int(e.duree)))
+	var danger := 2.0 if f.pv * 2 < f.pv_max else 1.0
+	var sur = f if e.cible == "soi" or e.cible == "allies" else t
+	if sur == null or a_statut(sur, e.statut):
+		return 0.0
+	var chance := 0.6 if Regles.g.statuts_controle.has(e.statut) else 1.0
+	var v: float = float(e.valeur)
+	match e.statut:
+		"def_phys", "def_mag":
+			return 6.0 * v * d * danger * 3.0
+		"renvoi":
+			return 8.0 * v * d
+		"parade", "reflet", "deviation":
+			return 9.0 * danger
+		"esquive":
+			return 12.0 * v * d * danger
+		"intangible_phys", "intangible_mag", "invisible":
+			return 7.0 * d * danger
+		"disparu":
+			return 5.0 * danger * danger
+		"leurre":
+			return 6.0 * v * danger
+		"regen":
+			return minf(p * v * d, float(f.pv_max - f.pv)) * 0.8
+		"baume":
+			return p * v * 0.15
+		"second_souffle":
+			return 6.0 * danger * danger
+		"marque":
+			return p * v * d * 0.8
+		"sangsue":
+			return p * v * d
+		"scelle":
+			var x := 6.0 * d
+			if sur.incantation != null:
+				x += 5.0 * float(sur.incantation.total)
+			return x * chance
+		"desarme":
+			return 7.0 * d * chance
+		"endormi":
+			return 10.0 * d * chance
+		"confus", "aveugle":
+			return 14.0 * v * d * chance
+		"egare":
+			return 5.0 * d * chance
+		"immobilise", "sans_garde", "hasard":
+			return 4.0 * d * chance
+		"retenu":
+			return 1.0
 	return 0.0

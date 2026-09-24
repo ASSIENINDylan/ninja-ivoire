@@ -25,16 +25,17 @@ Le jeu tourne entièrement sur le PC. `NinjaIvoire.exe` est l'exécutable offici
 | Création | Nom, 6 régions jouables (élément et attribut de départ), 3 types de village |
 | Village | Fiche du ninja, aperçu de la carte explorée, heure réelle et phase de la lune, choix d'élément |
 | Carte | La Côte d'Ivoire en 1 352 cases : 9 terrains, 7 régions, 56 zones à niveau, 21 villages, 46 villes, lieux mythiques, portails ; déplacement case par case, endurance, brouillard, rencontres |
-| Dojo | Composer jusqu'à 8 mudras, libérer le Souffle, découvrir un jutsu ou écouter la résonance |
-| Grimoire | Jutsus découverts, pour toujours, avec leur maîtrise ; jusqu'à 5 favoris (★) pour le combat |
-| Combat | Tours simultanés, trois rangs, incantation sur plusieurs tours, interruption, IA qui lit la situation |
+| Dojo | Composer jusqu'à 7 mudras, libérer le Souffle, découvrir un jutsu ou écouter la résonance |
+| Grimoire | Jutsus découverts, pour toujours : type, formule de puissance, effets exacts, maîtrise ; jusqu'à 5 favoris (★) |
+| Combat | Tours simultanés, trois rangs, incantation, interruption ; 5 types de jutsus (dégâts physiques, magiques ou purs, défense, entrave, illusion avec clones indiscernables, soin) ; seuls les favoris et les suites inconnues se lancent ; blessures durables |
 
 Les jutsus portent des noms poétiques (« Braise : Croc de la hyène », « Lagune : Toile d'Ananzè, qui dévore — sans fin »), avec leur nature en dessous (« Lame de Feu dévorante »).
 
 | | |
 |---|---|
 | ![Village](docs/captures/03_village.png) | ![Carte](docs/captures/11_carte.png) |
-| ![Dojo](docs/captures/05_dojo_resonance.png) | ![Combat](docs/captures/08_combat_action.png) |
+| ![Grimoire](docs/captures/06_grimoire.png) | ![Dojo](docs/captures/05b_dojo_illusion.png) |
+| ![Dojo](docs/captures/05_dojo_resonance.png) | ![Combat](docs/captures/08_combat_clone.png) |
 
 ## Architecture
 
@@ -47,7 +48,7 @@ Les jutsus portent des noms poétiques (« Braise : Croc de la hyène », « Lag
   - `internal/game` : ninja, grimoire, maîtrise, niveaux, rencontres, sauvegarde.
   - `internal/api` : API HTTP JSON pour le client.
 - **`client/`** : jeu PC en **Godot 4.4** (GDScript).
-  - `scripts/moteur` : copie fidèle des règles Go, pour jouer sans serveur (prototype hors ligne). Un test vérifie la parité avec Go sur près de 3 000 suites de mudras.
+  - `scripts/moteur` : copie fidèle des règles Go, pour jouer sans serveur (prototype hors ligne). Un test vérifie la parité avec Go (noms, effets, coefficients, textes) sur près de 3 000 suites de mudras.
   - Avec l'option `-- --serveur`, le client utilise le serveur Go en HTTP (développement, futur mode en ligne).
 
 ## Développer
@@ -65,6 +66,7 @@ go run ./cmd/exporter-regles -sortie ../client/donnees -tests ../client/tests
 # Client : ouvrir client/ dans Godot 4.4 ; tests du moteur local
 godot --headless --path client --script res://tests/test_grammaire.gd
 godot --headless --path client --script res://tests/test_partie.gd
+godot --headless --path client --script res://tests/test_combat.gd
 
 # Démo automatique avec captures d'écran
 godot --path client -- --demo=/tmp/captures

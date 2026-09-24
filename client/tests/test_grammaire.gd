@@ -20,18 +20,31 @@ func _init() -> void:
 			if b == null:
 				diff = "jutsu attendu, échec obtenu %s" % res.echec
 			else:
-				for k in ["nom", "nature", "element", "forme", "effet", "texte", "cout", "soutien", "fusion"]:
+				for k in ["nom", "nature", "element", "forme", "effet", "texte", "cout", "soutien", "fusion", "type"]:
 					if not _egal(a.get(k), b.get(k)):
 						diff += " %s: %s ≠ %s" % [k, a.get(k), b.get(k)]
-				for k in ["effet2", "legendaire"]:
+				for k in ["effet2", "legendaire", "degats_nature"]:
 					if str(a.get(k, "")) != str(b.get(k, "")):
 						diff += " %s: %s ≠ %s" % [k, a.get(k, ""), b.get(k, "")]
 				for k in ["mods_forme", "mods_effet"]:
 					if str(a.get(k, [])) != str(b.get(k, [])):
 						diff += " %s: %s ≠ %s" % [k, a.get(k, []), b.get(k, [])]
-				for k in ["puissance", "intensite"]:
-					if abs(float(a[k]) - float(b[k])) > 1e-9:
-						diff += " %s: %s ≠ %s" % [k, a[k], b[k]]
+				for k in ["f", "g", "m", "n"]:
+					if abs(float(a.coefs[k]) - float(b.coefs[k])) > 1e-9:
+						diff += " coefs.%s: %s ≠ %s" % [k, a.coefs[k], b.coefs[k]]
+				for k in ["delai", "incassable", "indissipable"]:
+					if bool(a.get(k, false)) != bool(b.get(k, false)):
+						diff += " %s: %s ≠ %s" % [k, a.get(k, false), b.get(k, false)]
+				if abs(float(a.get("echo", 0)) - float(b.echo)) > 1e-9:
+					diff += " echo: %s ≠ %s" % [a.get("echo", 0), b.echo]
+				var ca := _canon(Grammaire.normaliser(a.effets))
+				var cb := _canon(b.effets)
+				if ca != cb:
+					diff += " effets: %s ≠ %s" % [ca, cb]
+				var ref := {"fangan": 10, "gnanga": 12, "manhis": 8}
+				var p := CombatMoteur.puissance_de(ref, b, 40, 1.0)
+				if abs(p - float(v.puissance_ref)) > 1e-6:
+					diff += " puissance: %s ≠ %s" % [v.puissance_ref, p]
 		else:
 			var e = res.echec
 			if e == null:
@@ -61,3 +74,12 @@ func _egal(a, b) -> bool:
 	if typeof(a) in num and typeof(b) in num:
 		return abs(float(a) - float(b)) < 1e-9
 	return str(a) == str(b)
+
+
+## Forme canonique d'une liste d'effets, pour comparer Go et GDScript.
+func _canon(l: Array) -> String:
+	var parts := PackedStringArray()
+	for e in l:
+		parts.append("%s|%s|%s|%.4f|%d|%s|%d|%.4f|%s|%d|%.4f|%.4f[%s]" % [e.op, e.cible, e.nature, e.mult, e.frappes,
+			e.statut, e.duree, e.valeur, e.vers, e.nombre, e.part, e.propage, _canon(e.effets)])
+	return ";".join(parts)

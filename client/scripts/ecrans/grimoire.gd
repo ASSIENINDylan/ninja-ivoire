@@ -65,7 +65,12 @@ func construire() -> void:
 		etoile.tooltip_text = "Retirer des favoris" if fav else "Ajouter aux favoris (5 au maximum)"
 		t.add_child(etoile)
 		cv.add_child(t)
-		cv.add_child(UI.label(j.get("nature", ""), 14, Pal.IVOIRE_DOUX))
+		var sous := UI.hbox(10)
+		sous.add_child(UI.label(Jeu.libelle_type(j), 14, Pal.OR_VIF))
+		sous.add_child(UI.label(j.get("nature", ""), 14, Pal.IVOIRE_DOUX))
+		sous.add_child(UI.extensible())
+		sous.add_child(UI.label("Puissance %d" % int(j.get("puissance", 0)), 14, Pal.IVOIRE))
+		cv.add_child(sous)
 		cv.add_child(UI.glyphes(j.sequence, 30))
 		cv.add_child(UI.texte(j.texte, 14, Pal.IVOIRE_DOUX, 600))
 		var bas := UI.hbox(12)
