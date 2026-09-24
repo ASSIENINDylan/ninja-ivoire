@@ -8,7 +8,7 @@ Jeu PC de ninjas, stratégique et persistant, dont le monde est la **Côte d'Ivo
 - **7 régions, 21 villages** (traditionnels, modernes, futuristes) et une **guerre du vendredi soir** pour les zones.
 - **Économie portée par les joueurs**, avec le **Djê** comme monnaie.
 
-![Carte](docs/captures/12_carte_exploration.png)
+![Carte](docs/captures/14_exploitation.png)
 
 ## Jouer au prototype (Windows)
 
@@ -24,7 +24,8 @@ Le jeu tourne entièrement sur le PC. `NinjaIvoire.exe` est l'exécutable offici
 |---|---|
 | Création | Nom, 6 régions jouables (élément et attribut de départ), 3 types de village |
 | Village | Fiche du ninja, aperçu de la carte explorée, heure réelle et phase de la lune, choix d'élément |
-| Carte | La Côte d'Ivoire en 1 352 cases : 9 terrains, 7 régions, 56 zones à niveau, 21 villages, 46 villes, lieux mythiques, portails ; déplacement case par case, endurance, brouillard, rencontres |
+| Carte | La Côte d'Ivoire en 1 352 cases : au centre les cases autour du ninja, derrière le paysage du terrain, la grande carte en bas à gauche ; camps de bandits et gisements de fer, peau, pierre, or et diamant ; exploitation avec niveaux par ressource ; bandits et ninjas à affronter |
+| Forge | Sac et coffre du village, 17 armes et armures à forger, 5 emplacements d'équipement |
 | Dojo | Composer jusqu'à 7 mudras, libérer le Souffle, découvrir un jutsu ou écouter la résonance |
 | Grimoire | Jutsus découverts, pour toujours : type, formule de puissance, effets exacts, maîtrise ; jusqu'à 5 favoris (★) |
 | Combat | Tours simultanés, trois rangs, incantation, interruption ; 5 types de jutsus (dégâts physiques, magiques ou purs, défense, entrave, illusion avec clones indiscernables, soin) ; seuls les favoris et les suites inconnues se lancent ; blessures durables |
@@ -33,7 +34,8 @@ Les jutsus portent des noms poétiques (« Braise : Croc de la hyène », « Lag
 
 | | |
 |---|---|
-| ![Village](docs/captures/03_village.png) | ![Carte](docs/captures/11_carte.png) |
+| ![Village](docs/captures/03_village.png) | ![Camp](docs/captures/15_carte_camp.png) |
+| ![Forge](docs/captures/16_forge.png) | ![Carte](docs/captures/13_carte_gisement.png) |
 | ![Grimoire](docs/captures/06_grimoire.png) | ![Dojo](docs/captures/05b_dojo_illusion.png) |
 | ![Dojo](docs/captures/05_dojo_resonance.png) | ![Combat](docs/captures/08_combat_clone.png) |
 

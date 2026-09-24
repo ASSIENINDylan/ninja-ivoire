@@ -311,7 +311,19 @@ Le cœur de la forêt de Taï, le sommet du mont Nimba, les profondeurs des lagu
 - Les villages ne correspondent **pas** à des ethnies réelles, et aucun n'est « le méchant ».
 - On évite de rejouer des conflits réels récents.
 
+### Ressources, camps de bandits et forge (Décidé ; réglages Proposés et en place)
+- **Chaque case** est libre, abrite un **camp de bandits**, ou un **gisement** : **fer, peau d'animal, pierre, or, diamant**. L'or n'apparaît qu'à partir des zones de niveau 3 et le diamant à partir du niveau 6 ; le terrain décide du reste (fer et pierre en montagne, peaux en savane et en forêt, or dans les fleuves…). Le Cœur n'a pas de camp.
+- **Exploiter** coûte 2 d'endurance. Comme dans Albion Online, **chaque ressource a son propre niveau d'exploitation** : plus il est haut, plus la récolte est abondante (+25 % par niveau ; le diamant peut ne rien donner, surtout au début).
+- Un gisement s'épuise après 5 récoltes et se reconstitue d'un point toutes les 10 minutes.
+- **Pendant la récolte** (une fois sur cinq) : des **bandits** surgissent (combat), ou **un autre ninja** arrive sur le gisement. On peut aussi trouver un ninja en arrivant sur un gisement. **Toute personne qui n'est pas de ton équipe est affrontable**, même un ninja de ton propre village : on choisit **Affronter** ou **Ignorer**. Hors ligne, ces ninjas sont simulés ; en ligne, ce seront de vrais joueurs.
+- **Camp de bandits** : on l'attaque (ou les bandits vous repèrent en entrant, une fois sur trois). Vaincu, il laisse son butin (fer, peaux, parfois de l'or) et se reforme en 30 minutes.
+- **Sac et coffre** : les ressources récoltées vont dans le **sac**, que le vainqueur emporte à la défaite avec les objets non portés. Le **coffre du village** ne se perd jamais.
+- **Forge du village** : 17 objets pour 5 emplacements (arme, arme secondaire, tête, corps, pieds), du sabre de fer à l'armure de diamant. Les armes ajoutent de la puissance, les armures de la défense physique ou magique, des PV, du Manhis.
+- **Question ouverte** : l'équipement porté est-il perdu à la défaite ? Pour l'instant, non.
+
 ### La carte (étape 3 ; Proposé et en place, à ajuster)
+- **Écran de carte (Décidé) :** au centre, seulement les cases autour du ninja ; derrière, un **paysage** qui rappelle où l'on est (savane, forêt, montagne, fleuve, lagune, littoral…) et ce qu'abrite la case ; la **grande carte en bas à gauche**.
+- **Style (Décidé) :** interface **claire et colorée**, comme un pagne au soleil ; les combats se déroulent de jour, dans le paysage du terrain.
 - **Grille** de 45 × 47 cases d'environ 15 km sur la vraie forme du pays : **1 352 cases**.
 - **9 terrains** tirés de la géographie : savane, savane boisée, forêt, forêt dense (Taï), montagne (Man, Nimba), fleuve (Comoé, Bandama, Sassandra), lac (Kossou, infranchissable), lagune, littoral.
 - **7 régions** découpées autour de leurs villages ; **8 zones par région**, chacune nommée d'après une vraie ville (Daloa, Odienné, Bouaké…).

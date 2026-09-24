@@ -42,7 +42,7 @@ func construire() -> void:
 	_statut.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(_statut)
 
-	var version := UI.label("Prototype 0.1 — étapes 1 et 2 : combat et mudras", 13, Pal.GRIS)
+	var version := UI.label("Prototype 0.4 — jutsus, carte, ressources et forge", 13, Pal.GRIS)
 	version.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	version.position = Vector2(-420, -34)
 	add_child(version)
@@ -93,13 +93,13 @@ class Embleme:
 		var ext := PackedVector2Array([c + Vector2(0, -r), c + Vector2(r, 0), c + Vector2(0, r), c + Vector2(-r, 0), c + Vector2(0, -r)])
 		draw_polyline(ext, Pal.OR, 3.0, true)
 		var ri := r * 0.55
-		draw_colored_polygon(PackedVector2Array([c + Vector2(0, -ri), c + Vector2(ri, 0), c + Vector2(0, ri), c + Vector2(-ri, 0)]), Pal.IVOIRE)
+		draw_colored_polygon(PackedVector2Array([c + Vector2(0, -ri), c + Vector2(ri, 0), c + Vector2(0, ri), c + Vector2(-ri, 0)]), Color("fff4de"))
 		for d in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
 			draw_line(c + d * ri, c + d * r, Pal.OR, 2.0, true)
 		var pulse := 0.5 + 0.5 * sin(t * 2.0)
 		draw_circle(c, r * 0.12 + pulse * 3.0, Color("e2572b", 0.35))
 		draw_circle(c, r * 0.1, Color("e2572b"))
-		UI.dessiner_glyphe(self, c, ri * 0.75, "ivoire", Color("1a1216", 0.55), 2.0)
+		UI.dessiner_glyphe(self, c, ri * 0.75, "ivoire", Color(Pal.OR, 0.7), 2.0)
 
 
 ## Braises qui montent lentement.

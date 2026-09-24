@@ -60,7 +60,7 @@ func _style() -> void:
 	if inactive:
 		fond = Color(Pal.PANNEAU_2, 0.95)
 	elif selectionnee:
-		fond = Color(couleur.darkened(0.72), 0.95)
+		fond = Color(couleur.lerp(Color.WHITE, 0.82), 0.97)
 		bord = couleur
 		ep = 2
 	elif _survol:
