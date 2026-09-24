@@ -5,6 +5,8 @@
 - **Ambiance** : la technique de *Darkest Dungeon*, dans des couleurs ivoiriennes.
 - **Combats** : en 2D, vus de côté et animés.
 - **Carte** : une carte peinte, et au centre la scène illustrée du lieu.
+- **Interface** : parchemin, bois sculpté, bronze akan, motifs des toiles de Korhogo. Les maquettes validées sont sur le canevas Claude Design « Ninja Ivoire — Maquettes d'interface ».
+- **Ninjas** : 3 allures, une par type de village (traditionnel, moderne, futuriste).
 
 Ce document sert de référence pour toutes les images du jeu. Tant qu'on le respecte, les images restent cohérentes entre elles.
 
@@ -119,7 +121,7 @@ Portrait bust of the same young West African ninja (use as character reference),
 | **Décors de combat** | savane boisée, forêt, forêt dense, montagne, fleuve, lac, lagune, littoral ; chacun de jour et de nuit | 16 |
 | **Scènes de lieux** (centre de la carte) | un village de chaque type par région (traditionnel, moderne, futuriste), ville, camp de bandits, gisements (fer, peau, pierre, or, diamant), lieux mythiques, portail | ~35 |
 | **Grande carte** | la Côte d'Ivoire peinte comme une carte ancienne enluminée : régions, fleuves, lacs, reliefs | 1 à 2 |
-| **Ninjas** | 3 allures de village (traditionnel, moderne, futuriste), déclinées par région si possible ; planche de poses et portrait pour chacune | 6 à 21 |
+| **Ninjas** | 3 allures de village (traditionnel, moderne, futuriste) ; planche de poses et portrait pour chacune | 6 |
 | **Ennemis** | brigand, apprenti renégat, esprit de la forêt de Taï, drone et ninja cybernétique du Cercle d'Acier, adeptes Sans-Visage, panthère, bandits et chef, gardien du portail | 11 |
 | **Mudras** | 50 signes de la main peints, avec l'animal ou le symbole en filigrane | 50 |
 | **Objets et ressources** | 17 objets de forge, 5 ressources | 22 |
