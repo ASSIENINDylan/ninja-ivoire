@@ -161,7 +161,8 @@ static func case_(x: int, y: int):
 	var r := int(c.region[i])
 	if r < 0:
 		return null
-	return {"region": c.regions[r], "zone": int(c.zone[i]), "terrain": c.terrains[int(c.terrain[i])], "lieu": int(c.lieu[i])}
+	return {"region": c.regions[r], "zone": int(c.zone[i]), "terrain": c.terrains[int(c.terrain[i])], "lieu": int(c.lieu[i]),
+		"contenu": c.contenus[int(c.contenu[i])]}
 
 
 static func cout_terrain(terrain: String) -> int:
@@ -180,6 +181,14 @@ static func lieu_id(ident: String):
 	for l in d.carte.lieux:
 		if l.id == ident:
 			return l
+	return null
+
+
+## Un objet de la forge par identifiant.
+static func objet(ident: String):
+	for o in d.forge.objets:
+		if o.id == ident:
+			return o
 	return null
 
 

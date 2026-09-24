@@ -171,6 +171,81 @@ func _test_favoris() -> void:
 		r = p.appel("POST", "/api/combat/action", {"type": "incanter", "sequence": ["lamantin", "tortue", "braise"], "cible": "pnj1"})
 		verifier(r.ok, "une suite inconnue se lance : %s" % r.get("erreur", ""))
 	_test_blessures()
+	_test_ressources()
+
+
+func _placer_sur(p: PartieLocale, contenu: String) -> void:
+	var c: Dictionary = Regles.carte()
+	for i in c.contenu.size():
+		var reg := int(c.region[i])
+		if c.contenus[int(c.contenu[i])] == contenu and reg >= 0 and c.regions[reg] != "coeur":
+			p.ninja.position = [i % int(c.l), i / int(c.l)]
+			p.ninja.niveau = 30
+			return
+
+
+func _test_ressources() -> void:
+	var chemin := "user://test_ressources.save.json"
+	if FileAccess.file_exists(chemin):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(chemin))
+	var p := PartieLocale.new(chemin)
+	p.appel("POST", "/api/ninja", {"nom": "Awa", "region": "lagunes", "village": "moderne"})
+	p.hasard = func() -> float: return 0.9
+	verifier(not p.appel("POST", "/api/carte/exploiter", {}).ok, "rien à exploiter au village")
+	_placer_sur(p, "fer")
+	var r := p.appel("GET", "/api/etat", {})
+	verifier(r.data.ninja.situation.contenu == "fer" and int(r.data.ninja.situation.gisement.reste) == 5, "la situation montre le gisement")
+	for i in 5:
+		r = p.appel("POST", "/api/carte/exploiter", {})
+		verifier(r.ok and int(r.data.gain.fer) > 0, "récolte de fer : %s" % r.get("erreur", ""))
+	verifier(int(p.ninja.sac.fer) >= 5 and int(p.ninja.exploitation.fer.niveau) >= 2, "le métier progresse")
+	verifier(not p.appel("POST", "/api/carte/exploiter", {}).ok, "gisement épuisé")
+	verifier(PartieLocale.rendement("or", 20, 0.5, 0.0) > PartieLocale.rendement("or", 1, 0.5, 0.0), "le niveau augmente la récolte")
+	# Bandits pendant la récolte.
+	_placer_sur(p, "peau")
+	p.hasard = func() -> float: return 0.1
+	r = p.appel("POST", "/api/carte/exploiter", {})
+	verifier(r.ok and r.data.combat != null, "des bandits surgissent")
+	p.appel("POST", "/api/combat/fuite", {})
+	# Un ninja sur le gisement : on peut l'affronter.
+	var seq := [0.5, 0.5, 0.1, 0.9, 0.3, 0.2, 0.3, 0.4]
+	var i := [0]
+	p.hasard = func() -> float:
+		var v: float = seq[i[0] % seq.size()]
+		i[0] += 1
+		return v
+	r = p.appel("POST", "/api/carte/exploiter", {})
+	verifier(r.ok and r.data.ninja.situation.presence != null, "un ninja arrive sur le gisement")
+	r = p.appel("POST", "/api/carte/affronter", {})
+	verifier(r.ok and r.data.combat != null, "on peut affronter tout ninja présent")
+	p.appel("POST", "/api/combat/fuite", {})
+	# Camp de bandits : victoire, butin, camp vaincu.
+	_placer_sur(p, "camp")
+	r = p.appel("POST", "/api/carte/camp", {})
+	verifier(r.ok and r.data.combat != null, "attaque du camp")
+	p.combat.fini = true
+	p.combat.vainqueur = 0
+	var fin := p._terminer()
+	verifier(fin.get("butin", {}).size() > 0 and not p._camp_actif(int(p.ninja.position[0]), int(p.ninja.position[1])), "camp pillé")
+	# Forge et équipement au village.
+	var v = p.village_natal()
+	p.ninja.position = [int(v.x), int(v.y)]
+	p.ninja.sac = {"fer": 3, "peau": 1}
+	p.ninja.coffre = {"fer": 5}
+	r = p.appel("POST", "/api/forge/fabriquer", {"objet": "sabre_fer"})
+	verifier(r.ok and int(p.ninja.coffre.get("fer", 0)) == 0 and int(p.ninja.sac.fer) == 2, "forge : le coffre d'abord")
+	var avant := int(p._combattant(Regles.maintenant()).arme.puissance)
+	r = p.appel("POST", "/api/equipement/equiper", {"objet": "sabre_fer"})
+	var arme: Dictionary = p._combattant(Regles.maintenant()).arme
+	verifier(r.ok and int(arme.puissance) > avant and arme.nom == "un sabre de fer", "l'arme forgée compte en combat")
+	# Défaite : sac et objets non portés perdus, coffre intact.
+	p.ninja.coffre = {"pierre": 7}
+	p.ninja.objets = ["bandeau_cuir"]
+	p.appel("POST", "/api/combat", {"rencontre": "chacals"})
+	p.combat.fini = true
+	p.combat.vainqueur = 1
+	p._terminer()
+	verifier(p.ninja.sac.is_empty() and p.ninja.objets.is_empty() and int(p.ninja.coffre.pierre) == 7 and p.ninja.equipement.arme == "sabre_fer", "défaite : on perd le sac, pas le coffre")
 
 
 func _test_blessures() -> void:

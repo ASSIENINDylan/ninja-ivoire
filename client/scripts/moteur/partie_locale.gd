@@ -26,7 +26,20 @@ const ERR := {
 	"favoris_pleins": "5 jutsus favoris au maximum : retirez-en un d'abord",
 	"pas_favori": "ce jutsu n'est pas parmi vos 5 favoris : en combat, seuls vos favoris et les suites encore inconnues se lancent",
 	"retenu": "vous êtes retenu : impossible de fuir",
+	"pas_de_ressource": "il n'y a rien à exploiter ici",
+	"epuise": "le gisement est épuisé : il se reconstitue d'un point toutes les 10 minutes",
+	"fatigue": "trop fatigué pour exploiter : il faut 2 d'endurance",
+	"pas_de_camp": "il n'y a pas de camp de bandits actif ici",
+	"personne": "personne à affronter ici",
+	"hors_village": "il faut être dans son village",
+	"objet_inconnu": "objet inconnu",
+	"ressources": "pas assez de ressources (sac et coffre)",
+	"pas_l_objet": "vous n'avez pas cet objet",
+	"emplacement": "emplacement inconnu ou vide",
 }
+
+const PRENOMS := ["Kouassi", "Aya", "Yao", "Adjoua", "Konan", "Awa", "Bakary", "Mariam", "Séry", "Gnahoré",
+	"Zadi", "Tanoh", "Amani", "Fanta", "Drissa", "Affoué", "Koffi", "Akissi", "Siaka", "Nahounou"]
 
 var chemin := "user://ninja.save.json"
 var ninja = null  # Dictionary ou null
@@ -35,6 +48,8 @@ var rencontre = null
 var niveau_combat := 1
 var _vus := 0
 var _fuite := false
+var presence = null  # ninja croisé sur la case (Dictionary)
+var _camp_cle := ""
 ## Tire un nombre dans [0, 1) (remplaçable dans les tests).
 var hasard: Callable = randf
 ## L'heure en secondes (remplaçable dans les tests).
@@ -49,6 +64,7 @@ func _init(fichier: String = "user://ninja.save.json") -> void:
 			ninja = n
 			_initialiser_carte()
 			_initialiser_favoris()
+			_initialiser_ressources()
 			# Les noms des jutsus peuvent évoluer d'une version à l'autre.
 			for k in ninja.grimoire.values():
 				var res := Grammaire.analyser(k.sequence)
@@ -84,7 +100,7 @@ static func xp_pour_niveau(n: int) -> int:
 
 func pv_max() -> int:
 	var pv: int = 60 + int(ninja.fangan) * 4 + int(ninja.niveau) * 6
-	return pv * (100 + int(Regles.villages[ninja.type_village].bonus_pv)) / 100
+	return pv * (100 + int(Regles.villages[ninja.type_village].bonus_pv)) / 100 + int(bonus().pv)
 
 
 func souffle_max() -> int:
@@ -173,10 +189,11 @@ func _combattant(moment: Dictionary) -> Dictionary:
 		maitrise[k] = int(ninja.grimoire[k].maitrise)
 	return {
 		"id": "joueur", "nom": ninja.nom, "camp": 0, "rang": 1, "joueur": true, "apparence": "ninja_" + ninja.type_village,
-		"niveau": int(ninja.niveau), "fangan": int(ninja.fangan), "gnanga": int(ninja.gnanga), "manhis": int(ninja.manhis),
+		"niveau": int(ninja.niveau), "fangan": int(ninja.fangan), "gnanga": int(ninja.gnanga), "manhis": int(ninja.manhis) + int(bonus().manhis),
 		"pv": maxi(1, mini(int(ninja.pv), pv_max())), "pv_max": pv_max(), "souffle": souffle_max(), "souffle_max": souffle_max(),
-		"element": ninja.elements[0], "elements": ninja.elements.duplicate(), "arme": ninja.arme.duplicate(),
-		"defense": int(ninja.fangan) / 2, "defense_mag": int(ninja.gnanga) / 2, "clone": false, "absorption": 0, "garde": false, "statuts": [], "incantation": null,
+		"element": ninja.elements[0], "elements": ninja.elements.duplicate(), "arme": arme_portee(),
+		"defense": int(ninja.fangan) / 2 + int(bonus().defense), "defense_mag": int(ninja.gnanga) / 2 + int(bonus().defense_mag),
+		"clone": false, "absorption": 0, "garde": false, "statuts": [], "incantation": null,
 		"_maitrise": maitrise, "_permis": mudras_permis(),
 		"_contexte": {"niveau": int(ninja.niveau), "elements": ninja.elements.duplicate()},
 		"_precis": bool(Regles.villages[ninja.type_village].resonance),
@@ -309,6 +326,7 @@ func creer(nom: String, region: String, type_village: String) -> Dictionary:
 	}
 	ninja[r.attribut] = depart + int(Regles.c.bonus_region)
 	_initialiser_carte()
+	_initialiser_ressources()
 	_sauver()
 	return ok(vue_ninja())
 
@@ -423,6 +441,7 @@ func _demarrer(r: Dictionary, niveau: int) -> Dictionary:
 	niveau_combat = niveau
 	_vus = 0
 	_fuite = false
+	_camp_cle = ""
 	return combat.vue(0)
 
 
@@ -500,6 +519,13 @@ func _terminer() -> Dictionary:
 		ninja.victoires = int(ninja.victoires) + 1
 		fin.niveaux_gagnes = _gagner_xp(fin.xp)
 		fin.message = "Victoire ! Vous gagnez de l'expérience et des Djê."
+		if _camp_cle != "":
+			# Le camp est vaincu pour un temps ; son butin revient au vainqueur.
+			ninja.camps[_camp_cle] = horloge.call() + int(Regles.d.ressources.camp_repos)
+			fin.butin = _butin_camp()
+			for r in fin.butin:
+				ninja.sac[r] = int(ninja.sac.get(r, 0)) + int(fin.butin[r])
+			fin.message += " Le camp est pillé : son butin rejoint votre sac."
 	elif combat.vainqueur == 2:
 		fin.nul = true
 		fin.xp = int(recompenses(rencontre, niveau_combat)[0]) / 4
@@ -512,7 +538,13 @@ func _terminer() -> Dictionary:
 		ninja.defaites = int(ninja.defaites) + 1
 		_renaitre()
 		fin.defaite = true
-		fin.message = "Défaite. Vous renaissez dans votre village. (Quand l'inventaire existera, vos objets iront au vainqueur.)"
+		fin.message = "Défaite. Vous renaissez dans votre village."
+		# Le vainqueur emporte le sac et les objets non portés ; le coffre est sûr.
+		if ninja.sac.size() > 0 or ninja.objets.size() > 0:
+			fin.perdu = ninja.sac
+			ninja.sac = {}
+			ninja.objets = []
+			fin.message += " Le vainqueur emporte votre sac et vos objets non portés (le coffre du village, lui, est intact)."
 	if fin.baume > 0 and int(ninja.pv) > 0:
 		fin.message += " Un baume de Souffle referme vos plaies (+%d PV)." % fin.baume
 	fin.pv = int(ninja.pv)
@@ -554,6 +586,24 @@ func appel(methode: String, route: String, corps: Dictionary) -> Dictionary:
 			return reposer()
 		"POST /api/carte/defier":
 			return defier()
+		"POST /api/carte/exploiter":
+			return exploiter()
+		"POST /api/carte/affronter":
+			return affronter()
+		"POST /api/carte/ignorer":
+			return ignorer()
+		"POST /api/carte/camp":
+			return attaquer_camp()
+		"POST /api/village/deposer":
+			return transferer(true)
+		"POST /api/village/reprendre":
+			return transferer(false)
+		"POST /api/forge/fabriquer":
+			return fabriquer(str(corps.get("objet", "")))
+		"POST /api/equipement/equiper":
+			return equiper(str(corps.get("objet", "")))
+		"POST /api/equipement/retirer":
+			return retirer(str(corps.get("emplacement", "")))
 	return {"ok": false, "erreur": "route inconnue : " + route}
 
 
@@ -652,6 +702,28 @@ func _situation() -> Dictionary:
 		s.village = l.type == "village" and l.region == ninja.region and l.get("type_village", "") == ninja.type_village
 	if int(ninja.endurance) < int(Regles.c.endurance_max):
 		s.regen_dans = int(ninja.endurance_maj) + int(Regles.c.regen_secondes) - int(horloge.call())
+	var rs: Dictionary = Regles.d.ressources
+	var x := int(ninja.position[0])
+	var y := int(ninja.position[1])
+	var t: int = horloge.call()
+	s.contenu = cel.contenu
+	s.contenu_nom = Regles.carte().noms_contenus.get(cel.contenu, "")
+	s.gisement_max = int(rs.gisement_max)
+	s.regen_gisement = 0
+	s.camp_actif = false
+	s.camp_retour = 0
+	s.presence = null
+	if rs.rendement.has(cel.contenu):
+		var g := _gisement(x, y)
+		s.gisement = g.duplicate()
+		if int(g.reste) < int(rs.gisement_max):
+			s.regen_gisement = int(g.maj) + int(rs.gisement_regen) - t
+	elif cel.contenu == "camp":
+		s.camp_actif = _camp_actif(x, y)
+		if not s.camp_actif:
+			s.camp_retour = int(ninja.camps[_cle(x, y)]) - t
+	if presence != null and int(presence.x) == x and int(presence.y) == y:
+		s.presence = presence
 	return s
 
 
@@ -683,6 +755,7 @@ func deplacer(x: int, y: int) -> Dictionary:
 	ninja.endurance = int(ninja.endurance) - cout
 	ninja.position = [x, y]
 	_reveler(x, y, int(Regles.c.rayon_vision))
+	presence = null
 	var res := {"message": "", "combat": null, "rencontre": ""}
 	if cel.lieu >= 0:
 		res.message = "Vous arrivez à " + Regles.lieu(cel.lieu).nom + "."
@@ -695,6 +768,16 @@ func deplacer(x: int, y: int) -> Dictionary:
 		res.combat = _demarrer(r, int(z.niveau))
 		res.rencontre = r.nom
 		res.message = r.nom + " vous barre la route !"
+	# Camps de bandits et gisements fréquentés.
+	if res.combat == null and cel.lieu < 0:
+		var rs: Dictionary = Regles.d.ressources
+		if cel.contenu == "camp" and _camp_actif(x, y) and float(hasard.call()) < float(rs.chance_camp):
+			res.combat = _lancer_camp(cel)
+			res.rencontre = Regles.rencontres.camp_bandits.nom
+			res.message = "Les bandits du camp vous ont repéré !"
+		elif rs.rendement.has(cel.contenu) and float(hasard.call()) < float(rs.chance_presence):
+			presence = _nouvelle_presence(x, y, int(z.niveau))
+			res.message = presence.nom + " exploite déjà ce gisement."
 	res.ninja = vue_ninja()
 	_sauver()
 	return ok(res)
@@ -756,3 +839,306 @@ func choisir_favori(cle: String, favori: bool) -> Dictionary:
 		ninja.favoris.append(cle)
 	_sauver()
 	return ok(vue_ninja())
+
+
+# --- Ressources, camps, forge et équipement (copie de game/ressources.go) ------------
+
+func _initialiser_ressources() -> void:
+	if ninja.get("exploitation") == null:
+		ninja.exploitation = {}
+	for r in Regles.d.ressources.liste:
+		if not ninja.exploitation.has(r):
+			ninja.exploitation[r] = {"niveau": 1, "xp": 0}
+	for k in ["sac", "coffre", "equipement", "gisements", "camps"]:
+		if ninja.get(k) == null:
+			ninja[k] = {}
+	if ninja.get("objets") == null:
+		ninja.objets = []
+
+
+static func _cle(x: int, y: int) -> String:
+	return "%d,%d" % [x, y]
+
+
+static func xp_pour_metier(n: int) -> int:
+	return 8 * n
+
+
+## Quantité récoltée selon le niveau d'exploitation ; le diamant peut ne rien donner.
+static func rendement(r: String, niveau: int, h1: float, h2: float) -> int:
+	if r == "diamant" and h2 > 0.45 + 0.02 * float(niveau):
+		return 0
+	var q := float(Regles.d.ressources.rendement[r]) * (1.0 + 0.25 * float(niveau - 1)) * (0.8 + 0.4 * h1)
+	return maxi(1, int(round(q)))
+
+
+func _gisement(x: int, y: int) -> Dictionary:
+	var k := _cle(x, y)
+	var gmax := int(Regles.d.ressources.gisement_max)
+	var regen := int(Regles.d.ressources.gisement_regen)
+	var t: int = horloge.call()
+	var g = ninja.gisements.get(k)
+	if g == null:
+		return {"reste": gmax, "maj": t}
+	if int(g.reste) < gmax:
+		var gain: int = (t - int(g.maj)) / regen
+		if gain > 0:
+			g.reste = mini(gmax, int(g.reste) + gain)
+			g.maj = int(g.maj) + gain * regen
+	if int(g.reste) >= gmax:
+		ninja.gisements.erase(k)
+		return {"reste": gmax, "maj": t}
+	return g
+
+
+func _gagner_metier(r: String, xp: int) -> int:
+	var m: Dictionary = ninja.exploitation[r]
+	m.xp = int(m.xp) + xp
+	var gagnes := 0
+	while int(m.niveau) < int(Regles.d.ressources.niveau_max) and int(m.xp) >= xp_pour_metier(int(m.niveau)):
+		m.xp = int(m.xp) - xp_pour_metier(int(m.niveau))
+		m.niveau = int(m.niveau) + 1
+		gagnes += 1
+	return gagnes
+
+
+func _case_actuelle():
+	return Regles.case_(int(ninja.position[0]), int(ninja.position[1]))
+
+
+func exploiter() -> Dictionary:
+	if ninja == null:
+		return ko("pas_de_ninja")
+	if combat != null and not combat.fini:
+		return ko("combat_en_cours")
+	var rs: Dictionary = Regles.d.ressources
+	var cel = _case_actuelle()
+	var r: String = cel.contenu
+	if not rs.rendement.has(r):
+		return ko("pas_de_ressource")
+	var x := int(ninja.position[0])
+	var y := int(ninja.position[1])
+	var g := _gisement(x, y)
+	if int(g.reste) <= 0:
+		return ko("epuise")
+	_maj_endurance()
+	var cout := int(rs.cout_exploitation)
+	if int(ninja.endurance) < cout:
+		return ko("fatigue")
+	if int(ninja.endurance) == int(Regles.c.endurance_max):
+		ninja.endurance_maj = horloge.call()
+	ninja.endurance = int(ninja.endurance) - cout
+	if int(g.reste) == int(rs.gisement_max):
+		g.maj = horloge.call()
+	g.reste = int(g.reste) - 1
+	ninja.gisements[_cle(x, y)] = g
+	var m: Dictionary = ninja.exploitation[r]
+	var q := rendement(r, int(m.niveau), float(hasard.call()), float(hasard.call()))
+	ninja.sac[r] = int(ninja.sac.get(r, 0)) + q
+	if int(ninja.sac[r]) == 0:
+		ninja.sac.erase(r)
+	var montee := _gagner_metier(r, int(rs.xp[r]))
+	var res := {"gain": {r: q}, "combat": null, "rencontre": "", "message": ""}
+	if q > 0:
+		res.message = "Vous exploitez : +%d %s." % [q, rs.noms[r]]
+	else:
+		res.message = "Vous fouillez la terre… sans trouver de diamant cette fois."
+	if montee > 0:
+		res.message += " Exploitation (%s) : niveau %d !" % [str(rs.noms[r]).to_lower(), int(m.niveau)]
+	if float(hasard.call()) < float(rs.chance_evenement):
+		var z := Regles.zone(cel.zone)
+		if cel.region != "coeur" and float(hasard.call()) < 0.55:
+			var rc: Dictionary = Regles.rencontres.bandits
+			res.combat = _demarrer(rc, int(z.niveau))
+			res.rencontre = rc.nom
+			res.message += " Des bandits surgissent et veulent votre récolte !"
+		else:
+			presence = _nouvelle_presence(x, y, int(z.niveau))
+			res.message += " " + presence.nom + " arrive sur le gisement."
+	res.ninja = vue_ninja()
+	_sauver()
+	return ok(res)
+
+
+func _nouvelle_presence(x: int, y: int, niveau: int) -> Dictionary:
+	var pr := {"x": x, "y": y, "nom": PRENOMS[int(float(hasard.call()) * PRENOMS.size()) % PRENOMS.size()]}
+	pr.niveau = maxi(1, niveau - 1 + int(float(hasard.call()) * 3))
+	pr.meme_village = false
+	if float(hasard.call()) < 0.5:
+		pr.region = ninja.region
+		pr.type_village = ninja.type_village
+		pr.meme_village = true
+	else:
+		var autres := []
+		for r in Regles.d.regions:
+			if r.jouable and r.id != ninja.region:
+				autres.append(r)
+		var reg: Dictionary = autres[int(float(hasard.call()) * autres.size()) % autres.size()]
+		pr.region = reg.id
+		pr.type_village = Regles.d.villages[int(float(hasard.call()) * 3) % 3].id
+	var region: Dictionary = Regles.regions[pr.region]
+	pr.region_nom = region.nom
+	pr.village = region.villages[Regles.village_index(pr.type_village)]
+	pr.element = region.element
+	return pr
+
+
+static func ninja_errant(pr: Dictionary) -> Dictionary:
+	var m: String = Regles.mudra_de_element[pr.element]
+	var modele := {
+		"nom": pr.nom, "apparence": "ninja_" + pr.type_village, "element": pr.element, "ia": "ninja",
+		"fangan": 9, "gnanga": 10, "manhis": 10, "pv": 90, "arme": {"nom": "un sabre", "puissance": 7, "distance": false},
+		"jutsus": [[m, "martin_pecheur", "braise"], [m, "mante", "liane"], [m, "martin_pecheur", "kola"]],
+	}
+	return {"id": "ninja_errant", "nom": "%s (%s)" % [pr.nom, pr.village], "niveau": 1, "xp": 45, "dje": 15, "ennemis": [modele]}
+
+
+func affronter() -> Dictionary:
+	if ninja == null:
+		return ko("pas_de_ninja")
+	if combat != null and not combat.fini:
+		return ko("combat_en_cours")
+	var pr = presence
+	if pr == null or int(pr.x) != int(ninja.position[0]) or int(pr.y) != int(ninja.position[1]):
+		return ko("personne")
+	presence = null
+	var rc := ninja_errant(pr)
+	var vue := _demarrer(rc, int(pr.niveau))
+	return ok({"ninja": vue_ninja(), "combat": vue, "rencontre": rc.nom, "message": "Vous défiez " + pr.nom + " !"})
+
+
+func ignorer() -> Dictionary:
+	if ninja == null:
+		return ko("pas_de_ninja")
+	var msg := "Il n'y a personne."
+	if presence != null:
+		msg = presence.nom + " poursuit sa route."
+	presence = null
+	return ok({"ninja": vue_ninja(), "message": msg})
+
+
+func _camp_actif(x: int, y: int) -> bool:
+	var k := _cle(x, y)
+	if not ninja.camps.has(k):
+		return true
+	if int(horloge.call()) >= int(ninja.camps[k]):
+		ninja.camps.erase(k)
+		return true
+	return false
+
+
+func attaquer_camp() -> Dictionary:
+	if ninja == null:
+		return ko("pas_de_ninja")
+	if combat != null and not combat.fini:
+		return ko("combat_en_cours")
+	var cel = _case_actuelle()
+	if cel.contenu != "camp" or not _camp_actif(int(ninja.position[0]), int(ninja.position[1])):
+		return ko("pas_de_camp")
+	var vue := _lancer_camp(cel)
+	return ok({"ninja": vue_ninja(), "combat": vue, "rencontre": Regles.rencontres.camp_bandits.nom, "message": "Vous attaquez le camp de bandits !"})
+
+
+func _lancer_camp(cel: Dictionary) -> Dictionary:
+	var vue := _demarrer(Regles.rencontres.camp_bandits, int(Regles.zone(cel.zone).niveau))
+	_camp_cle = _cle(int(ninja.position[0]), int(ninja.position[1]))
+	return vue
+
+
+func _butin_camp() -> Dictionary:
+	var b := {"fer": 1 + int(float(hasard.call()) * 3), "peau": 1 + int(float(hasard.call()) * 3)}
+	if float(hasard.call()) < 0.25:
+		b["or"] = 1
+	return b
+
+
+func _dans_son_village() -> bool:
+	var l = _lieu_actuel()
+	return l != null and l.type == "village" and l.region == ninja.region and l.get("type_village", "") == ninja.type_village
+
+
+## Tout le sac au coffre (deposer) ou tout le coffre au sac.
+func transferer(deposer: bool) -> Dictionary:
+	if ninja == null:
+		return ko("pas_de_ninja")
+	if not _dans_son_village():
+		return ko("hors_village")
+	var de: Dictionary = ninja.sac if deposer else ninja.coffre
+	var vers: Dictionary = ninja.coffre if deposer else ninja.sac
+	for r in de.keys():
+		vers[r] = int(vers.get(r, 0)) + int(de[r])
+		de.erase(r)
+	_sauver()
+	return ok(vue_ninja())
+
+
+func fabriquer(ident: String) -> Dictionary:
+	if ninja == null:
+		return ko("pas_de_ninja")
+	var o = Regles.objet(ident)
+	if o == null:
+		return ko("objet_inconnu")
+	if not _dans_son_village():
+		return ko("hors_village")
+	for r in o.cout:
+		if int(ninja.coffre.get(r, 0)) + int(ninja.sac.get(r, 0)) < int(o.cout[r]):
+			return ko("ressources")
+	for r in o.cout:
+		var q := int(o.cout[r])
+		var pris := mini(q, int(ninja.coffre.get(r, 0)))
+		ninja.coffre[r] = int(ninja.coffre.get(r, 0)) - pris
+		ninja.sac[r] = int(ninja.sac.get(r, 0)) - (q - pris)
+		for m in [ninja.coffre, ninja.sac]:
+			if int(m.get(r, 0)) == 0:
+				m.erase(r)
+	ninja.objets.append(ident)
+	_sauver()
+	return ok(vue_ninja())
+
+
+func equiper(ident: String) -> Dictionary:
+	if ninja == null:
+		return ko("pas_de_ninja")
+	var i: int = ninja.objets.find(ident)
+	if i < 0:
+		return ko("pas_l_objet")
+	var o = Regles.objet(ident)
+	ninja.objets.remove_at(i)
+	var ancien = ninja.equipement.get(o.emplacement, "")
+	if ancien != "":
+		ninja.objets.append(ancien)
+	ninja.equipement[o.emplacement] = ident
+	_sauver()
+	return ok(vue_ninja())
+
+
+func retirer(emplacement: String) -> Dictionary:
+	if ninja == null:
+		return ko("pas_de_ninja")
+	var ident: String = ninja.equipement.get(emplacement, "")
+	if ident == "":
+		return ko("emplacement")
+	ninja.equipement.erase(emplacement)
+	ninja.objets.append(ident)
+	_sauver()
+	return ok(vue_ninja())
+
+
+## Ce que l'équipement porté ajoute au ninja.
+func bonus() -> Dictionary:
+	var b := {"defense": 0, "defense_mag": 0, "pv": 0, "manhis": 0}
+	for e in ninja.get("equipement", {}):
+		var o = Regles.objet(ninja.equipement[e])
+		if o != null:
+			for k in b:
+				b[k] += int(o.get(k, 0))
+	return b
+
+
+## L'arme en main : celle de la forge, ou le sabre de départ.
+func arme_portee() -> Dictionary:
+	var a: Dictionary = ninja.arme.duplicate()
+	var o = Regles.objet(ninja.get("equipement", {}).get("arme", ""))
+	if o != null:
+		a = {"nom": o.arme, "puissance": int(ninja.arme.puissance) + int(o.get("puissance", 0)), "distance": bool(o.get("distance", false))}
+	return a
