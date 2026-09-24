@@ -5,9 +5,8 @@ const ATTRIBUTS := [["fangan", "Fangan", "force : dégâts des armes, points de 
 
 var _fiche: VBoxContainer
 var _droite: VBoxContainer
-var _carte: CarteCI
+var _carte: CarteMonde
 var _ciel: Label
-var _noms_rencontres := {}
 
 
 func construire() -> void:
@@ -28,9 +27,9 @@ func construire() -> void:
 	var centre := UI.vbox(10)
 	centre.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	h.add_child(centre)
-	_carte = CarteCI.new()
+	_carte = CarteMonde.new()
+	_carte.interactif = false
 	_carte.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_carte.region_joueur = Jeu.ninja.region
 	centre.add_child(_carte)
 	_ciel = UI.label("", 16, Pal.IVOIRE_DOUX)
 	_ciel.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -126,34 +125,17 @@ func _remplir() -> void:
 	_droite.add_child(dojo)
 	_droite.add_child(UI.bouton("Grimoire — mes jutsus (%d)" % jutsus.size(), func(): Jeu.aller("grimoire"), 18))
 	_droite.add_child(UI.frise())
-	_droite.add_child(UI.label("Combats", 26, Pal.IVOIRE, true))
-	_droite.add_child(UI.texte("Chaque zone demande un niveau minimum. La défaite te renvoie au village.", 14))
-	_charger_rencontres()
+	_droite.add_child(UI.label("Au-delà des murs", 26, Pal.IVOIRE, true))
+	_droite.add_child(UI.texte("Explore la Côte d'Ivoire case par case. Chaque pas coûte de l'endurance ; les zones lointaines sont réservées aux ninjas aguerris ; des rencontres surgissent en brousse. La défaite te ramène ici.", 14, Pal.IVOIRE_DOUX, 380))
+	_droite.add_child(UI.bouton_principal("Sortir explorer la carte", func(): Jeu.aller("carte", {"message": "Vous quittez %s." % Jeu.ninja.village}), 19))
+	var s = n.get("situation")
+	if s != null:
+		_droite.add_child(UI.label("Endurance %d / %d" % [int(n.endurance), int(s.endurance_max)], 15, Pal.IVOIRE_DOUX))
 
 	var c = Jeu.ciel
 	if c != null and not c.is_empty():
 		_ciel.text = "%s  ·  %s  ·  %s  ·  Soleil ×%.2f  ·  Lune ×%.2f" % [c.heure, "nuit" if c.nuit else "jour", c.phase_lune, c.facteur_soleil, c.facteur_lune]
 
-
-func _charger_rencontres() -> void:
-	var r := await Api.lire("/api/rencontres")
-	if not r.ok:
-		erreur(r.erreur)
-		return
-	for rc in r.data:
-		_noms_rencontres[rc.id] = rc.nom
-		var carte := CarteChoix.new(Pal.OCRE)
-		carte.inactive = not rc.accessible
-		var tete := UI.hbox(8)
-		tete.add_child(UI.label(rc.nom, 20, Pal.IVOIRE, true))
-		tete.add_child(UI.extensible())
-		tete.add_child(UI.label("niv. %d" % rc.niveau, 15, Pal.OR_VIF if rc.accessible else Pal.GRIS))
-		carte.ajouter(tete)
-		carte.ajouter(UI.label(rc.lieu, 13, Pal.OR))
-		carte.ajouter(UI.texte(rc.description, 14, Pal.IVOIRE_DOUX, 360))
-		carte.ajouter(UI.label("Adversaires : " + ", ".join(rc.ennemis), 13, Pal.GRIS))
-		carte.clic.connect(_combattre.bind(rc.id))
-		_droite.add_child(carte)
 
 
 func _panneau_element() -> Control:
@@ -197,13 +179,6 @@ func _choisir_element(id: String) -> void:
 	notifier("Tu maîtrises désormais l'élément %s." % Jeu.element(id).nom)
 	_remplir()
 
-
-func _combattre(id: String) -> void:
-	var r := await Api.envoyer("/api/combat", {"rencontre": id})
-	if not r.ok:
-		erreur(r.erreur)
-		return
-	Jeu.aller("combat", {"combat": r.data, "nom": _noms_rencontres.get(id, "")})
 
 
 func _abandonner() -> void:

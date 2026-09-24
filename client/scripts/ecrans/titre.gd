@@ -70,7 +70,7 @@ func _demarrer() -> void:
 	_statut.text = "Prêt."
 	if Jeu.ninja != null:
 		var n = Jeu.ninja
-		_boutons.add_child(UI.bouton_principal("Continuer — %s, niveau %d" % [n.nom, n.niveau], func(): Jeu.aller("village"), 22))
+		_boutons.add_child(UI.bouton_principal("Continuer — %s, niveau %d" % [n.nom, n.niveau], func(): Jeu.aller("village" if n.situation.village else "carte"), 22))
 	else:
 		_boutons.add_child(UI.bouton_principal("Créer mon ninja", func(): Jeu.aller("creation"), 22))
 	_boutons.add_child(UI.bouton("Quitter", Jeu.quitter))

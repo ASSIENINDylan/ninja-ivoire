@@ -16,8 +16,11 @@ func construire() -> void:
 	v.add_child(tete)
 	tete.add_child(UI.label("Grimoire de %s" % Jeu.ninja.nom, 42, Pal.IVOIRE, true))
 	tete.add_child(UI.extensible())
-	tete.add_child(UI.bouton("Dojo", func(): Jeu.aller("dojo")))
-	tete.add_child(UI.bouton("Retour au village", func(): Jeu.aller("village")))
+	if params.get("retour", "village") == "carte":
+		tete.add_child(UI.bouton("Retour à la carte", func(): Jeu.aller("carte")))
+	else:
+		tete.add_child(UI.bouton("Dojo", func(): Jeu.aller("dojo")))
+		tete.add_child(UI.bouton("Retour au village", func(): Jeu.aller("village")))
 	v.add_child(UI.frise())
 
 	var jutsus: Array = Jeu.ninja.jutsus if Jeu.ninja.jutsus != null else []

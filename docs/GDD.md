@@ -101,6 +101,15 @@ Structure d'une phrase : **Élément → Forme → Effet principal → (Effet se
 - En plus, une **centaine de jutsus légendaires** sont conçus à la main.
 - Un ninja ne maîtrise que 6 ou 7 éléments (§4). Chacun ne peut donc explorer qu'une partie de l'arbre. Le reste s'obtient par l'**échange** et le **commerce**.
 
+### Noms des jutsus (Décidé : plus originaux ; style Proposé et en place)
+- Un jutsu porte un **nom poétique** à la manière des arts ninjas : **« Voie : Image »**.
+  - La **voie** vient de l'élément : Braise (Feu), Lagune (Eau), Alizé (Vent), Latérite (Terre), Orage (Foudre), Fromager (Végétal), Forge (Métal), Djembé (Son), Dune (Sable), Vipère (Venin), Brume, Sel, Nuée (Essaim), Zénith (Soleil), Croissant (Lune), Abîme (Gravité), et une voie pour chaque élément rare et mythique (Harmattan, Grande Marée, Ivoire, Ancêtres…).
+  - L'**image** vient du couple forme × effet : 100 images tirées de la faune, des métiers et des contes ivoiriens (Toile d'Ananzè, Croc de la hyène, Charge du buffle, Gueule du crocodile, Case de la guérisseuse, Masque du geôlier…).
+  - Puis l'effet secondaire (« qui dévore », « qui enserre »…) et les modificateurs (« Grande… », « — sans fin »…).
+- Exemples : « Braise : Croc de la hyène », « Lagune : Toile d'Ananzè, qui dévore — sans fin ».
+- Le **nom descriptif** (« Lame de Feu dévorante ») reste affiché dessous, pour comprendre ce que fait le jutsu.
+- Les 40 000 jutsus sans modificateur ont tous un nom différent.
+
 ### Découverte (Proposé)
 - **Résonance :** un essai raté indique, par l'intensité du Souffle, si l'on s'approche d'une combinaison valide.
 - **Risque :** un essai raté coûte du Souffle. Un essai très raté peut se retourner contre le lanceur.
@@ -276,6 +285,18 @@ Le cœur de la forêt de Taï, le sommet du mont Nimba, les profondeurs des lagu
 - On s'**inspire** des cultures (masques, sociétés d'initiation, tissus, royaumes, contes) sans les caricaturer, en **fictionnalisant** les objets sacrés.
 - Les villages ne correspondent **pas** à des ethnies réelles, et aucun n'est « le méchant ».
 - On évite de rejouer des conflits réels récents.
+
+### La carte (étape 3 ; Proposé et en place, à ajuster)
+- **Grille** de 45 × 47 cases d'environ 15 km sur la vraie forme du pays : **1 352 cases**.
+- **9 terrains** tirés de la géographie : savane, savane boisée, forêt, forêt dense (Taï), montagne (Man, Nimba), fleuve (Comoé, Bandama, Sassandra), lac (Kossou, infranchissable), lagune, littoral.
+- **7 régions** découpées autour de leurs villages ; **8 zones par région**, chacune nommée d'après une vraie ville (Daloa, Odienné, Bouaké…).
+- **Niveaux des zones :** les zones des villages sont de niveau 1 ; les autres montent avec la distance (3, 6, 10, 14, 20 ; au Cœur : 2, 4, 6, 9, 12). On ne peut pas entrer dans une zone au-dessus de son niveau.
+- **Lieux :** 21 villages, 46 villes, 7 lieux mythiques (cœur de Taï, cascades de Man, profondeurs de la lagune Ébrié, faubourgs de Néo-Ébrié, rives du lac de Kossou, parc de la Comoé, sommet du mont Nimba) et 6 portails de région.
+- **Déplacement** case par case dans les 8 directions (clic, flèches, ZQSD, A/E/W/C).
+- **Endurance** : 60 points ; un pas coûte 1 (savane, littoral), 2 (forêt, fleuve, lagune) ou 3 (forêt dense, montagne) ; +1 point par minute réelle ; pleine après un **repos** dans un village de sa région ou du Cœur.
+- **Brouillard** : on ne voit que ce qu'on a exploré (2 cases autour de soi) ; les frontières des régions restent visibles.
+- **Rencontres** : 15 % de chances par pas en pleine nature, selon le terrain (chacals en savane, brigands sur l'eau, panthères en forêt, renégats en montagne…), au niveau de la zone. Les lieux mythiques et les portails ont leurs combats fixes.
+- **Défaite** : on renaît dans son village, endurance pleine.
 
 ## 7. La guerre entre régions (Décidé)
 

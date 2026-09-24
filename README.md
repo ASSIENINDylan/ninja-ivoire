@@ -8,7 +8,7 @@ Jeu PC de ninjas, stratégique et persistant, dont le monde est la **Côte d'Ivo
 - **7 régions, 21 villages** (traditionnels, modernes, futuristes) et une **guerre du vendredi soir** pour les zones.
 - **Économie portée par les joueurs**, avec le **Djê** comme monnaie.
 
-![Combat](docs/captures/09_combat_composer.png)
+![Carte](docs/captures/12_carte_exploration.png)
 
 ## Jouer au prototype (Windows)
 
@@ -23,21 +23,25 @@ Le jeu tourne entièrement sur le PC. `NinjaIvoire.exe` est l'exécutable offici
 | Écran | Contenu |
 |---|---|
 | Création | Nom, 6 régions jouables (élément et attribut de départ), 3 types de village |
-| Village | Fiche du ninja, carte des 7 régions, heure réelle et phase de la lune, choix d'élément, combats |
+| Village | Fiche du ninja, aperçu de la carte explorée, heure réelle et phase de la lune, choix d'élément |
+| Carte | La Côte d'Ivoire en 1 352 cases : 9 terrains, 7 régions, 56 zones à niveau, 21 villages, 46 villes, lieux mythiques, portails ; déplacement case par case, endurance, brouillard, rencontres |
 | Dojo | Composer jusqu'à 8 mudras, libérer le Souffle, découvrir un jutsu ou écouter la résonance |
 | Grimoire | Jutsus découverts, pour toujours, avec leur maîtrise |
 | Combat | Tours simultanés, trois rangs, incantation sur plusieurs tours, interruption, IA qui lit la situation |
 
+Les jutsus portent des noms poétiques (« Braise : Croc de la hyène », « Lagune : Toile d'Ananzè, qui dévore — sans fin »), avec leur nature en dessous (« Lame de Feu dévorante »).
+
 | | |
 |---|---|
-| ![Création](docs/captures/02_creation.png) | ![Village](docs/captures/03_village.png) |
-| ![Dojo](docs/captures/05_dojo_resonance.png) | ![Grimoire](docs/captures/06_grimoire.png) |
+| ![Village](docs/captures/03_village.png) | ![Carte](docs/captures/11_carte.png) |
+| ![Dojo](docs/captures/05_dojo_resonance.png) | ![Combat](docs/captures/08_combat_action.png) |
 
 ## Architecture
 
 - **`server/`** : moteur de règles et serveur en **Go** (bibliothèque standard uniquement). C'est la **référence** des règles, et le futur serveur du jeu en ligne.
   - `cmd/exporter-regles` : écrit `client/donnees/regles.json` (données du jeu, recettes légendaires sous forme d'empreintes SHA-256) et les vecteurs de test du client.
   - `internal/data` : éléments, mudras, régions, Soleil et Lune.
+  - `internal/carte` : génération de la carte (terrains, régions, zones, lieux).
   - `internal/grammar` : suite de mudras → jutsu, résonance, légendaires (secret).
   - `internal/combat` : moteur de combat et IA.
   - `internal/game` : ninja, grimoire, maîtrise, niveaux, rencontres, sauvegarde.

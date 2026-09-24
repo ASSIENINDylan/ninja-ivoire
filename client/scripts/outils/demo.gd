@@ -54,6 +54,37 @@ func _scenario() -> void:
 	await _attendre(2.0)
 	await _capture("03_village")
 
+	Jeu.aller("carte", {"message": "Vous quittez votre village."})
+	await _attendre(1.0)
+	await _capture("11_carte")
+	e = _ecran()
+	# Quelques pas vers l'intérieur des terres, sans rencontre.
+	if Api.partie != null:
+		Api.partie.hasard = func() -> float: return 0.99
+	for essai in 12:
+		var pos: Array = Jeu.ninja.position
+		var fait := false
+		for v in [Vector2i(0, -1), Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 0), Vector2i(1, 0)]:
+			var x: int = int(pos[0]) + v.x
+			var y: int = int(pos[1]) + v.y
+			if Deplacements.possible(x, y) == "":
+				e._aller(x, y)
+				fait = true
+				break
+		await _attendre(0.35)
+		if not is_instance_valid(e) or main.get("_ecran") != e or not fait:
+			break
+	await _attendre(1.0)
+	if main.get("_ecran") == e:
+		e._carte.survol = Vector2i(int(Jeu.ninja.position[0]) - 1, int(Jeu.ninja.position[1]))
+		await _capture("12_carte_exploration")
+	else:
+		await _capture("12_carte_rencontre")
+		await Api.envoyer("/api/combat/fuite")
+		await Jeu.rafraichir()
+	if Api.partie != null:
+		Api.partie.hasard = randf
+
 	Jeu.aller("dojo")
 	await _attendre(0.8)
 	e = _ecran()

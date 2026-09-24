@@ -506,9 +506,10 @@ func _fin(fin: Dictionary) -> void:
 		for nom in m:
 			v.add_child(UI.label("%s — maîtrise %d" % [nom, m[nom]], 15, Pal.IVOIRE_DOUX))
 	v.add_child(UI.espace(8))
-	var b := UI.bouton_principal("Retour au village", func():
+	var retour: String = "village" if fin.get("defaite", false) else params.get("retour", "village")
+	var b := UI.bouton_principal("Retour au village" if retour == "village" else "Reprendre la route", func():
 		await Jeu.rafraichir()
-		Jeu.aller("village"), 20)
+		Jeu.aller(retour), 20)
 	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	v.add_child(b)
 

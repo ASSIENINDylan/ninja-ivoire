@@ -8,6 +8,7 @@ const ECRANS := {
 	"dojo": preload("res://scripts/ecrans/dojo.gd"),
 	"grimoire": preload("res://scripts/ecrans/grimoire.gd"),
 	"combat": preload("res://scripts/ecrans/combat.gd"),
+	"carte": preload("res://scripts/ecrans/carte.gd"),
 }
 
 var _ecran: Control = null

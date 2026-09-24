@@ -210,15 +210,15 @@ func _interface() -> void:
 	if d.absorption > 0:
 		draw_rect(Rect2(-w * 0.5, y, w * clamp(d.absorption / max(1.0, float(d.pv_max)), 0, 1), 4), Color(Pal.IVOIRE, 0.8))
 	draw_rect(Rect2(-w * 0.5, y, w, 10), Color(0, 0, 0, 0.6), false, 1.0)
-	var txt := "%d / %d" % [d.pv, d.pv_max]
-	var tw := f.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
-	draw_string_outline(f, Vector2(-tw * 0.5, y + 9), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, 3, Color(0, 0, 0, 0.8))
-	draw_string(f, Vector2(-tw * 0.5, y + 9), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Pal.IVOIRE)
 	y += 13
 	# Souffle.
 	draw_rect(Rect2(-w * 0.5, y, w, 6), Color("140e11"))
 	draw_rect(Rect2(-w * 0.5, y, w * clamp(souffle_affiche / max(1.0, d.souffle_max), 0, 1), 6), Pal.SOUFFLE)
-	y += 12
+	y += 8
+	var txt := "PV %d / %d" % [d.pv, d.pv_max]
+	var tw := f.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
+	draw_string(f, Vector2(-tw * 0.5, y + 12), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Pal.IVOIRE_DOUX)
+	y += 18
 	# Statuts.
 	var sx := -w * 0.5
 	for s in d.get("statuts", []) if d.get("statuts") != null else []:

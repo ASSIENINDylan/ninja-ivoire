@@ -264,7 +264,7 @@ func catalogue() -> Dictionary:
 	return ok({
 		"version": Regles.d.version, "regions": Regles.d.regions, "villages": Regles.d.villages,
 		"elements": Regles.d.elements, "mudras": mudras, "niveau_max": Regles.c.niveau_max,
-		"legendaires": Regles.d.legendaires.nombre,
+		"legendaires": Regles.d.legendaires.nombre, "carte": Regles.d.carte,
 	})
 
 
