@@ -3,6 +3,7 @@ package game
 import (
 	"encoding/json"
 	"errors"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"sort"
@@ -26,19 +27,22 @@ var (
 
 // Partie : la partie locale d'un joueur (prototype hors ligne).
 type Partie struct {
-	mu        sync.Mutex
-	chemin    string
-	Ninja     *Ninja
-	combat    *combat.Combat
-	rencontre *Rencontre
-	vus       int // découvertes du combat déjà inscrites au grimoire
+	mu           sync.Mutex
+	chemin       string
+	Ninja        *Ninja
+	combat       *combat.Combat
+	rencontre    *Rencontre
+	niveauCombat int
+	vus          int // découvertes du combat déjà inscrites au grimoire
+	// Hasard tire un nombre dans [0, 1) (remplaçable dans les tests).
+	Hasard func() float64
 	// Maintenant donne l'heure réelle (remplaçable dans les tests).
 	Maintenant func() time.Time
 }
 
 // Charger ouvre (ou crée) la sauvegarde.
 func Charger(chemin string) (*Partie, error) {
-	p := &Partie{chemin: chemin, Maintenant: time.Now}
+	p := &Partie{chemin: chemin, Maintenant: time.Now, Hasard: rand.Float64}
 	b, err := os.ReadFile(chemin)
 	if errors.Is(err, os.ErrNotExist) {
 		return p, nil
@@ -54,6 +58,7 @@ func Charger(chemin string) (*Partie, error) {
 		if n.Grimoire == nil {
 			n.Grimoire = map[string]*JutsuConnu{}
 		}
+		n.initialiserCarte(time.Now())
 		// Les noms des jutsus peuvent évoluer d'une version à l'autre.
 		for _, k := range n.Grimoire {
 			if j, e := grammar.Analyser(k.Sequence); e == nil {
@@ -105,14 +110,15 @@ type JutsuVue struct {
 // NinjaVue : le ninja et ses valeurs calculées.
 type NinjaVue struct {
 	*Ninja
-	RegionNom     string     `json:"region_nom"`
-	PVMax         int        `json:"pv_max"`
-	SouffleMax    int        `json:"souffle_max"`
-	XPProchain    int        `json:"xp_prochain"`
-	MudrasParTour int        `json:"mudras_par_tour"`
-	ElementsMax   int        `json:"elements_max"`
-	Permis        []string   `json:"permis"`
-	Jutsus        []JutsuVue `json:"jutsus"`
+	RegionNom     string        `json:"region_nom"`
+	PVMax         int           `json:"pv_max"`
+	SouffleMax    int           `json:"souffle_max"`
+	XPProchain    int           `json:"xp_prochain"`
+	MudrasParTour int           `json:"mudras_par_tour"`
+	ElementsMax   int           `json:"elements_max"`
+	Permis        []string      `json:"permis"`
+	Jutsus        []JutsuVue    `json:"jutsus"`
+	Situation     *SituationVue `json:"situation"`
 }
 
 func (p *Partie) vueJutsu(j *grammar.Jutsu) JutsuVue {
@@ -135,8 +141,9 @@ func (p *Partie) vueNinja() *NinjaVue {
 	if n == nil {
 		return nil
 	}
+	n.MajEndurance(p.Maintenant())
 	v := &NinjaVue{
-		Ninja: n, RegionNom: data.Regions[n.Region].Nom,
+		Ninja: n, RegionNom: data.Regions[n.Region].Nom, Situation: p.situation(),
 		PVMax: n.PVMax(), SouffleMax: n.SouffleMax(), XPProchain: XPPourNiveau(n.Niveau),
 		MudrasParTour: 3 + n.Gnanga/15, ElementsMax: n.ElementsMax(),
 	}
@@ -351,18 +358,25 @@ func (p *Partie) DemarrerCombat(id string) (*combat.Combat, error) {
 	if p.Ninja.Niveau < r.Niveau {
 		return nil, ErrNiveauTropBas
 	}
+	return p.demarrer(r, r.Niveau), nil
+}
+
+// demarrer lance le combat (le verrou doit être tenu).
+func (p *Partie) demarrer(r *Rencontre, niveau int) *combat.Combat {
 	moment := p.Maintenant()
-	fighters := append([]*combat.Combattant{p.Ninja.Combattant(moment)}, r.Instancier()...)
-	p.combat = combat.Nouveau(id, fighters, moment.UnixNano(), p.Maintenant)
+	fighters := append([]*combat.Combattant{p.Ninja.Combattant(moment)}, r.Instancier(niveau)...)
+	p.combat = combat.Nouveau(r.ID, fighters, moment.UnixNano(), p.Maintenant)
 	p.rencontre = r
+	p.niveauCombat = niveau
 	p.vus = 0
-	return p.combat.Vue(0), nil
+	return p.combat.Vue(0)
 }
 
 // FinCombat : récompenses et progression.
 type FinCombat struct {
 	Victoire      bool           `json:"victoire"`
 	Nul           bool           `json:"nul"`
+	Defaite       bool           `json:"defaite"`
 	XP            int            `json:"xp"`
 	Dje           int            `json:"dje"`
 	NiveauxGagnes int            `json:"niveaux_gagnes"`
@@ -432,18 +446,21 @@ func (p *Partie) terminer() *FinCombat {
 	switch c.Vainqueur {
 	case 0:
 		fin.Victoire = true
-		fin.XP, fin.Dje = r.XP, r.Dje
-		n.Dje += r.Dje
+		fin.XP, fin.Dje = r.Recompenses(p.niveauCombat)
+		n.Dje += fin.Dje
 		n.Victoires++
-		fin.NiveauxGagnes = n.GagnerXP(r.XP)
+		fin.NiveauxGagnes = n.GagnerXP(fin.XP)
 		fin.Message = "Victoire ! Vous gagnez de l'expérience et des Djê."
 	case 2:
 		fin.Nul = true
-		fin.XP = r.XP / 4
+		xp, _ := r.Recompenses(p.niveauCombat)
+		fin.XP = xp / 4
 		fin.NiveauxGagnes = n.GagnerXP(fin.XP)
 		fin.Message = "Match nul. Les deux camps se retirent, épuisés."
 	default:
 		n.Defaites++
+		n.Renaitre(p.Maintenant())
+		fin.Defaite = true
 		fin.Message = "Défaite. Vous renaissez dans votre village. (Quand l'inventaire existera, vos objets iront au vainqueur.)"
 	}
 	return fin

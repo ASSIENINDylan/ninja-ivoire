@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 
 	"github.com/ASSIENINDylan/ninja-ivoire/server/internal/api"
+	"github.com/ASSIENINDylan/ninja-ivoire/server/internal/carte"
 	"github.com/ASSIENINDylan/ninja-ivoire/server/internal/combat"
 	"github.com/ASSIENINDylan/ninja-ivoire/server/internal/data"
 	"github.com/ASSIENINDylan/ninja-ivoire/server/internal/game"
@@ -66,6 +67,8 @@ func regles() map[string]any {
 		"regions":    data.AllRegions(),
 		"villages":   data.AllTypesVillage(),
 		"rencontres": rencontres,
+		"sauvages":   game.Sauvages,
+		"carte":      carte.Monde.Export(),
 		"grammaire":  grammar.Tables(),
 		"legendaires": map[string]any{
 			"sel": grammar.SelHachage, "recettes": legs, "prefixes": prefixes, "nombre": grammar.NombreLegendaires(),
@@ -77,6 +80,8 @@ func regles() map[string]any {
 			"maitrise_max": game.MaitriseMax, "maitrise_decouverte": combat.MaitriseDecouverte,
 			"maitrise_pnj": combat.MaitrisePNJ, "tour_max": combat.TourMax,
 			"niveau_fusion": data.NiveauFusion, "nb_rangs": combat.NbRangs,
+			"endurance_max": game.EnduranceMax, "regen_secondes": game.RegenSecondes,
+			"chance_rencontre": game.ChanceRencontre, "rayon_vision": game.RayonVision,
 		},
 	}
 }

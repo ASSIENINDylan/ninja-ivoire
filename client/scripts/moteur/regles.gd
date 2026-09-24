@@ -140,3 +140,51 @@ static func facteur_cosmique(element: String, m: Dictionary) -> float:
 		"crepuscule":
 			return max(facteur_soleil(m), facteur_lune(m))
 	return 1.0
+
+
+# --- Carte du monde -----------------------------------------------------------------
+
+static func carte() -> Dictionary:
+	return d.carte
+
+
+static func dans(x: int, y: int) -> bool:
+	return x >= 0 and y >= 0 and x < int(d.carte.l) and y < int(d.carte.h)
+
+
+## La case (x, y) : {region, zone, terrain, lieu} ou null hors du pays.
+static func case_(x: int, y: int):
+	if not dans(x, y):
+		return null
+	var c: Dictionary = d.carte
+	var i: int = y * int(c.l) + x
+	var r := int(c.region[i])
+	if r < 0:
+		return null
+	return {"region": c.regions[r], "zone": int(c.zone[i]), "terrain": c.terrains[int(c.terrain[i])], "lieu": int(c.lieu[i])}
+
+
+static func cout_terrain(terrain: String) -> int:
+	return int(d.carte.couts.get(terrain, 0))
+
+
+static func zone(i: int) -> Dictionary:
+	return d.carte.zones[i]
+
+
+static func lieu(i: int) -> Dictionary:
+	return d.carte.lieux[i]
+
+
+static func lieu_id(ident: String):
+	for l in d.carte.lieux:
+		if l.id == ident:
+			return l
+	return null
+
+
+static func village_de(region: String, type_village: String):
+	for l in d.carte.lieux:
+		if l.type == "village" and l.region == region and l.get("type_village", "") == type_village:
+			return l
+	return null

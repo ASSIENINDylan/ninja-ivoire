@@ -54,6 +54,10 @@ type Ninja struct {
 	Dje              int                    `json:"dje"`
 	Arme             combat.Arme            `json:"arme"`
 	Victoires        int                    `json:"victoires"`
+	Position         [2]int                 `json:"position"`
+	Endurance        int                    `json:"endurance"`
+	EnduranceMaj     int64                  `json:"endurance_maj"`
+	Explore          string                 `json:"explore"`
 	Defaites         int                    `json:"defaites"`
 	Creation         time.Time              `json:"creation"`
 }
@@ -93,6 +97,7 @@ func NouveauNinja(nom, region, typeVillage string) (*Ninja, error) {
 		Arme:     combat.Arme{Nom: "un sabre court", Puissance: 6 + tv.BonusArme},
 		Creation: time.Now(),
 	}
+	n.initialiserCarte(n.Creation)
 	switch r.Attribut {
 	case data.Fangan:
 		n.Fangan += BonusRegion

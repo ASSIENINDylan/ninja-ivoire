@@ -58,6 +58,8 @@ var (
 	batteurSansVisage = &ModelePNJ{Nom: "Batteur Sans-Visage", Apparence: "sans_visage", Element: "son", IA: combat.IANinja, Fangan: 9, Gnanga: 13, Manhis: 12, PV: 90,
 		Arme:   combat.Arme{Nom: "un tambour de guerre", Puissance: 6, Distance: true},
 		Jutsus: [][]string{{"tambour", "martin_pecheur", "belier"}, {"tambour", "case", "racine"}}}
+	pantherePNJ = &ModelePNJ{Nom: "Panthère des bois", Apparence: "chacal", IA: combat.IABete, Fangan: 11, Manhis: 16, PV: 85,
+		Arme: combat.Arme{Nom: "ses griffes", Puissance: 8}}
 	gardePortail = &ModelePNJ{Nom: "Gardien du portail", Apparence: "gardien", Element: "terre", IA: combat.IANinja, Fangan: 16, Gnanga: 12, Manhis: 8, PV: 260,
 		Arme:   combat.Arme{Nom: "une massue de pierre", Puissance: 12},
 		Jutsus: [][]string{{"buffle", "tortue", "lion", "belier"}, {"buffle", "mante", "hache"}, {"buffle", "case", "liane"}}}
@@ -82,7 +84,10 @@ var rencontreList = []*Rencontre{
 	{ID: "sans_visage", Nom: "Rituel des Sans-Visage", Lieu: "Rives du lac de Kossou", Niveau: 10, XP: 420, Dje: 130,
 		Description: "Des adeptes tentent de réveiller un esprit scellé. Leurs tambours brisent les incantations.",
 		Ennemis:     []*ModelePNJ{adepteSansVisage, batteurSansVisage, adepteSansVisage}},
-	{ID: "portail", Nom: "Gardien du portail", Lieu: "Portail des Montagnes", Niveau: 15, XP: 800, Dje: 300,
+	{ID: "panthere", Nom: "Panthère des bois", Lieu: "Forêts du Sud", Niveau: 3, XP: 100, Dje: 30,
+		Description: "Une panthère silencieuse chasse entre les fromagers.",
+		Ennemis:     []*ModelePNJ{pantherePNJ}},
+	{ID: "portail", Nom: "Gardien du portail", Lieu: "Portail de région", Niveau: 15, XP: 800, Dje: 300,
 		Description: "Le gardien d'un portail de région. Chaque vendredi soir, il faut le vaincre pour lancer un siège.",
 		Ennemis:     []*ModelePNJ{gardePortail}},
 }
@@ -99,14 +104,33 @@ func init() {
 	}
 }
 
+// Sauvages : les rencontres possibles en chemin, selon le terrain.
+var Sauvages = map[string][]string{
+	"savane":        {"chacals"},
+	"savane_boisee": {"chacals", "renegat"},
+	"foret":         {"panthere", "brigand"},
+	"foret_dense":   {"panthere", "esprit_tai"},
+	"montagne":      {"renegat"},
+	"fleuve":        {"brigand"},
+	"lagune":        {"brigand"},
+	"littoral":      {"brigand"},
+}
+
+// Recompenses : expérience et Djê d'une rencontre à un niveau donné.
+func (r *Rencontre) Recompenses(niveau int) (int, int) {
+	niveau = max(1, niveau)
+	return r.XP * niveau / r.Niveau, r.Dje * niveau / r.Niveau
+}
+
 // AllRencontres renvoie les rencontres dans l'ordre.
 func AllRencontres() []*Rencontre { return rencontreList }
 
-// Instancier crée les combattants d'une rencontre à son niveau.
-func (r *Rencontre) Instancier() []*combat.Combattant {
+// Instancier crée les combattants d'une rencontre au niveau demandé
+// (celui de la zone où elle a lieu).
+func (r *Rencontre) Instancier(niveau int) []*combat.Combattant {
 	var out []*combat.Combattant
 	for i, m := range r.Ennemis {
-		lv := r.Niveau
+		lv := max(1, niveau)
 		f := &combat.Combattant{
 			ID: fmt.Sprintf("pnj%d", i+1), Nom: m.Nom, Camp: 1, Rang: i + 1, Apparence: m.Apparence,
 			Niveau: lv, Fangan: m.Fangan + lv, Gnanga: m.Gnanga + lv, Manhis: m.Manhis + lv/2,

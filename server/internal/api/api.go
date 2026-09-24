@@ -7,9 +7,11 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/ASSIENINDylan/ninja-ivoire/server/internal/carte"
 	"github.com/ASSIENINDylan/ninja-ivoire/server/internal/combat"
 	"github.com/ASSIENINDylan/ninja-ivoire/server/internal/data"
 	"github.com/ASSIENINDylan/ninja-ivoire/server/internal/game"
+	"github.com/ASSIENINDylan/ninja-ivoire/server/internal/grammar"
 )
 
 // Version du protocole, vérifiée par le client.
@@ -33,6 +35,7 @@ type Catalogue struct {
 	Elements    []data.Element     `json:"elements"`
 	Mudras      []MudraPublic      `json:"mudras"`
 	NiveauMax   int                `json:"niveau_max"`
+	Carte       map[string]any     `json:"carte"`
 	Legendaires int                `json:"legendaires"`
 }
 
@@ -40,7 +43,7 @@ func catalogue() Catalogue {
 	c := Catalogue{
 		Version: Version, Regions: data.AllRegions(), Villages: data.AllTypesVillage(),
 		Elements: data.AllElements(), NiveauMax: game.NiveauMax,
-		Legendaires: 8,
+		Legendaires: grammar.NombreLegendaires(), Carte: carte.Monde.Export(),
 	}
 	for _, m := range data.AllMudras() {
 		mp := MudraPublic{ID: m.ID, Nom: m.Nom, Categorie: m.Categorie, Niveau: m.Niveau}
@@ -113,6 +116,18 @@ func Nouveau(p *game.Partie) *Serveur {
 	})
 	s.mux.HandleFunc("POST /api/combat/fuite", func(w http.ResponseWriter, r *http.Request) {
 		repondre(w)(p.Fuir())
+	})
+	s.mux.HandleFunc("POST /api/carte/deplacer", func(w http.ResponseWriter, r *http.Request) {
+		var req struct{ X, Y int }
+		if lire(w, r, &req) {
+			repondre(w)(p.Deplacer(req.X, req.Y))
+		}
+	})
+	s.mux.HandleFunc("POST /api/carte/reposer", func(w http.ResponseWriter, r *http.Request) {
+		repondre(w)(p.Reposer())
+	})
+	s.mux.HandleFunc("POST /api/carte/defier", func(w http.ResponseWriter, r *http.Request) {
+		repondre(w)(p.Defier())
 	})
 	return s
 }

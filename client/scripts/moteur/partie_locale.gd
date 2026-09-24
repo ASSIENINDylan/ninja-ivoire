@@ -17,13 +17,23 @@ const ERR := {
 	"pas_de_combat": "aucun combat en cours",
 	"rencontre": "rencontre inconnue",
 	"niveau": "niveau trop bas pour cette zone",
+	"pas_adjacent": "on ne se déplace que d'une case à la fois",
+	"hors_pays": "impossible de quitter le pays",
+	"infranchi": "le lac barre la route",
+	"pas_de_repos": "on ne se repose que dans un village de sa région ou du Cœur",
+	"rien_a_defier": "il n'y a personne à défier ici",
 }
 
 var chemin := "user://ninja.save.json"
 var ninja = null  # Dictionary ou null
 var combat: CombatMoteur = null
 var rencontre = null
+var niveau_combat := 1
 var _vus := 0
+## Tire un nombre dans [0, 1) (remplaçable dans les tests).
+var hasard: Callable = randf
+## L'heure en secondes (remplaçable dans les tests).
+var horloge: Callable = func() -> int: return int(Time.get_unix_time_from_system())
 
 
 func _init(fichier: String = "user://ninja.save.json") -> void:
@@ -32,6 +42,7 @@ func _init(fichier: String = "user://ninja.save.json") -> void:
 		var n = JSON.parse_string(FileAccess.get_file_as_string(chemin))
 		if n is Dictionary and n.get("nom", "") != "":
 			ninja = n
+			_initialiser_carte()
 			# Les noms des jutsus peuvent évoluer d'une version à l'autre.
 			for k in ninja.grimoire.values():
 				var res := Grammaire.analyser(k.sequence)
@@ -163,11 +174,11 @@ func _combattant(moment: Dictionary) -> Dictionary:
 	}
 
 
-static func _instancier(r: Dictionary) -> Array:
+static func _instancier(r: Dictionary, niveau: int) -> Array:
 	var out := []
 	var i := 0
 	for m in r.ennemis:
-		var lv := int(r.niveau)
+		var lv := maxi(1, niveau)
 		var f := {
 			"id": "pnj%d" % (i + 1), "nom": m.nom, "camp": 1, "rang": i + 1, "joueur": false, "apparence": m.apparence,
 			"niveau": lv, "fangan": int(m.fangan) + lv, "gnanga": int(m.gnanga) + lv, "manhis": int(m.manhis) + lv / 2,
@@ -209,7 +220,9 @@ func _vue_jutsu(j: Dictionary) -> Dictionary:
 func vue_ninja():
 	if ninja == null:
 		return null
+	_maj_endurance()
 	var v: Dictionary = ninja.duplicate(true)
+	v.situation = _situation()
 	v.region_nom = Regles.regions[ninja.region].nom
 	v.pv_max = pv_max()
 	v.souffle_max = souffle_max()
@@ -279,6 +292,7 @@ func creer(nom: String, region: String, type_village: String) -> Dictionary:
 		"victoires": 0, "defaites": 0, "creation": Time.get_datetime_string_from_system(true),
 	}
 	ninja[r.attribut] = depart + int(Regles.c.bonus_region)
+	_initialiser_carte()
 	_sauver()
 	return ok(vue_ninja())
 
@@ -382,12 +396,22 @@ func demarrer_combat(id: String) -> Dictionary:
 		return ko("rencontre")
 	if int(ninja.niveau) < int(r.niveau):
 		return ko("niveau")
+	return ok(_demarrer(r, int(r.niveau)))
+
+
+func _demarrer(r: Dictionary, niveau: int) -> Dictionary:
 	var liste := [_combattant(Regles.maintenant())]
-	liste.append_array(_instancier(r))
-	combat = CombatMoteur.new(id, liste, int(Time.get_unix_time_from_system() * 1000.0))
+	liste.append_array(_instancier(r, niveau))
+	combat = CombatMoteur.new(r.id, liste, int(Time.get_unix_time_from_system() * 1000.0))
 	rencontre = r
+	niveau_combat = niveau
 	_vus = 0
-	return ok(combat.vue(0))
+	return combat.vue(0)
+
+
+static func recompenses(r: Dictionary, niveau: int) -> Array:
+	niveau = maxi(1, niveau)
+	return [int(r.xp) * niveau / int(r.niveau), int(r.dje) * niveau / int(r.niveau)]
 
 
 func agir(a: Dictionary) -> Dictionary:
@@ -425,7 +449,7 @@ func fuir() -> Dictionary:
 
 
 func _terminer() -> Dictionary:
-	var fin := {"victoire": false, "nul": false, "xp": 0, "dje": 0, "niveaux_gagnes": 0, "maitrise": {}, "message": ""}
+	var fin := {"victoire": false, "nul": false, "defaite": false, "xp": 0, "dje": 0, "niveaux_gagnes": 0, "maitrise": {}, "message": ""}
 	# La pratique paie, même dans la défaite.
 	for cle in combat.usages:
 		_pratiquer(cle, int(combat.usages[cle]))
@@ -435,19 +459,22 @@ func _terminer() -> Dictionary:
 	match combat.vainqueur:
 		0:
 			fin.victoire = true
-			fin.xp = int(rencontre.xp)
-			fin.dje = int(rencontre.dje)
+			var rec := recompenses(rencontre, niveau_combat)
+			fin.xp = rec[0]
+			fin.dje = rec[1]
 			ninja.dje = int(ninja.dje) + fin.dje
 			ninja.victoires = int(ninja.victoires) + 1
 			fin.niveaux_gagnes = _gagner_xp(fin.xp)
 			fin.message = "Victoire ! Vous gagnez de l'expérience et des Djê."
 		2:
 			fin.nul = true
-			fin.xp = int(rencontre.xp) / 4
+			fin.xp = int(recompenses(rencontre, niveau_combat)[0]) / 4
 			fin.niveaux_gagnes = _gagner_xp(fin.xp)
 			fin.message = "Match nul. Les deux camps se retirent, épuisés."
 		_:
 			ninja.defaites = int(ninja.defaites) + 1
+			_renaitre()
+			fin.defaite = true
 			fin.message = "Défaite. Vous renaissez dans votre village. (Quand l'inventaire existera, vos objets iront au vainqueur.)"
 	return fin
 
@@ -479,4 +506,163 @@ func appel(methode: String, route: String, corps: Dictionary) -> Dictionary:
 			return agir(corps)
 		"POST /api/combat/fuite":
 			return fuir()
+		"POST /api/carte/deplacer":
+			return deplacer(int(corps.get("x", -1)), int(corps.get("y", -1)))
+		"POST /api/carte/reposer":
+			return reposer()
+		"POST /api/carte/defier":
+			return defier()
 	return {"ok": false, "erreur": "route inconnue : " + route}
+
+
+# --- Carte : déplacements, endurance, brouillard -------------------------------------
+
+func _initialiser_carte() -> void:
+	var taille := int(Regles.carte().l) * int(Regles.carte().h)
+	if str(ninja.get("explore", "")).length() == taille:
+		return
+	var v = village_natal()
+	ninja.position = [int(v.x), int(v.y)]
+	ninja.endurance = int(Regles.c.endurance_max)
+	ninja.endurance_maj = horloge.call()
+	ninja.explore = "0".repeat(taille)
+	for l in Regles.carte().lieux:
+		if l.type == "village" and (l.region == ninja.region or l.region == "coeur"):
+			_reveler(int(l.x), int(l.y), 1)
+	_reveler(int(v.x), int(v.y), int(Regles.c.rayon_vision) + 2)
+
+
+func village_natal():
+	return Regles.village_de(ninja.region, ninja.type_village)
+
+
+func _reveler(x: int, y: int, rayon: int) -> void:
+	var l := int(Regles.carte().l)
+	var b: PackedByteArray = str(ninja.explore).to_ascii_buffer()
+	for dy in range(-rayon, rayon + 1):
+		for dx in range(-rayon, rayon + 1):
+			if Regles.dans(x + dx, y + dy):
+				b[(y + dy) * l + x + dx] = 49  # « 1 »
+	ninja.explore = b.get_string_from_ascii()
+
+
+func _maj_endurance() -> void:
+	var emax := int(Regles.c.endurance_max)
+	var t: int = horloge.call()
+	if int(ninja.endurance) >= emax:
+		ninja.endurance = emax
+		ninja.endurance_maj = t
+		return
+	var regen := int(Regles.c.regen_secondes)
+	var gain: int = (t - int(ninja.endurance_maj)) / regen
+	if gain > 0:
+		ninja.endurance = mini(emax, int(ninja.endurance) + gain)
+		ninja.endurance_maj = int(ninja.endurance_maj) + gain * regen
+
+
+func _renaitre() -> void:
+	var v = village_natal()
+	ninja.position = [int(v.x), int(v.y)]
+	ninja.endurance = int(Regles.c.endurance_max)
+	ninja.endurance_maj = horloge.call()
+
+
+func _peut_se_reposer(l) -> bool:
+	return l != null and l.type == "village" and (l.region == ninja.region or l.region == "coeur")
+
+
+func _lieu_actuel():
+	var cel = Regles.case_(int(ninja.position[0]), int(ninja.position[1]))
+	if cel == null or cel.lieu < 0:
+		return null
+	return Regles.lieu(cel.lieu)
+
+
+func _situation() -> Dictionary:
+	var cel = Regles.case_(int(ninja.position[0]), int(ninja.position[1]))
+	var s := {
+		"terrain": cel.terrain, "terrain_nom": Regles.carte().noms_terrains[cel.terrain],
+		"zone": Regles.zone(cel.zone), "lieu": null, "repos": false, "village": false,
+		"endurance_max": int(Regles.c.endurance_max), "regen_dans": 0,
+	}
+	var l = _lieu_actuel()
+	if l != null:
+		s.lieu = l
+		s.repos = _peut_se_reposer(l)
+		s.village = l.type == "village" and l.region == ninja.region and l.get("type_village", "") == ninja.type_village
+	if int(ninja.endurance) < int(Regles.c.endurance_max):
+		s.regen_dans = int(ninja.endurance_maj) + int(Regles.c.regen_secondes) - int(horloge.call())
+	return s
+
+
+## Avance le ninja d'une case (huit directions).
+func deplacer(x: int, y: int) -> Dictionary:
+	if ninja == null:
+		return ko("pas_de_ninja")
+	if combat != null and not combat.fini:
+		return ko("combat_en_cours")
+	var dx: int = x - int(ninja.position[0])
+	var dy: int = y - int(ninja.position[1])
+	if dx < -1 or dx > 1 or dy < -1 or dy > 1 or (dx == 0 and dy == 0):
+		return ko("pas_adjacent")
+	var cel = Regles.case_(x, y)
+	if cel == null:
+		return ko("hors_pays")
+	var cout := Regles.cout_terrain(cel.terrain)
+	if cout == 0:
+		return ko("infranchi")
+	var z := Regles.zone(cel.zone)
+	if int(ninja.niveau) < int(z.niveau):
+		return ko("les environs de %s sont trop dangereux : niveau %d requis" % [z.nom, int(z.niveau)])
+	_maj_endurance()
+	if int(ninja.endurance) < cout:
+		return ko("trop fatigué : il faut %d d'endurance (un point par minute, ou repos au village)" % cout)
+	var ancienne: int = Regles.case_(int(ninja.position[0]), int(ninja.position[1])).zone
+	if int(ninja.endurance) == int(Regles.c.endurance_max):
+		ninja.endurance_maj = horloge.call()
+	ninja.endurance = int(ninja.endurance) - cout
+	ninja.position = [x, y]
+	_reveler(x, y, int(Regles.c.rayon_vision))
+	var res := {"message": "", "combat": null, "rencontre": ""}
+	if cel.lieu >= 0:
+		res.message = "Vous arrivez à " + Regles.lieu(cel.lieu).nom + "."
+	elif cel.zone != ancienne:
+		res.message = "Vous entrez dans les environs de %s (niveau %d)." % [z.nom, int(z.niveau)]
+	# En pleine nature, on peut faire une mauvaise rencontre.
+	var choix: Array = Regles.d.sauvages.get(cel.terrain, [])
+	if cel.lieu < 0 and choix.size() > 0 and float(hasard.call()) < float(Regles.c.chance_rencontre):
+		var r: Dictionary = Regles.rencontres[choix[int(float(hasard.call()) * choix.size()) % choix.size()]]
+		res.combat = _demarrer(r, int(z.niveau))
+		res.rencontre = r.nom
+		res.message = r.nom + " vous barre la route !"
+	res.ninja = vue_ninja()
+	_sauver()
+	return ok(res)
+
+
+## Rend toute l'endurance, dans un village ami.
+func reposer() -> Dictionary:
+	if ninja == null:
+		return ko("pas_de_ninja")
+	if not _peut_se_reposer(_lieu_actuel()):
+		return ko("pas_de_repos")
+	ninja.endurance = int(Regles.c.endurance_max)
+	ninja.endurance_maj = horloge.call()
+	_sauver()
+	return ok({"ninja": vue_ninja(), "message": "Vous vous reposez : votre endurance est au maximum."})
+
+
+## Lance la rencontre du lieu où se trouve le ninja.
+func defier() -> Dictionary:
+	if ninja == null:
+		return ko("pas_de_ninja")
+	if combat != null and not combat.fini:
+		return ko("combat_en_cours")
+	var l = _lieu_actuel()
+	if l == null or l.get("rencontre", "") == "":
+		return ko("rien_a_defier")
+	if int(ninja.niveau) < int(l.niveau):
+		return ko("%s : niveau %d requis" % [l.nom, int(l.niveau)])
+	var r: Dictionary = Regles.rencontres[l.rencontre]
+	var vue := _demarrer(r, int(l.niveau))
+	return ok({"ninja": vue_ninja(), "combat": vue, "rencontre": r.nom, "message": l.nom + " : le combat commence."})
