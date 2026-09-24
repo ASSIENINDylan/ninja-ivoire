@@ -606,6 +606,10 @@ func appel(methode: String, route: String, corps: Dictionary) -> Dictionary:
 			return transferer(true)
 		"POST /api/village/reprendre":
 			return transferer(false)
+		"POST /api/village/ranger":
+			return deplacer_objet(str(corps.get("objet", "")), true)
+		"POST /api/village/sortir":
+			return deplacer_objet(str(corps.get("objet", "")), false)
 		"POST /api/forge/fabriquer":
 			return fabriquer(str(corps.get("objet", "")))
 		"POST /api/equipement/equiper":
@@ -860,8 +864,9 @@ func _initialiser_ressources() -> void:
 	for k in ["sac", "coffre", "equipement", "gisements", "camps"]:
 		if ninja.get(k) == null:
 			ninja[k] = {}
-	if ninja.get("objets") == null:
-		ninja.objets = []
+	for k in ["objets", "coffre_objets"]:
+		if ninja.get(k) == null:
+			ninja[k] = []
 
 
 static func _cle(x: int, y: int) -> String:
@@ -1076,6 +1081,23 @@ func transferer(deposer: bool) -> Dictionary:
 	for r in de.keys():
 		vers[r] = int(vers.get(r, 0)) + int(de[r])
 		de.erase(r)
+	_sauver()
+	return ok(vue_ninja())
+
+
+## Range un objet du sac au coffre (jamais perdu), ou l'en ressort.
+func deplacer_objet(ident: String, ranger: bool) -> Dictionary:
+	if ninja == null:
+		return ko("pas_de_ninja")
+	if not _dans_son_village():
+		return ko("hors_village")
+	var de: Array = ninja.objets if ranger else ninja.coffre_objets
+	var vers: Array = ninja.coffre_objets if ranger else ninja.objets
+	var i := de.find(ident)
+	if i < 0:
+		return ko("pas_l_objet")
+	de.remove_at(i)
+	vers.append(ident)
 	_sauver()
 	return ok(vue_ninja())
 

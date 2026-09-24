@@ -124,14 +124,25 @@ func TestCampForgeEtDefaite(t *testing.T) {
 	if c := n.Combattant(p.Maintenant()); c.Arme.Puissance <= base || c.Arme.Nom != "un sabre de fer" {
 		t.Errorf("l'arme forgée compte en combat : %+v", c.Arme)
 	}
+	// Le coffre garde aussi les objets.
+	n.Objets = []string{"bandeau_cuir", "veste_cuir"}
+	if _, err := p.RangerObjet("veste_cuir"); err != nil || len(n.CoffreObjets) != 1 {
+		t.Fatalf("ranger au coffre : %v %v", err, n.CoffreObjets)
+	}
 	// Défaite : le sac, les objets et l'équipement porté sont perdus, pas le coffre.
 	n.Coffre[carte.Pierre] = 7
-	n.Objets = []string{"bandeau_cuir"}
 	p.DemarrerCombat("chacals")
 	p.combat.Fini, p.combat.Vainqueur = true, 1
 	fin = p.terminer()
 	if len(n.Sac) != 0 || len(n.Objets) != 0 || n.Coffre[carte.Pierre] != 7 || len(n.Equipement) != 0 {
 		t.Errorf("après défaite : sac %v objets %v coffre %v équipement %v", n.Sac, n.Objets, n.Coffre, n.Equipement)
+	}
+	if len(n.CoffreObjets) != 1 {
+		t.Errorf("le coffre garde ses objets : %v", n.CoffreObjets)
+	}
+	n.Position = [2]int{v.X, v.Y}
+	if _, err := p.SortirObjet("veste_cuir"); err != nil || len(n.Objets) != 1 {
+		t.Errorf("reprendre du coffre : %v %v", err, n.Objets)
 	}
 	if len(fin.ObjetsPerdus) != 2 {
 		t.Errorf("objets perdus : %v", fin.ObjetsPerdus)

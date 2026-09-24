@@ -141,6 +141,10 @@ func _scenario() -> void:
 		e._fabriquer("sabre_fer")
 		await _attendre(0.6)
 		e._equiper("sabre_fer")
+		await _attendre(0.6)
+		e._fabriquer("bandeau_cuir")
+		await _attendre(0.6)
+		e._ranger("bandeau_cuir")
 		await _attendre(1.0)
 		await _capture("16_forge")
 

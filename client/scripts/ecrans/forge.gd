@@ -137,6 +137,7 @@ func _remplir() -> void:
 		lv.add_child(UI.label(_effets(o), 12, Pal.VERT))
 		ligne.add_child(lv)
 		ligne.add_child(UI.bouton("Équiper", _equiper.bind(id), 13))
+		ligne.add_child(UI.bouton("Au coffre", _ranger.bind(id), 13))
 		_gauche.add_child(ligne)
 
 	# La forge.
@@ -169,9 +170,25 @@ func _remplir() -> void:
 	_droite.add_child(UI.bouton_principal("Tout déposer au coffre", _transferer.bind(true), 15))
 	_droite.add_child(UI.frise())
 	_droite.add_child(UI.label("Coffre du village", 24, Pal.IVOIRE, true))
-	_droite.add_child(UI.texte("Jamais perdu.", 13, Pal.VERT))
+	_droite.add_child(UI.texte("Jamais perdu : ressources, armes et armures.", 13, Pal.VERT))
 	_droite.add_child(_liste(n.coffre))
 	_droite.add_child(UI.bouton("Tout reprendre dans le sac", _transferer.bind(false), 15))
+	_droite.add_child(UI.label("Armes et armures au coffre", 17, Pal.IVOIRE, true))
+	var objets_coffre: Array = n.get("coffre_objets", [])
+	if objets_coffre.is_empty():
+		_droite.add_child(UI.texte("Aucune. Range ici une tenue de réserve pour te rééquiper après une défaite.", 13, Pal.GRIS))
+	for id in objets_coffre:
+		var o = _objet(id)
+		if o == null:
+			continue
+		var ligne := UI.hbox(8)
+		var lv := UI.vbox(2)
+		lv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lv.add_child(UI.label("%s (%s)" % [o.nom, noms[o.emplacement]], 14, Pal.IVOIRE))
+		lv.add_child(UI.label(_effets(o), 12, Pal.VERT))
+		ligne.add_child(lv)
+		ligne.add_child(UI.bouton("Reprendre", _sortir.bind(id), 13))
+		_droite.add_child(ligne)
 
 
 func _liste(m: Dictionary) -> Control:
@@ -212,6 +229,14 @@ func _equiper(id: String) -> void:
 
 func _retirer(e: String) -> void:
 	await _appel("/api/equipement/retirer", {"emplacement": e}, "")
+
+
+func _ranger(id: String) -> void:
+	await _appel("/api/village/ranger", {"objet": id}, "%s est à l'abri dans le coffre." % _objet(id).nom)
+
+
+func _sortir(id: String) -> void:
+	await _appel("/api/village/sortir", {"objet": id}, "%s est de retour dans le sac." % _objet(id).nom)
 
 
 func _transferer(deposer: bool) -> void:

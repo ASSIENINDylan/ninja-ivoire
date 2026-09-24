@@ -162,6 +162,18 @@ func Nouveau(p *game.Partie) *Serveur {
 	s.mux.HandleFunc("POST /api/village/reprendre", func(w http.ResponseWriter, r *http.Request) {
 		repondre(w)(p.Reprendre())
 	})
+	s.mux.HandleFunc("POST /api/village/ranger", func(w http.ResponseWriter, r *http.Request) {
+		var req struct{ Objet string }
+		if lire(w, r, &req) {
+			repondre(w)(p.RangerObjet(req.Objet))
+		}
+	})
+	s.mux.HandleFunc("POST /api/village/sortir", func(w http.ResponseWriter, r *http.Request) {
+		var req struct{ Objet string }
+		if lire(w, r, &req) {
+			repondre(w)(p.SortirObjet(req.Objet))
+		}
+	})
 	s.mux.HandleFunc("POST /api/forge/fabriquer", func(w http.ResponseWriter, r *http.Request) {
 		var req struct{ Objet string }
 		if lire(w, r, &req) {

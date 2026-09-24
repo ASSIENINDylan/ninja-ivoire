@@ -108,6 +108,9 @@ func (n *Ninja) initialiserRessources() {
 	if n.Objets == nil {
 		n.Objets = []string{}
 	}
+	if n.CoffreObjets == nil {
+		n.CoffreObjets = []string{}
+	}
 	if n.Equipement == nil {
 		n.Equipement = map[string]string{}
 	}
@@ -387,6 +390,39 @@ func (p *Partie) transferer(deposer bool) (*NinjaVue, error) {
 		vers[r] += q
 		delete(de, r)
 	}
+	return p.vueNinja(), p.sauver()
+}
+
+// RangerObjet met au coffre un objet du sac : il ne sera jamais perdu.
+func (p *Partie) RangerObjet(id string) (*NinjaVue, error) {
+	return p.deplacerObjet(id, true)
+}
+
+// SortirObjet reprend un objet du coffre dans le sac.
+func (p *Partie) SortirObjet(id string) (*NinjaVue, error) {
+	return p.deplacerObjet(id, false)
+}
+
+func (p *Partie) deplacerObjet(id string, ranger bool) (*NinjaVue, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	n := p.Ninja
+	if n == nil {
+		return nil, ErrPasDeNinja
+	}
+	if !p.dansSonVillage() {
+		return nil, ErrHorsVillage
+	}
+	de, vers := &n.Objets, &n.CoffreObjets
+	if !ranger {
+		de, vers = &n.CoffreObjets, &n.Objets
+	}
+	i := indexOf(*de, id)
+	if i < 0 {
+		return nil, ErrPasLObjet
+	}
+	*de = append((*de)[:i], (*de)[i+1:]...)
+	*vers = append(*vers, id)
 	return p.vueNinja(), p.sauver()
 }
 

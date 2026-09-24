@@ -62,13 +62,14 @@ type Ninja struct {
 	EnduranceMaj     int64                  `json:"endurance_maj"`
 	Explore          string                 `json:"explore"`
 	Defaites         int                    `json:"defaites"`
-	Exploitation     map[string]*Metier     `json:"exploitation"` // niveau d'exploitation par ressource
-	Sac              map[string]int         `json:"sac"`          // ressources portées (perdues à la défaite, comme l'équipement)
-	Coffre           map[string]int         `json:"coffre"`       // ressources à l'abri au village
-	Objets           []string               `json:"objets"`       // objets forgés non portés
-	Equipement       map[string]string      `json:"equipement"`   // emplacement → objet porté
-	Gisements        map[string]*Gisement   `json:"gisements"`    // gisements entamés
-	Camps            map[string]int64       `json:"camps"`        // camps vaincus → date de retour
+	Exploitation     map[string]*Metier     `json:"exploitation"`  // niveau d'exploitation par ressource
+	Sac              map[string]int         `json:"sac"`           // ressources portées (perdues à la défaite, comme l'équipement)
+	Coffre           map[string]int         `json:"coffre"`        // ressources à l'abri au village
+	Objets           []string               `json:"objets"`        // objets forgés non portés (dans le sac)
+	CoffreObjets     []string               `json:"coffre_objets"` // objets rangés au coffre du village
+	Equipement       map[string]string      `json:"equipement"`    // emplacement → objet porté
+	Gisements        map[string]*Gisement   `json:"gisements"`     // gisements entamés
+	Camps            map[string]int64       `json:"camps"`         // camps vaincus → date de retour
 	Creation         time.Time              `json:"creation"`
 }
 
