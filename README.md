@@ -78,7 +78,9 @@ godot --path client -- --demo=/tmp/captures
 
 ## Documents
 
+- [Document de conception complet, en PDF](docs/Ninja_Ivoire_Document_de_conception.pdf) (régénéré par `python3 docs/outils/generer_pdf.py`)
 - [Document de conception (GDD)](docs/GDD.md)
+- [Direction artistique](docs/DIRECTION_ARTISTIQUE.md)
 - [Feuille de route](docs/ROADMAP.md)
 
 ## Équipe

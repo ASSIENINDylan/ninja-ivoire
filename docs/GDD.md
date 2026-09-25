@@ -25,7 +25,7 @@
 | Plateforme | **Jeu PC** — Décidé |
 | Rendu | **Combat** au tour par tour avec des décors à la Darkest Dungeon ; **déplacements sur la carte** façon shinobi.fr — Décidé |
 | Code | **On repart de zéro** (sans réutiliser `game.js` ni `mmorpg/`), dans un **nouveau dépôt** — Décidé |
-| Graphismes | Pas de dessinateur : **style simple et élégant** — Décidé |
+| Graphismes | **Illustrations peintes générées par IA**, dans la technique de Darkest Dungeon et les couleurs ivoiriennes (voir §8 bis) — Décidé |
 | Rôles | **Terence dirige la conception, Claude développe** — Décidé |
 | Niveau maximum | **100** — Décidé |
 
@@ -99,7 +99,7 @@ Chaque mudra a un **sens**, et une suite de mudras forme une **phrase**. Une phr
 
 | Catégorie | Nombre | Rôle |
 |---|---|---|
-| **Élément** | 16 | Un mudra par élément de base. Deux mudras d'éléments enchaînés, à très haut niveau, donnent un élément rare. |
+| **Élément** | 16 | Un mudra par élément de base. Deux mudras d'éléments enchaînés, à partir du niveau 60, donnent un élément rare. |
 | **Forme** | 10 | projectile, lame, mur, zone, clone, lien, armure, piège, invocation, déplacement |
 | **Effet** | 10 | Braise, Hache, Kaolin (dégâts) ; Racine (défense) ; Bélier, Liane (entrave) ; Voile, Feuille (illusion) ; Kola, Moustique (soin) — voir §2 |
 | **Modificateur** | 6 | amplifier, étendre, multiplier, retarder, silence, persistance |
@@ -123,7 +123,7 @@ Structure d'une phrase : **Élément → Forme → Effet principal → (Effet se
 
 - Il y a donc **plus de 4 000 jutsus réellement différents** dans leur nature, **40 000** avec les effets secondaires, et des **millions de variantes**.
 - **Environ 1 suite de signes sur 4 000 tapée au hasard est valide.** Sans la résonance et la logique de la grammaire, on ne trouve rien : la découverte se fait par la réflexion.
-- En plus, une **centaine de jutsus légendaires** sont conçus à la main.
+- En plus, une **centaine de jutsus légendaires** sont prévus, conçus à la main. **8 existent aujourd'hui**, dont un (Souffle d'Ivoire) qui demande un élément mythique.
 - Un ninja ne maîtrise que 6 ou 7 éléments (§4). Chacun ne peut donc explorer qu'une partie de l'arbre. Le reste s'obtient par l'**échange** et le **commerce**.
 
 ### Noms des jutsus (Décidé : plus originaux ; style Proposé et en place)
@@ -192,7 +192,7 @@ Chaque élément est **fort contre deux éléments** et **faible contre deux aut
 | **Lune** | Illusions, sommeil, puissance la nuit et selon les phases lunaires (décidé) | Cyclique | Soleil, Gravité | Son, Sel |
 | **Gravité** | Déplace les ennemis entre les rangs, ralentit, écrase | Court / moyen | Vent, Sel | Lune, Essaim |
 
-### 16 éléments rares, par fusion à très haut niveau (Proposé)
+### 16 éléments rares, par fusion à partir du niveau 60 (Proposé et en place)
 
 | Fusion | Élément rare | Idée |
 |---|---|---|
@@ -322,7 +322,7 @@ Le cœur de la forêt de Taï, le sommet du mont Nimba, les profondeurs des lagu
 
 ### La carte (étape 3 ; Proposé et en place, à ajuster)
 - **Écran de carte (Décidé) :** au centre, seulement les cases autour du ninja ; derrière, un **paysage** qui rappelle où l'on est (savane, forêt, montagne, fleuve, lagune, littoral…) et ce qu'abrite la case ; la **grande carte en bas à gauche**.
-- **Style (Décidé) :** interface **claire et colorée**, comme un pagne au soleil ; les combats se déroulent de jour, dans le paysage du terrain.
+- **Style du prototype :** interface **claire et colorée**, comme un pagne au soleil. Elle sera remplacée par la direction artistique du §8 bis (parchemin, bois sculpté, scènes peintes, jour et nuit selon l'heure réelle).
 - **Grille** de 45 × 47 cases d'environ 15 km sur la vraie forme du pays : **1 352 cases**.
 - **9 terrains** tirés de la géographie : savane, savane boisée, forêt, forêt dense (Taï), montagne (Man, Nimba), fleuve (Comoé, Bandama, Sassandra), lac (Kossou, infranchissable), lagune, littoral.
 - **7 régions** découpées autour de leurs villages ; **8 zones par région**, chacune nommée d'après une vraie ville (Daloa, Odienné, Bouaké…).
@@ -372,13 +372,17 @@ Le cœur de la forêt de Taï, le sommet du mont Nimba, les profondeurs des lagu
 - **Équipement visible** : ce que porte un ninja (arme, tête, corps, pieds, arme secondaire) se voit sur son personnage, en combat et au village, grâce à l'animation par pièces sur un squelette commun aux 3 allures. Un ninja vaincu apparaît sans son équipement.
 - **Méthode** : une première scène complète (combat en savane) validée avant de produire le reste.
 
-## 9. Technique (Proposé)
+## 9. Technique (Proposé et en place)
 
-- **Client PC** : Godot 4 (gratuit, excellent en 2D, export Windows / Mac / Linux).
-- **Serveur autoritatif** : obligatoire. Les **recettes de jutsus ne doivent jamais être dans le client**, sinon elles seraient extraites en quelques heures.
+- **Client PC** : Godot 4.4 (gratuit, excellent en 2D, export Windows / Mac / Linux).
+- **Moteur de règles** : en Go. C'est la référence des règles et le futur serveur du jeu en ligne.
+- **Prototype hors ligne** : le jeu embarque une copie fidèle des règles et tourne seul sur le PC. Des tests vérifient que les deux moteurs donnent exactement les mêmes résultats.
+- **Serveur autoritatif en ligne** : obligatoire. Les **recettes de jutsus ne doivent jamais être dans le client**, sinon elles seraient extraites en quelques heures. Aujourd'hui, les recettes légendaires n'y figurent que sous forme d'empreintes chiffrées.
 - **Base de données** : PostgreSQL.
 
 ## 10. Questions ouvertes
 
 - Détail des lignées.
 - Monétisation.
+- **Puissance des légendaires** : aujourd'hui, de longues suites ordinaires de 6 ou 7 mudras dépassent la plupart des légendaires en puissance brute. Faut-il que chaque légendaire domine les jutsus ordinaires de son type ?
+- **Portails avant le jeu en ligne** : renforcer le gardien et appliquer la règle du vendredi soir dès le jeu en solo ?

@@ -17,4 +17,4 @@
 
 - **`server/`** : moteur de règles et serveur en **Go**. Toute la logique du jeu (grammaire des mudras, recettes, combat) vit ici. Le client ne connaît jamais les recettes.
 - **`client/`** : jeu PC en **Godot 4**. Il affiche ce que le serveur décide.
-- Pendant le prototype, le client lance automatiquement un serveur local.
+- Pendant le prototype, le jeu tourne hors ligne, avec une copie fidèle des règles Go.
